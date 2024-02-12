@@ -3,7 +3,6 @@ extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
 #[cfg(not(target_arch = "wasm32"))]
-#[macro_use]
 extern crate tokio;
 extern crate tracing;
 #[cfg(all(target_arch = "wasm32", feature = "web"))]
@@ -22,10 +21,4 @@ pub mod storage;
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
 }
