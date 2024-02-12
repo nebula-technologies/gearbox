@@ -1,0 +1,38 @@
+[package]
+name = "toolbelt"
+version = "0.0.1"
+edition = "2021"
+authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
+description = "Excessive tooling for Rust"
+readme = "README.md"
+categories = [""]
+keywords = ["tooling"]
+license = "MIT"
+repository = "https://github.com/nebula-technologies/toolbelt"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["web"]
+web = ["web-sys", "web-storage"]
+web-storage = ["web-sys/Storage", "web-sys/Window"]
+
+[dependencies]
+serde_json = "1"
+serde_yaml = "0.9"
+serde = "1"
+tracing = "0.1.40"
+libc = "0.2.153"
+dirs = "5.0.1"
+
+
+[dependencies.web-sys]
+version = "0.3.67"
+optional = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.tokio]
+version = "1"
+features = ["rt-multi-thread", "rt", "macros"]
+
+
+
