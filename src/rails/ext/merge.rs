@@ -30,7 +30,7 @@ pub trait Merge<T, E> {
 impl<T, E> Merge<T, E> for Result<T, E> {
     ///
     /// ```
-    /// use toolbelt::rails::ext::Merge;
+    /// use gearbox::rails::ext::Merge;
     ///
     /// fn func_xyz(v: u32, w: u32) -> Result<u32,u32> {
     ///     Ok( v + w)
@@ -55,7 +55,7 @@ impl<T, E> Merge<T, E> for Result<T, E> {
 
     ///
     /// ```
-    /// use toolbelt::rails::ext::Merge;
+    /// use gearbox::rails::ext::Merge;
     ///
     /// fn func_xyz(v: u32, w: u32, x: u32) -> Result<u32,u32> {
     ///     Ok( v + w + x )
@@ -83,7 +83,7 @@ impl<T, E> Merge<T, E> for Result<T, E> {
 
     ///
     /// ```
-    /// use toolbelt::rails::ext::Merge;
+    /// use gearbox::rails::ext::Merge;
     ///
     /// fn func_xyz(v: u32, w: u32, x: u32, y: u32) -> Result<u32,u32> {
     ///     Ok( v + w + x + y)
@@ -114,7 +114,7 @@ impl<T, E> Merge<T, E> for Result<T, E> {
 
     ///
     /// ```
-    /// use toolbelt::rails::ext::Merge;
+    /// use gearbox::rails::ext::Merge;
     ///
     /// fn func_xyz(v: u32, w: u32, x: u32, y: u32, z: u32) -> Result<u32,u32> {
     ///     Ok( v + w + x + y + z)
@@ -175,7 +175,7 @@ pub trait MergeOption<T> {
 impl<T> MergeOption<T> for Option<T> {
     ///
     /// ```
-    /// use toolbelt::rails::ext::MergeOption;
+    /// use gearbox::rails::ext::MergeOption;
     ///
     /// fn func_xyz(v: u32, w: u32) -> Option<u32> {
     ///     Some( v + w)
@@ -195,7 +195,7 @@ impl<T> MergeOption<T> for Option<T> {
 
     ///
     /// ```
-    /// use toolbelt::rails::ext::MergeOption;
+    /// use gearbox::rails::ext::MergeOption;
     ///
     /// fn func_xyz(v: u32, w: u32, x: u32) -> Option<u32> {
     ///     Some( v + w + x )
@@ -221,7 +221,7 @@ impl<T> MergeOption<T> for Option<T> {
 
     ///
     /// ```
-    /// use toolbelt::rails::ext::MergeOption;
+    /// use gearbox::rails::ext::MergeOption;
     ///
     /// fn func_xyz(v: u32, w: u32, x: u32, y: u32) -> Option<u32> {
     ///     Some( v + w + x + y)
@@ -249,7 +249,7 @@ impl<T> MergeOption<T> for Option<T> {
 
     ///
     /// ```
-    /// use toolbelt::rails::ext::MergeOption;
+    /// use gearbox::rails::ext::MergeOption;
     ///
     /// fn func_xyz(v: u32, w: u32, x: u32, y: u32, z: u32) -> Option<u32> {
     ///     Some( v + w + x + y + z)
