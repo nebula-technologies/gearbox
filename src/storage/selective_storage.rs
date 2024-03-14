@@ -1,12 +1,8 @@
-use crate::rails::ext::map_into::RailsMapErrIntoBox;
-
 use crate::common::TryDefault;
+use crate::rails::ext::map_into::RailsMapErrIntoBox;
 #[cfg(target_arch = "x86_64")]
 use crate::storage::io::file::error::Error as FileError;
-
 use crate::storage::KeyStoreExt;
-
-use serde::de::DeserializeOwned;
 use serde_json::Error as JsonError;
 use std::fmt::{Debug, Display, Formatter};
 
