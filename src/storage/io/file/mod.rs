@@ -1,6 +1,6 @@
 use crate::rails::ext::if_then::RailsIfExt;
 use crate::rails::ext::map_into::RailsMapErrInto;
-use crate::rails::tracing::{RailsLog, RailsLogState};
+use crate::rails::tracing::common::{RailsLog, RailsLogState};
 use std::fs::File as StdFile;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -86,7 +86,8 @@ impl File {
 
     fn contents_map(t: &StdFile) -> Result<String, std::io::Error> {
         let mut contents = String::new();
-        t.clone().read_to_string(&mut contents).map(|_| contents)
+        t.try_clone()
+            .and_then(|mut t| t.read_to_string(&mut contents).map(|_| contents))
     }
 }
 
