@@ -1,5 +1,6 @@
+use super::Error;
 use crate::time::duration::Duration;
-use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use spin::lock_api::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 #[derive(Debug, Default)]
 pub struct CacheWrapper(RwLock<Cache>);
@@ -10,8 +11,7 @@ impl CacheWrapper {
     }
 
     pub fn clear(&self) {
-        self.0
-            .write()
+        (Ok(self.0.write()) as Result<RwLockWriteGuard<'_, Cache>, Error>)
             .and_then(|mut t| {
                 let t = &mut *t;
                 t.year = None;
@@ -105,14 +105,12 @@ impl CacheWrapper {
             .unwrap_or(None)
     }
 
-    fn cache(&self) -> Result<RwLockReadGuard<'_, Cache>, PoisonError<RwLockReadGuard<'_, Cache>>> {
-        self.0.read()
+    fn cache(&self) -> Result<RwLockReadGuard<'_, Cache>, Error> {
+        Ok(self.0.read())
     }
 
-    fn cache_mut(
-        &self,
-    ) -> Result<RwLockWriteGuard<'_, Cache>, PoisonError<RwLockWriteGuard<'_, Cache>>> {
-        self.0.write()
+    fn cache_mut(&self) -> Result<RwLockWriteGuard<'_, Cache>, Error> {
+        Ok(self.0.write())
     }
 }
 
