@@ -3,7 +3,7 @@ pub mod ext;
 
 use crate::common::TryDefault;
 use crate::rails::ext::map_into::RailsMapErrInto;
-use crate::rails::tracing::{RailsLog, RailsLogState};
+use crate::rails::tracing::common::{RailsLog, RailsLogState};
 pub use error::Error;
 use web_sys::{window, Storage};
 

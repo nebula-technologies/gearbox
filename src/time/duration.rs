@@ -1,5 +1,4 @@
 use crate::time::constants::NANOS_PER_SEC;
-use libc::jrand48;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Duration {

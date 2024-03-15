@@ -35,15 +35,21 @@ impl<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> LogLayer<W,
         _default_fields: HashMap<String, LogValue>,
     ) -> Self {
         println!("PROCESS ID: {}", std::process::id());
+        #[cfg(any(unix, windows))]
+        let hostname = Option::from(
+            crate::net::hostname::gethostname()
+                .to_string_lossy()
+                .into_owned(),
+        );
+
+        #[cfg(not(any(unix, windows)))]
+        let hostname = None;
+
         Self {
             make_writer,
             version: Option::from(1),
             proc_id: Option::from(std::process::id()),
-            hostname: Option::from(
-                crate::net::hostname::gethostname()
-                    .to_string_lossy()
-                    .into_owned(),
-            ),
+            hostname: hostname,
             application: name.or_else(|| get_exec_name()),
             phantom: Default::default(),
         }
