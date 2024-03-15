@@ -1,5 +1,6 @@
 use std::ffi::OsString;
 
+#[cfg(any(unix, windows))]
 pub fn gethostname() -> OsString {
     gethostname_impl()
 }
