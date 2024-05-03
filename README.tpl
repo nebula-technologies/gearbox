@@ -1,7 +1,6 @@
-{{badges}}
-
 # {{crate}}
 
+{{badges}}
 {{readme}}
 
 Current version: {{version}}
