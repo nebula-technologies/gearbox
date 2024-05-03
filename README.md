@@ -1,4 +1,10 @@
-# Gearbox
+![Maintenance](https://img.shields.io/badge/maintenance-activly--developed-brightgreen.svg)
+
+# gearbox
+
+[![pipeline status](https://gitlab.nebula.technology/libraries/rust/gearbox/badges/main/pipeline.svg)](https://gitlab.nebula.technology/libraries/rust/gearbox/-/commits/main)
+[![coverage report](https://gitlab.nebula.technology/libraries/rust/gearbox/badges/main/coverage.svg)](https://gitlab.nebula.technology/libraries/rust/gearbox/-/commits/main)
+[![Latest Release](https://gitlab.nebula.technology/libraries/rust/gearbox/-/badges/release.svg)](https://gitlab.nebula.technology/libraries/rust/gearbox/-/releases)
 
 Gearbox is a versatile library that encompasses a wide array of functionalities, including networking, logging,
 railway-oriented programming extensions, and time management. Initially designed as a collection of utilities, the
@@ -8,7 +14,7 @@ universally compatible, from embedded systems to WebAssembly (WASM) environments
 minimizing the need for boilerplate code. This development strategy positions Gearbox as a comprehensive solution for
 developers seeking to build efficient, scalable applications across a broad spectrum of platforms.
 
-## Features
+### Features
 
 | Category   | Feature               | use                                 | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 |------------|-----------------------|-------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -17,13 +23,20 @@ developers seeking to build efficient, scalable applications across a broad spec
 | Networking | hostname              | gearbox::net::hostname              | Get the hostname of the local machine.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 |            | HTTP Request          | gearbox::net::http::*               | Send an HTTP request, this is currently an extension on top of `Reqwest` but simplifies the implementation of mTLS and payload signing.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Error      | ErrorTracer           | gearbox::error::tracer::*           | This is an error structure that builds a traceable stack of errors over time as errors are passed. It allows for later breaking down the error into a TypeId to define the encapsulated error for further operations on the error. This error type contains information about file, line, module path, and optional error_code with display and debug. Its an advanced alternative to std::error::Error that also works outside the std. This also comes with the macro `Error!()` which sets up the `ErrorTracerExtInfo` with all the needed information (file, line, module) |
-|            | Rail ErrorTracer      | gearbox::rails::ext::map_err_tracer | this is a simplification for `map_err` for operating with the ErrorTracer, this allows for passing an `Error!()` or an `ErrorTracerExtInfo` for the collection of all the information                                                                                                                                                                                                                                                                                                                                                                                          | 
-| Paths      | Common Paths          | gearbox::path::*                    | This is common paths under windows linux and more, eg under linux the config path is usually `~/.config/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | 
+|            | Rail ErrorTracer      | gearbox::rails::ext::map_err_tracer | this is a simplification for `map_err` for operating with the ErrorTracer, this allows for passing an `Error!()` or an `ErrorTracerExtInfo` for the collection of all the information                                                                                                                                                                                                                                                                                                                                                                                          |
+| Paths      | Common Paths          | gearbox::path::*                    | This is common paths under windows linux and more, eg under linux the config path is usually `~/.config/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Time       | Time Stamps and more  | gearbox::time::*                    | This is a timestamp system similar to Chrono, this is more like the library under PHP but handles times and time calculations, this library is used through out gearbox instead of Chrono                                                                                                                                                                                                                                                                                                                                                                                      |
 
-## TODO
+### TODO
 
-- [ ] ( gearbox::log::* ) Clean up Log fmt/syslog, some of the code can be combined and cleaned up a bit better, also
-  the formatter supports syslog, and bunyan, this should probably be cleared up a bit more, and separated better.
+- [ ] ( gearbox::log::* ) Clean up Log fmt/syslog, some of the code can be combined and cleaned up a bit better, also the formatter supports syslog, and bunyan, this should probably be cleared up a bit more, and separated better.
 - [ ] ( gearbox::path::* ) current this system is mainly just exposing the dirs::* library, this should be removed.
 - [ ] ( gearbox::* ) Remove usage for Vec or move usage of std::vec::Vec to another no-std library
+
+
+
+Current version: 0.0.4
+
+Some additional info here
+
+License: MIT
