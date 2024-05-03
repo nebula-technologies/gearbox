@@ -2,10 +2,10 @@ use crate::log::fmt::formatter::LogFormatter;
 use crate::log::fmt::log_layer::{LogLayer, Type};
 use crate::log::fmt::log_value::LogValue;
 use crate::log::fmt::storage::Storage;
+use core::fmt;
+use hashbrown::HashMap;
 use serde::ser::{SerializeMap, Serializer};
 use serde_json::Value;
-use std::collections::HashMap;
-use std::fmt;
 use std::io::Write;
 use tracing::{log, Event, Id, Level, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
@@ -58,7 +58,7 @@ impl Bunyan {
     pub fn with_default_fields(name: String, default_fields: HashMap<String, LogValue>) -> Self {
         Self {
             name,
-            pid: std::process::id(),
+            pid: core::process::id(),
             hostname: gethostname::gethostname().to_string_lossy().into_owned(),
             bunyan_version: 0,
             default_fields,

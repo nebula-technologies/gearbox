@@ -193,7 +193,7 @@ impl Value {
                 }
             }
             Value::UInt(n) => Some(*n),
-            Value::Float(n) => None,
+            Value::Float(_n) => None,
             _ => None,
         }
     }

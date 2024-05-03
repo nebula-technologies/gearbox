@@ -1,9 +1,8 @@
 use crate::log::fmt::log_value::LogValue;
 use crate::time::DateTime;
-use std::collections::HashMap;
-use std::fmt;
-use std::ops::{Deref, DerefMut};
-use std::time::Instant;
+use core::fmt;
+use core::ops::{Deref, DerefMut};
+use hashbrown::HashMap;
 use tracing::field::{Field, Visit};
 use tracing::span::{Attributes, Record};
 use tracing::{Id, Subscriber};
@@ -154,8 +153,8 @@ impl<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>> Layer
         let span = ctx.span(span).expect("Span not found, this is a bug");
 
         let mut extensions = span.extensions_mut();
-        if extensions.get_mut::<Instant>().is_none() {
-            extensions.insert(Instant::now());
+        if extensions.get_mut::<DateTime>().is_none() {
+            extensions.insert(DateTime::now());
         }
     }
 
@@ -168,8 +167,8 @@ impl<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>> Layer
         let elapsed_milliseconds = {
             let extensions = span.extensions();
             extensions
-                .get::<Instant>()
-                .map(|i| i.elapsed().as_millis())
+                .get::<DateTime>()
+                .map(|i| i.elapsed().as_millis_since_epoch())
                 // If `Instant` is not in the span extensions it means that the span was never
                 // entered into.
                 .unwrap_or(0)

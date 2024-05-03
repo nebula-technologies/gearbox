@@ -1,10 +1,9 @@
-use crate::rails::ext::{Merge, MergeOption};
 use crate::time::constants::{
     NANOS_PER_MILLI, NANOS_PER_SEC, SECS_PER_DAY, SECS_PER_HOUR, SECS_PER_MINUTE,
 };
 use crate::time::constants_utils::YearFlags;
 use crate::time::error::Error;
-use std::fmt::Display;
+use core::fmt::Display;
 
 pub(super) const fn is_leap_year(year: &i32) -> bool {
     let year = year.rem_euclid(400);
@@ -156,7 +155,7 @@ pub(crate) fn str_to_zone(zone: &str) -> Result<(i8, u8), Error> {
     Ok((hour as i8 * sign, minute))
 }
 
-mod SafeCalc {
+mod safe_calc {
     use crate::rails::ext::Merge;
     use crate::time::error::Error;
 
@@ -268,12 +267,12 @@ struct TimestampChunks {
 
 impl TimestampChunks {
     fn append_year(&mut self, c: char) -> Result<(), Error> {
-        SafeCalc::calc_i32(self.year, c).map(|t| {
+        safe_calc::calc_i32(self.year, c).map(|t| {
             self.year = t;
         })
     }
     fn append_month(&mut self, c: char) -> Result<(), Error> {
-        SafeCalc::calc_u8(self.month, c).map(|t| {
+        safe_calc::calc_u8(self.month, c).map(|t| {
             self.month = t;
         })
     }
@@ -281,32 +280,32 @@ impl TimestampChunks {
         self.month_str.push(c);
     }
     fn append_day(&mut self, c: char) -> Result<(), Error> {
-        SafeCalc::calc_u8(self.day, c).map(|t| {
+        safe_calc::calc_u8(self.day, c).map(|t| {
             self.day = t;
         })
     }
     fn append_hour(&mut self, c: char) -> Result<(), Error> {
-        SafeCalc::calc_u8(self.hour, c).map(|t| {
+        safe_calc::calc_u8(self.hour, c).map(|t| {
             self.hour = t;
         })
     }
     fn append_min(&mut self, c: char) -> Result<(), Error> {
-        SafeCalc::calc_u8(self.minute, c).map(|t| {
+        safe_calc::calc_u8(self.minute, c).map(|t| {
             self.minute = t;
         })
     }
     fn append_sec(&mut self, c: char) -> Result<(), Error> {
-        SafeCalc::calc_u8(self.second, c).map(|t| {
+        safe_calc::calc_u8(self.second, c).map(|t| {
             self.second = t;
         })
     }
     fn append_millis(&mut self, c: char) -> Result<(), Error> {
-        SafeCalc::calc_u64(self.milliseconds, c).map(|t| {
+        safe_calc::calc_u64(self.milliseconds, c).map(|t| {
             self.milliseconds = t;
         })
     }
     fn append_nanos(&mut self, c: char) -> Result<(), Error> {
-        SafeCalc::calc_u64(self.nanosecond, c).map(|t| {
+        safe_calc::calc_u64(self.nanosecond, c).map(|t| {
             self.nanosecond = t;
         })
     }
@@ -426,10 +425,10 @@ struct ZoneChunk {
 impl ZoneChunk {
     fn append(&mut self, c: char) -> Result<(), Error> {
         match self.cursor {
-            ZoneCursor::Hour => SafeCalc::calc_u8(self.hour, c).map(|t| {
+            ZoneCursor::Hour => safe_calc::calc_u8(self.hour, c).map(|t| {
                 self.hour = t;
             }),
-            ZoneCursor::Minute => SafeCalc::calc_u8(self.minute, c).map(|t| {
+            ZoneCursor::Minute => safe_calc::calc_u8(self.minute, c).map(|t| {
                 self.minute = t;
             }),
         }
@@ -729,7 +728,7 @@ pub enum CompareError {
 }
 
 impl Display for CompareError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "The value is not greater than the other value")
     }
 }

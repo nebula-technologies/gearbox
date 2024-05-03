@@ -1,10 +1,13 @@
+use crate::common;
 use crate::time::utils::CompareError;
-use std::fmt::Display;
-use std::num::ParseIntError;
+use core::fmt::Display;
+use core::num::ParseIntError;
+#[cfg(feature = "std")]
 use std::time::SystemTimeError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
+    #[cfg(feature = "std")]
     InvalidSystemTime(SystemTimeError),
     StringParser(String),
     InvalidFormat(String),
@@ -17,8 +20,9 @@ pub enum Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            #[cfg(feature = "std")]
             Error::InvalidSystemTime(e) => write!(f, "Invalid system time: {}", e),
             Error::StringParser(e) => write!(f, "String parser error: {}", e),
             Error::InvalidFormat(e) => write!(f, "Invalid format: {}", e),
@@ -31,8 +35,6 @@ impl Display for Error {
         }
     }
 }
-
-impl std::error::Error for Error {}
 
 impl From<ParseIntError> for Error {
     fn from(e: ParseIntError) -> Self {

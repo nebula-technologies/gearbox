@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 use tracing::{debug, error, info, trace, warn};
 
 pub trait RailsLog<T> {
@@ -64,8 +64,8 @@ pub trait RailsLogState<'a, O> {
 }
 
 impl<'a, O> RailsLogState<'a, Result<(), ()>> for O
-    where
-        O: FnOnce(()) -> Result<(), ()>,
+where
+    O: FnOnce(()) -> Result<(), ()>,
 {
     fn event(self, level: TracingLevels) -> Log<'a, Result<(), ()>> {
         Log {
@@ -109,8 +109,8 @@ pub trait RailsLogMsgState<'a, O> {
 }
 
 impl<'a, O> RailsLogMsgState<'a, Result<(), ()>> for O
-    where
-        O: FnOnce(()) -> Result<(), ()>,
+where
+    O: FnOnce(()) -> Result<(), ()>,
 {
     fn event_msg(self, level: TracingLevels, msg: &'a str) -> Log<'a, Result<(), ()>> {
         Log {

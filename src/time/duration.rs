@@ -1,4 +1,6 @@
-use crate::time::constants::NANOS_PER_SEC;
+use crate::time::constants::{MILLIS_PER_SEC, NANOS_PER_SEC};
+use crate::time::NANOS_PER_MILLI;
+use core::ops::{Add, Sub};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Duration {
@@ -29,11 +31,11 @@ impl Duration {
         }
     }
 
-    pub fn from_secs_nanos(sec: i64, nanos: u32) -> Self {
+    pub fn from_secs_nanos(sec: &i64, nanos: &u32) -> Self {
         if sec.is_negative() {
-            Self::Negative(sec.abs() as u64, nanos)
+            Self::Negative(sec.abs() as u64, *nanos)
         } else {
-            Self::Positive(sec as u64, nanos)
+            Self::Positive(*sec as u64, *nanos)
         }
     }
 
@@ -41,6 +43,20 @@ impl Duration {
         match self {
             Self::Negative(sec, _) => -(sec.clone() as i64),
             Self::Positive(sec, _) => sec.clone() as i64,
+            Self::Zero => 0,
+        }
+    }
+
+    pub fn as_millis(&self) -> i64 {
+        match self {
+            Self::Negative(sec, nanos) => {
+                -((sec.clone() as i64 * MILLIS_PER_SEC as i64)
+                    + (nanos.clone() as i64 / NANOS_PER_MILLI as i64))
+            }
+            Self::Positive(sec, nanos) => {
+                (sec.clone() as i64 * MILLIS_PER_SEC as i64)
+                    + (nanos.clone() as i64 / NANOS_PER_MILLI as i64)
+            }
             Self::Zero => 0,
         }
     }
@@ -188,13 +204,83 @@ impl Duration {
             Self::Zero => *self = Self::Negative(remove_secs as u64, remove_nanos as u32),
         }
     }
+
+    pub(crate) fn subtract_time(&mut self, time: Self) {
+        match self {
+            Self::Negative(ref mut sec, ref mut n) => match time {
+                Self::Negative(sec2, n2) => {
+                    let new_nanos = n.clone() as i32 - n2 as i32;
+                    if new_nanos.is_negative() {
+                        *n = (NANOS_PER_SEC as i32 + new_nanos) as u32;
+                        *sec -= 1;
+                    } else {
+                        *n = new_nanos as u32;
+                    }
+                    let new_secs = sec.clone() as i64 - sec2 as i64;
+                    if new_secs.is_negative() {
+                        *self = Self::Positive(new_secs.abs() as u64, *n);
+                    } else {
+                        *sec = new_secs as u64;
+                    }
+                }
+                Self::Positive(sec2, n2) => {
+                    let new_nanos = n.clone() as i32 + n2 as i32;
+                    if new_nanos >= NANOS_PER_SEC as i32 {
+                        *n = (new_nanos - NANOS_PER_SEC as i32) as u32;
+                        *sec += 1;
+                    } else {
+                        *n = new_nanos as u32;
+                    }
+                    *sec = (sec.clone() as i64 + sec2 as i64) as u64;
+                }
+                Self::Zero => {}
+            },
+            Self::Positive(ref mut sec, ref mut n) => match time {
+                Self::Negative(s2, n2) => {
+                    let new_nanos = n.clone() as i32 + n2 as i32;
+                    if new_nanos >= NANOS_PER_SEC as i32 {
+                        *n = (new_nanos - NANOS_PER_SEC as i32) as u32;
+                        *sec += 1;
+                    } else {
+                        *n = new_nanos as u32;
+                    }
+                    *sec = (sec.clone() as i64 + s2 as i64) as u64;
+                }
+                Self::Positive(s2, n2) => {
+                    let new_nanos = n.clone() as i32 - n2 as i32;
+                    if new_nanos.is_negative() {
+                        *n = (new_nanos + NANOS_PER_SEC as i32) as u32;
+                        *sec -= 1;
+                    } else {
+                        *n = new_nanos as u32;
+                    }
+                    let new_secs = sec.clone() as i64 - s2 as i64;
+                    if new_secs.is_negative() {
+                        *self = Self::Negative(new_secs.abs() as u64, *n);
+                    } else {
+                        *sec = new_secs as u64;
+                    }
+                }
+                Duration::Zero => {}
+            },
+            Self::Zero => match time {
+                Duration::Negative(s, n) => {
+                    *self = Duration::Positive(s, n);
+                }
+                Duration::Positive(s, n) => {
+                    *self = Duration::Negative(s, n);
+                }
+                Duration::Zero => {}
+            },
+        }
+    }
 }
 
 impl From<std::time::Duration> for Duration {
     fn from(duration: std::time::Duration) -> Self {
         let sec = duration.as_secs() as i64;
         let nanos = duration.subsec_nanos();
-        Duration::from_secs_nanos(sec, nanos)
+        Duration::from_secs_nanos(&sec, &nanos)
     }
 }
 
@@ -206,32 +292,104 @@ impl From<i64> for Duration {
 
 impl From<(i64, u64)> for Duration {
     fn from((sec, nanos): (i64, u64)) -> Self {
-        Duration::from_secs_nanos(sec, nanos as u32)
+        Duration::from_secs_nanos(&sec, &(nanos as u32))
     }
 }
 
 impl From<(i64, u32)> for Duration {
     fn from((sec, nanos): (i64, u32)) -> Self {
-        Duration::from_secs_nanos(sec, nanos)
+        Duration::from_secs_nanos(&sec, &nanos)
     }
 }
 impl From<(u64, u32)> for Duration {
     fn from((sec, nanos): (u64, u32)) -> Self {
-        Duration::from_secs_nanos(sec as i64, nanos)
+        Duration::from_secs_nanos(&(sec as i64), &nanos)
     }
 }
 impl From<(u32, u32)> for Duration {
     fn from((sec, nanos): (u32, u32)) -> Self {
-        Duration::from_secs_nanos(sec as i64, nanos)
+        Duration::from_secs_nanos(&(sec as i64), &nanos)
     }
 }
 impl From<(i32, i32)> for Duration {
     fn from((sec, nanos): (i32, i32)) -> Self {
-        Duration::from_secs_nanos(sec as i64, nanos as u32)
+        Duration::from_secs_nanos(&(sec as i64), &(nanos as u32))
     }
 }
 impl From<(i32, u32)> for Duration {
     fn from((sec, nanos): (i32, u32)) -> Self {
-        Duration::from_secs_nanos(sec as i64, nanos)
+        Duration::from_secs_nanos(&(sec as i64), &nanos)
+    }
+}
+
+impl Add for Duration {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        let self_nanos = self.as_sub_nanos();
+        let other_nanos = other.as_sub_nanos();
+        let mut calc_nanos = self_nanos + other_nanos;
+
+        let self_secs = self.as_secs();
+        let other_secs = other.as_secs();
+        let mut calc_secs = self_secs + other_secs;
+
+        if calc_nanos > NANOS_PER_SEC {
+            calc_secs += (calc_nanos / NANOS_PER_SEC) as i64;
+            calc_nanos = calc_nanos % NANOS_PER_SEC;
+        }
+        if calc_secs.is_negative() {
+            Self::Negative(calc_secs.abs() as u64, calc_nanos as u32)
+        } else {
+            Self::Positive(calc_secs as u64, calc_nanos as u32)
+        }
+    }
+}
+
+impl Sub for Duration {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        // Assume these methods convert durations to a total of nanoseconds within the current second
+        let self_nanos = self.as_sub_nanos();
+        let other_nanos = other.as_sub_nanos();
+
+        // Initial calculation might result in negative nanoseconds
+        let mut calc_nanos = self_nanos as i64 - other_nanos as i64;
+
+        // Convert durations to total seconds
+        let self_secs = self.as_secs() as i64;
+        let other_secs = other.as_secs() as i64;
+        let mut calc_secs = self_secs - other_secs;
+
+        // Adjust for negative nanoseconds, ensuring calc_nanos is within 0..NANOS_PER_SEC
+        if calc_nanos < 0 {
+            calc_secs -= 1;
+            calc_nanos += NANOS_PER_SEC as i64; // Adjust nanos back to positive within a second
+        }
+
+        // Convert back to Duration, deciding on Positive, Negative, or Zero
+        if calc_secs > 0 || (calc_secs == 0 && calc_nanos > 0) {
+            Self::Positive(calc_secs as u64, calc_nanos as u32)
+        } else if calc_secs < 0 || (calc_secs == 0 && calc_nanos < 0) {
+            Self::Negative(calc_secs.abs() as u64, calc_nanos.abs() as u32)
+        } else {
+            Self::Zero
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::time::Duration;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn test_add_sub_time() {
+        let epoch = Duration::from_secs_nanos(&0, &0);
+        let sec_10 = Duration::from_secs_nanos(&10, &0);
+
+        assert_eq!(10, (epoch.clone() + sec_10.clone()).as_secs());
+        assert_eq!(-10, (epoch.clone() - sec_10.clone()).as_secs());
     }
 }
