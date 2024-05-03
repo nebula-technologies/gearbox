@@ -3,7 +3,6 @@
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
 use crate::time::constants_utils::YearFlags;
-use core::fmt;
 
 pub const COMMON_TIMESTAMP_FORMATS: [&str; 16] = [
     // ISO 8601 Date and Time Formats
@@ -44,6 +43,9 @@ pub const NANOS_PER_MINUTE: u64 = 60_000_000_000;
 pub const NANOS_PER_SEC: u32 = 1_000_000_000;
 pub const NANOS_PER_MILLI: u32 = 1_000_000;
 pub const NANOS_PER_MICRO: u32 = 1_000;
+
+/// For milliseconds conversion
+pub const MILLIS_PER_SEC: u32 = 1_000;
 /// Defaults for SECONDS
 pub const SECS_PER_YEAR: u32 = 31536000;
 pub const SECS_PER_LEAP_YEAR: u32 = 31622400;
@@ -55,7 +57,7 @@ pub const SECS_PER_MINUTE: u32 = 60;
 // Weekday of the last day in the preceding year.
 // Allows for quick day of week calculation from the 1-based ordinal.
 pub(super) const YEAR_STARTS_AFTER_MONDAY: u8 = 7; // non-zero to allow use with `NonZero*`.
-pub(super) const YEAR_STARTS_AFTER_THUESDAY: u8 = 1;
+pub(super) const YEAR_STARTS_AFTER_TUESDAY: u8 = 1;
 pub(super) const YEAR_STARTS_AFTER_WEDNESDAY: u8 = 2;
 pub(super) const YEAR_STARTS_AFTER_THURSDAY: u8 = 3;
 pub(super) const YEAR_STARTS_AFTER_FRIDAY: u8 = 4;
@@ -65,40 +67,54 @@ pub(super) const YEAR_STARTS_AFTER_SUNDAY: u8 = 6;
 pub(super) const COMMON_YEAR: u8 = 1 << 3;
 pub(super) const LEAP_YEAR: u8 = 0 << 3;
 
-pub(super) const A: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SATURDAY);
-pub(super) const AG: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SATURDAY);
-pub(super) const B: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_FRIDAY);
-pub(super) const BA: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_FRIDAY);
-pub(super) const C: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THURSDAY);
-pub(super) const CB: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THURSDAY);
-pub(super) const D: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
-pub(super) const DC: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
-pub(super) const E: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THUESDAY);
-pub(super) const ED: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THUESDAY);
-pub(super) const F: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_MONDAY);
-pub(super) const FE: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_MONDAY);
-pub(super) const G: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SUNDAY);
-pub(super) const GF: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SUNDAY);
+pub(super) const NSU: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SUNDAY);
+pub(super) const NSA: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SATURDAY);
+pub(super) const NFR: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_FRIDAY);
+pub(super) const NTH: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THURSDAY);
+pub(super) const NWE: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
+pub(super) const NTU: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_TUESDAY);
+pub(super) const NMO: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_MONDAY);
+
+pub(super) const LSU: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SUNDAY);
+pub(super) const LSA: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SATURDAY);
+pub(super) const LFR: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_FRIDAY);
+pub(super) const LTH: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THURSDAY);
+pub(super) const LWE: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
+pub(super) const LTU: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_TUESDAY);
+pub(super) const LMO: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_MONDAY);
 
 pub(super) const YEAR_TO_FLAGS: &[YearFlags; 400] = &[
-    BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA,
-    G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G,
-    F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F,
-    E, DC, B, A, G, FE, D, C, B, AG, F, E, D, // 100
-    C, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC,
-    B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B,
-    A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A,
-    G, FE, D, C, B, AG, F, E, D, CB, A, G, F, // 200
-    E, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE,
-    D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D,
-    C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C,
-    B, AG, F, E, D, CB, A, G, F, ED, C, B, A, // 300
-    G, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B, AG,
-    F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F,
-    E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E,
-    D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
+    LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU,
+    NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO, NWE,
+    NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR,
+    NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU, NMO,
+    LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO, NWE, NTH,
+    NFR, LSA, NMO, NTU, NWE, NTH, NFR, NSA, NSU, LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA,
+    NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO,
+    NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH,
+    LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU,
+    NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO, NWE,
+    NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU, NMO, NTU, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH,
+    NSA, NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU,
+    LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE,
+    NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA,
+    NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO,
+    NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU, NMO, LTU, NTH, NFR, NSA, NSU, NMO, NTU, NWE,
+    LTH, NSA, NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA,
+    NSU, LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU,
+    NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU, LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH,
+    NSA, NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE, NTH, LFR, NSU, NMO, NTU, LWE, NFR, NSA, NSU,
+    LMO, NWE, NTH, NFR, LSA, NMO, NTU, NWE, LTH, NSA, NSU, NMO, LTU, NTH, NFR, NSA, LSU, NTU, NWE,
+    NTH,
 ];
+const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
 
+const LEAP_YEAR_MASK: i32 = 0b1000;
+// OL: ordinal and leap year flag.
+// With only these parts of the date an ordinal 366 in a common year would be encoded as
+// `((366 << 1) | 1) << 3`, and in a leap year as `((366 << 1) | 0) << 3`, which is less.
+// This allows for efficiently checking the ordinal exists depending on whether this is a leap year.
+const OL_MASK: i32 = ORDINAL_MASK | LEAP_YEAR_MASK;
 // OL: (ordinal << 1) | leap year flag
 pub(super) const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
 pub(super) const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;

@@ -1,6 +1,6 @@
+use core::fmt::{Display, Formatter};
 use serde_json::Error as JsonError;
 use serde_yaml::Error as YamlError;
-use std::fmt::{Display, Formatter};
 use std::io::Error as IoError;
 
 #[derive(Debug)]
@@ -16,7 +16,7 @@ pub enum Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Error::IoError(e) => write!(f, "IO error: {}", e),
             Error::NoFileConfigured(s) => write!(f, "No file configured: {}", s),

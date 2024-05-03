@@ -1,31 +1,35 @@
-pub trait RailsMapErrInto<T, U> {
-    fn map_err_into(self) -> Result<T, U>
-    where
-        Self: Sized;
-}
-
-impl<T, E: Into<U>, U> RailsMapErrInto<T, U> for Result<T, E> {
-    fn map_err_into(self) -> Result<T, U>
+pub trait RailsMapErrInto<T, E> {
+    fn map_err_into<U>(self) -> Result<T, U>
     where
         Self: Sized,
+        E: Into<U>;
+}
+
+impl<T, E> RailsMapErrInto<T, E> for Result<T, E> {
+    fn map_err_into<U>(self) -> Result<T, U>
+    where
+        Self: Sized,
+        E: Into<U>,
     {
         match self {
             Ok(t) => Ok(t),
-            Err(e) => Err(e.into()),
+            Err(e) => Err(e.into()), // Using Into here
         }
     }
 }
 
-pub trait RailsMapInto<U, E> {
-    fn map_into(self) -> Result<U, E>
-    where
-        Self: Sized;
-}
-
-impl<T: Into<U>, E, U> RailsMapInto<U, E> for Result<T, E> {
-    fn map_into(self) -> Result<U, E>
+pub trait RailsMapInto<T, E> {
+    fn map_into<U>(self) -> Result<U, E>
     where
         Self: Sized,
+        T: Into<U>;
+}
+
+impl<T, E> RailsMapInto<T, E> for Result<T, E> {
+    fn map_into<U>(self) -> Result<U, E>
+    where
+        Self: Sized,
+        T: Into<U>,
     {
         match self {
             Ok(t) => Ok(t.into()),
@@ -51,24 +55,24 @@ impl<T, E> RailsBoxErr<T, E> for Result<T, E> {
         }
     }
 }
-pub trait RailsMapErrIntoBox<T, E, U>
+pub trait RailsMapErrIntoBox<T, E>
 where
     E: std::error::Error,
-    Box<E>: Into<U>,
 {
-    fn map_err_box_into(self) -> Result<T, U>
-    where
-        Self: Sized;
-}
-
-impl<T, E, U> RailsMapErrIntoBox<T, E, U> for Result<T, E>
-where
-    E: std::error::Error,
-    Box<E>: Into<U>,
-{
-    fn map_err_box_into(self) -> Result<T, U>
+    fn map_err_box_into<U>(self) -> Result<T, U>
     where
         Self: Sized,
+        Box<E>: Into<U>;
+}
+
+impl<T, E> RailsMapErrIntoBox<T, E> for Result<T, E>
+where
+    E: std::error::Error,
+{
+    fn map_err_box_into<U>(self) -> Result<T, U>
+    where
+        Self: Sized,
+        Box<E>: Into<U>,
     {
         match self {
             Ok(t) => Ok(t),

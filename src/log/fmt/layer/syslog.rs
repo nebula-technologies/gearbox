@@ -6,7 +6,7 @@ use crate::log::fmt::severity::Severity;
 use crate::log::fmt::storage::Storage;
 use crate::time::DateTime;
 use core::fmt;
-use std::collections::HashMap;
+use hashbrown::HashMap;
 use std::ops::{Deref, DerefMut};
 use tracing::{Event, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;

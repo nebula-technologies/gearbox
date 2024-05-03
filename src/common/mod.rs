@@ -1,6 +1,3 @@
-pub trait TryDefault {
-    type Error;
-    fn try_default() -> Result<Self, Self::Error>
-    where
-        Self: Sized;
-}
+pub mod try_default;
+
+pub use try_default::TryDefault;

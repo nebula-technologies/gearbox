@@ -5,7 +5,6 @@ use crate::storage::io::file::error::Error;
 use crate::storage::{json::JsonExt, yaml::YamlExt, KeyStoreExt};
 use serde::de::DeserializeOwned;
 
-
 impl JsonExt for File {
     type Error = Error;
     fn get_json<T: serde::de::DeserializeOwned>(&self) -> Result<T, Self::Error> {

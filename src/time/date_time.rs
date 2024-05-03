@@ -1,20 +1,33 @@
 use crate::time::cache::{CacheKey, CacheKey::*, CacheWrapper};
 use crate::time::constants::{
-    COMMON_TIMESTAMP_FORMATS, EPOCH, NANOS_PER_DAY, NANOS_PER_MICRO, NANOS_PER_MILLI,
-    NANOS_PER_MINUTE, NANOS_PER_SEC, SECS_PER_DAY, SECS_PER_HOUR, SECS_PER_LEAP_YEAR,
-    SECS_PER_MINUTE, SECS_PER_MONTH, SECS_PER_YEAR,
+    COMMON_TIMESTAMP_FORMATS, EPOCH, NANOS_PER_MICRO, NANOS_PER_MILLI, NANOS_PER_SEC, SECS_PER_DAY,
+    SECS_PER_HOUR, SECS_PER_LEAP_YEAR, SECS_PER_MINUTE, SECS_PER_YEAR,
 };
 use crate::time::duration::Duration;
 use crate::time::error::Error;
 use crate::time::utils::{days_in_month, is_leap_year};
 
 use crate::time::constants_utils::{Mdf, YearFlags};
-use crate::time::utils;
-use std::cmp::Ordering;
-use std::fmt::{Display, Formatter};
-use std::hash::{Hash, Hasher};
+use crate::time::{utils, TimeNow};
+use core::cmp::Ordering;
+use core::fmt::{Display, Formatter};
+use core::hash::{Hash, Hasher};
+use std::ops::{Add, Sub};
 use std::time::{SystemTime, UNIX_EPOCH};
-
+/// Represents a point in time with associated timezone information.
+///
+/// `DateTime` is a struct that combines a `Duration` since the UNIX epoch
+/// to represent the specific moment, along with a `Duration` to manage timezone
+/// offsets. It also utilizes a `CacheWrapper` to optimize repeated time calculations.
+///
+/// # Examples
+///
+/// ```
+/// use gearbox::time::{DateTime, Duration};
+///
+/// let mut datetime = DateTime::now();
+/// println!("Current time: {:?}", datetime);
+/// ```
 #[derive(Debug)]
 pub struct DateTime {
     time: Duration,
@@ -23,14 +36,33 @@ pub struct DateTime {
 }
 
 impl DateTime {
+    /// Clears the internal cache. This method is useful when there are significant
+    /// changes to the DateTime's state that invalidate cached values.
     fn clear_cache(&self) {
         self.cache.clear();
     }
 
+    /// Retrieves a cached value based on a specified key.
+    ///
+    /// If the value is not cached, `None` is returned.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - A `CacheKey` that specifies which time component to retrieve from the cache.
     fn cache(&self, key: CacheKey) -> Option<(i32, Duration)> {
         self.cache.get(key)
     }
 
+    /// Updates the cache with a new value for a specified key, associating it with a duration.
+    ///
+    /// This method can be used to manually set cache values for specific time components.
+    /// This is useful in scenarios where calculated time components are known and do not need to be recomputed.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The `CacheKey` specifying which component to update.
+    /// * `value` - The integer value of the component.
+    /// * `duration` - The `Duration` that specifies how long this cache entry is valid.
     fn cache_update<D>(&self, key: CacheKey, value: i32, duration: D) -> (i32, Duration)
     where
         D: Into<Duration>,
@@ -41,6 +73,20 @@ impl DateTime {
 
 /// DateTime - Creation Functions
 impl DateTime {
+    /// Constructs a new `DateTime` object representing the current time.
+    ///
+    /// This function retrieves the system time, calculates the duration since the UNIX epoch,
+    /// and initializes the `time` field with this duration. The `zone` is set to zero, and the cache is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let now = DateTime::now();
+    /// println!("Current DateTime: {:?}", now);
+    /// ```
+    #[cfg(feature = "std")]
     pub fn now() -> Self {
         let system_time = SystemTime::now();
         let duration = system_time.duration_since(UNIX_EPOCH).unwrap();
@@ -51,6 +97,81 @@ impl DateTime {
         }
     }
 
+    /// Constructs a new `DateTime` object representing from the timesystem.
+    ///
+    /// This function retrieves the system time from a timesystem that implements the trait `TimeSystemNow`,
+    /// calculates the duration since the UNIX epoch, and initializes the `time` field with this duration.
+    /// The `zone` is set to zero, and the cache is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::time::SystemTime;
+    /// use gearbox::time::{DateTime, TimeNow};
+    ///
+    /// let now = DateTime::now_with_timesystem::<SystemTime>();
+    /// println!("Current DateTime: {:?}", now);
+    /// ```
+
+    pub fn now_with_timesystem<T: TimeNow>() -> Self {
+        let system_time = SystemTime::now();
+        let duration = system_time.duration_since(UNIX_EPOCH).unwrap();
+        Self {
+            time: duration.into(),
+            zone: Duration::zero(),
+            cache: Default::default(),
+        }
+    }
+
+    /// Returns a timestamp that is set to 'zero' 0 which is the same as epoch in UNIX time.
+    /// This is useful for creating a DateTime object that will need time added or adjusted later
+    /// # Examples
+    /// ```rust
+    ///
+    /// use gearbox::time::DateTime;
+    /// let datetime = DateTime::new();
+    /// println!("DateTime: {:?}", datetime);
+    ///
+    /// assert_eq!(datetime.year(), 1970);
+    /// ```
+    pub fn new() -> Self {
+        Self {
+            time: Duration::zero(),
+            zone: Duration::zero(),
+            cache: Default::default(),
+        }
+    }
+
+    /// Calculates the time elapsed from this `DateTime` instance to now.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::now();
+    /// let elapsed = datetime.elapsed();
+    /// println!("Elapsed time: {:?}", elapsed);
+    /// ```
+    pub fn elapsed(&self) -> Self {
+        let now = Self::now();
+        self.clone() - now
+    }
+
+    /// Creates a `DateTime` from seconds since the UNIX epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `sec` - The number of seconds since the UNIX epoch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::{DateTime, Duration};
+    ///
+    /// let datetime = DateTime::from_secs(1609459200); // 2021-01-01T00:00:00Z
+    /// println!("DateTime: {:?}", datetime);
+    /// ```
     pub fn from_secs(sec: i64) -> Self {
         Self {
             time: Duration::from_secs(sec),
@@ -59,6 +180,20 @@ impl DateTime {
         }
     }
 
+    /// Creates a `DateTime` from nanoseconds since the UNIX epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `nanos` - The number of nanoseconds since the UNIX epoch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::{DateTime, Duration};
+    ///
+    /// let datetime = DateTime::from_nanos(1609459200000000000);
+    /// println!("DateTime: {:?}", datetime);
+    /// ```
     pub fn from_nanos(nanos: i128) -> Self {
         Self {
             time: Duration::from_nanos(nanos),
@@ -67,14 +202,43 @@ impl DateTime {
         }
     }
 
+    /// Creates a `DateTime` from seconds and additional nanoseconds since the UNIX epoch.
+    ///
+    /// # Arguments
+    ///
+    /// * `sec` - The number of seconds since the UNIX epoch.
+    /// * `nanos` - Additional nanoseconds to add to the seconds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::{DateTime, Duration};
+    ///
+    /// let datetime = DateTime::from_secs_nanos(1609459200, 500);
+    /// println!("DateTime: {:?}", datetime);
+    /// ```
     pub fn from_secs_nanos(sec: i64, nanos: u32) -> Self {
         Self {
-            time: Duration::from_secs_nanos(sec, nanos),
+            time: Duration::from_secs_nanos(&sec, &nanos),
             zone: Duration::zero(),
             cache: Default::default(),
         }
     }
 
+    /// Creates a `DateTime` from a UNIX timestamp.
+    ///
+    /// # Arguments
+    ///
+    /// * `timestamp` - The UNIX timestamp as seconds since the epoch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::from_timestamp(1609459200);
+    /// println!("DateTime from timestamp: {:?}", datetime);
+    /// ```
     pub fn from_timestamp(timestamp: i64) -> Self {
         Self {
             time: Duration::from_secs(timestamp),
@@ -83,6 +247,24 @@ impl DateTime {
         }
     }
 
+    /// Creates a `DateTime` from a `SystemTime`.
+    ///
+    /// If `SystemTime` is before the UNIX epoch, adjusts the `DateTime` to represent the correct negative duration.
+    ///
+    /// # Arguments
+    ///
+    /// * `system_time` - A `std::time::SystemTime` instance.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::time::{SystemTime, UNIX_EPOCH};
+    /// use gearbox::time::DateTime;
+    ///
+    /// let system_time = SystemTime::now();
+    /// let datetime = DateTime::from_system_time(system_time);
+    /// println!("DateTime from SystemTime: {:?}", datetime);
+    /// ```
     pub fn from_system_time(system_time: SystemTime) -> Self {
         system_time
             .duration_since(UNIX_EPOCH)
@@ -98,7 +280,24 @@ impl DateTime {
                 )
             })
     }
-
+    /// Constructs a `DateTime` from a specified date.
+    ///
+    /// This function accounts for leap years when calculating the time elapsed from the epoch to the specified date.
+    ///
+    /// # Arguments
+    ///
+    /// * `year` - Year component of the date.
+    /// * `month` - Month component of the date.
+    /// * `day` - Day component of the date.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::from_date(2021, 1, 1); // Represents 2021-01-01
+    /// println!("DateTime from date: {:?}", datetime);
+    /// ```
     pub fn from_date(year: i32, month: u8, day: u8) -> Self {
         let mut duration = Duration::zero();
         if year < EPOCH {
@@ -137,7 +336,27 @@ impl DateTime {
             cache: Default::default(),
         }
     }
-
+    /// Constructs a `DateTime` with a detailed date and time specification including timezone.
+    ///
+    /// # Arguments
+    ///
+    /// * `year` - Year component.
+    /// * `month` - Month component.
+    /// * `day` - Day component.
+    /// * `hour` - Hour component.
+    /// * `minute` - Minute component.
+    /// * `second` - Second component.
+    /// * `nanos` - Nanosecond component.
+    /// * `zone` - Tuple representing the timezone offset as hours and minutes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::from_date_long(2021, 1, 1, 12, 0, 0, 0, (0, 0));
+    /// println!("Detailed DateTime: {:?}", datetime);
+    /// ```
     pub fn from_date_long(
         year: i32,
         month: u8,
@@ -157,6 +376,27 @@ impl DateTime {
         date_time
     }
 
+    /// Parses a `DateTime` from a formatted string.
+    ///
+    /// This method attempts to parse a string into a `DateTime` using predefined common timestamp formats.
+    ///
+    /// # Arguments
+    ///
+    /// * `string` - A string slice representing the formatted date and time.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(Error::InvalidFormat)` if the string does not match any known formats.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::from_str("2021-01-01T12:00:00Z");
+    /// assert!(datetime.is_ok());
+    /// println!("Parsed DateTime: {:?}", datetime.unwrap());
+    /// ```
     pub fn from_str(string: &str) -> Result<Self, Error> {
         for i in COMMON_TIMESTAMP_FORMATS.iter() {
             let date_time_res = utils::str_to_timestamp(string, i).map(|t| {
@@ -170,24 +410,66 @@ impl DateTime {
         Err(Error::InvalidFormat(string.to_string()))
     }
 }
+
 /// # DateTime - TimeZone Control
 impl DateTime {
+    /// Returns the current time zone offset in seconds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::now();
+    /// println!("Timezone offset in seconds: {}", datetime.timezone_offset_seconds());
+    /// ```
     pub fn timezone_offset_seconds(&self) -> i64 {
         self.timezone().as_secs()
     }
 
+    /// Returns the current time zone offset in hours.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::now();
+    /// println!("Timezone offset in hours: {}", datetime.timezone_offset_hours());
+    /// ```
     pub fn timezone_offset_hours(&self) -> i64 {
         self.timezone().as_secs() / SECS_PER_HOUR as i64
     }
 
-    fn timezone_abbreviation(&self) -> String {
+    /// Generates a timezone abbreviation based on the current timezone offset.
+    ///
+    /// This method computes the offset in a human-readable format (`±HH:MM`).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::now();
+    /// println!("Timezone abbreviation: {}", datetime.timezone_abbreviation());
+    /// ```
+    pub fn timezone_abbreviation(&self) -> String {
         let zone = self.timezone();
         let sign = if zone.is_negative() { "-" } else { "+" };
         let hours = zone.as_secs().abs() / SECS_PER_HOUR as i64;
         let minutes = (zone.as_secs() % SECS_PER_HOUR as i64) / SECS_PER_MINUTE as i64;
         format!("{}{:02}:{:02}", sign, hours, minutes)
     }
-
+    /// Converts the timezone to a string in the format `±HH:MM`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::now();
+    /// println!("Timezone as string: {}", datetime.zone_to_str());
+    /// ```
     pub fn zone_to_str(&self) -> String {
         let zone = self.timezone();
         let sign = if zone.is_negative() { "-" } else { "+" };
@@ -196,17 +478,65 @@ impl DateTime {
         format!("{}{:02}:{:02}", sign, hours, minutes)
     }
 
+    /// Provides a reference to the current timezone `Duration`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let datetime = DateTime::now();
+    /// let timezone_duration = datetime.timezone();
+    /// println!("Timezone duration: {:?}", timezone_duration);
+    /// ```
     pub fn timezone(&self) -> &Duration {
         &self.zone
     }
 
+    /// Provides a mutable reference to the current timezone `Duration`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::{DateTime, Duration};
+    ///
+    /// let mut datetime = DateTime::now();
+    /// *datetime.timezone_mut() = Duration::from_secs(3600);  // Adjusting timezone to +1 hour
+    /// ```
     pub fn timezone_mut(&mut self) -> &mut Duration {
         &mut self.zone
+    }
+    /// Adjusts the `DateTime` object's timezone and shifts the time accordingly.
+    ///
+    /// This method calculates the difference between the current timezone and the new one, adjusting the
+    /// internal time to reflect the change in timezone without altering the absolute point in time.
+    ///
+    /// # Arguments
+    ///
+    /// * `zone` - The new timezone `Duration`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::{DateTime, Duration};
+    ///
+    /// let mut datetime = DateTime::now();
+    /// datetime.shift_timezone(Duration::from_secs(3600)); // Shifting timezone to UTC+1
+    /// println!("New DateTime: {:?}", datetime);
+    /// ```
+    pub fn shift_timezone(&mut self, zone: Duration) {
+        let difference = self.zone.as_secs() - zone.as_secs();
+        if difference.is_positive() {
+            self.time.add_secs(difference as u64);
+        } else if difference.is_negative() {
+            self.time.remove_secs(difference.abs() as u64);
+        }
+        self.zone = zone;
     }
 }
 
 impl DateTime {
-    pub fn adujust_days(&mut self, days: i64) {
+    pub fn adjust_days(&mut self, days: i64) {
         if days.is_negative() {
             self.time
                 .remove_secs(days.abs() as u64 * SECS_PER_DAY as u64);
@@ -256,37 +586,145 @@ impl DateTime {
     }
 }
 
-/// # DateTime - common functionalities (public)
+/// Represents a date and time, providing utility functions for detailed manipulation and retrieval of individual time components.
+///
+/// This struct assumes a supporting `Time` implementation that allows precise control and querying of time data.
+///
+/// # Examples
+///
+/// ```
+/// use gearbox::time::*;
+///
+/// let mut dt = DateTime::new();
+/// dt.adjust_days(1);
+/// dt.adjust_hours(-3);
+/// dt.adjust_minutes(30);
+/// dt.adjust_seconds(45);
+/// ```
 impl DateTime {
+    /// Returns the year component of the current date.
+    ///
+    /// # Returns
+    /// * `i32`: The current year as a four-digit number.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.year(), 1970);
+    /// ```
     pub fn year(&self) -> i32 {
         self.year_with_overflow().0
     }
 
+    /// Returns the month component of the current date.
+    ///
+    /// # Returns
+    /// * `u8`: The month of the year, where 1 represents January and 12 represents December.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.month(), 1); // May
+    /// ```
     pub fn month(&self) -> u8 {
         self.month_with_overflow().0 as u8
     }
 
+    /// Returns the ISO week number of the current date.
+    ///
+    /// # Returns
+    /// * `u8`: The week number according to the ISO week date system.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.week(), 1);
+    /// ```
     pub fn week(&self) -> u8 {
         self.week_of_year_with_overflow().1
     }
 
+    /// Returns the ISO week date year.
+    ///
+    /// # Returns
+    /// * `i32`: The year of the current ISO week.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.iso_week(), 1);
+    /// ```
     pub fn iso_week(&self) -> i32 {
         self.week_of_year_with_overflow().1 as i32
     }
 
+    /// Returns the day of the year.
+    ///
+    /// # Returns
+    /// * `u32`: The day number within the current year.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.day_of_year(), 1); // 150th day of the year
+    /// ```
     pub fn day_of_year(&self) -> u32 {
         self.day_of_year_with_overflow().0 as u32
     }
 
+    /// Returns the day of the month.
+    ///
+    /// # Returns
+    /// * `u8`: The day of the month.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.day_of_month(), 1); // EPOCH starts at 1st january
+    /// ```
     pub fn day_of_month(&self) -> u8 {
         self.day_of_month_with_overflow().0 as u8
     }
 
+    /// Returns the day of the week.
+    ///
+    /// # Returns
+    /// * `u8`: The day of the week (1 for Monday, 7 for Sunday).
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.day_of_week(), 4); // Thursday
+    /// ```
     pub fn day_of_week(&self) -> u8 {
         self.day_of_week_with_overflow().0 as u8
     }
-
-    pub fn days_in_month(&self) -> u8 {
+    /// Returns the number of days in the current month, considering leap years.
+    ///
+    /// # Returns
+    /// * `u8`: The number of days in the month.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.days_in_current_month(), 31); // January has 31 days
+    /// ```
+    pub fn days_in_current_month(&self) -> u8 {
         let month = self.month();
         match month {
             1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
@@ -302,38 +740,216 @@ impl DateTime {
         }
     }
 
+    /// Returns the ISO day of the week.
+    ///
+    /// # Returns
+    /// * `u32`: The ISO day of the week, where 1 is Monday and 7 is Sunday.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.iso_day_of_week(), 4); // Monday
+    /// ```
     pub fn iso_day_of_week(&self) -> u32 {
         self.day_of_week_with_overflow().0 as u32
     }
 
+    /// Returns the hour component of the time.
+    ///
+    /// # Returns
+    /// * `u8`: The hour of the day (0-23).
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.hour(), 0); // 1 PM
+    /// ```
     pub fn hour(&self) -> u8 {
         self.hour_with_overflow().0 as u8
     }
 
+    /// Returns the minute component of the time.
+    ///
+    /// # Returns
+    /// * `u8`: The minute of the hour (0-59).
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.minute(), 0);
+    /// ```
     pub fn minute(&self) -> u8 {
         self.minute_with_overflow().0 as u8
     }
 
+    /// Returns the second component of the time.
+    ///
+    /// # Returns
+    /// * `u8`: The second of the minute (0-59).
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.second(), 0);
+    /// ```
     pub fn second(&self) -> u8 {
         self.second_with_overflow().0 as u8
     }
 
+    /// Returns the millisecond component of the current second.
+    ///
+    /// # Returns
+    /// * `u16`: The millisecond of the current second (0-999).
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.millisecond(), 0);
+    /// ```
     pub fn millisecond(&self) -> u16 {
         self.millisecond_with_overflow().0 as u16
     }
 
+    /// Returns the microsecond component of the current millisecond.
+    ///
+    /// # Returns
+    /// * `u16`: The microsecond of the current millisecond (0-999).
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.microsecond(), 0);
+    /// ```
     pub fn microsecond(&self) -> u16 {
         self.microsecond_with_overflow().0 as u16
     }
 
     /// Calculates the remaining nanoseconds within the current microsecond.
+    ///
+    /// # Returns
+    /// * `u64`: The nanoseconds remaining within the current microsecond (0-999).
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.nanosecond(), 0);
+    /// ```
     pub fn nanosecond(&self) -> u64 {
         self.second_with_overflow().1.as_sub_nanos() as u64
     }
+
+    /// Returns the number of seconds since the Unix epoch.
+    ///
+    /// # Returns
+    /// * `i64`: The number of seconds since January 1, 1970, 00:00:00 UTC.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.as_seconds_since_epoch(), 0);
+    /// ```
+    pub fn as_seconds_since_epoch(&self) -> i64 {
+        self.time.as_secs()
+    }
+
+    /// Returns the number of milliseconds since the Unix epoch.
+    ///
+    /// # Returns
+    /// * `i64`: The number of milliseconds since January 1, 1970, 00:00:00 UTC.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.as_millis_since_epoch(), 0);
+    /// ```
+    pub fn as_millis_since_epoch(&self) -> i64 {
+        self.time.as_millis()
+    }
+
+    /// Returns the number of nanoseconds since the Unix epoch.
+    ///
+    /// # Returns
+    /// * `i128`: The number of nanoseconds since January 1, 1970, 00:00:00 UTC.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.as_nanos_since_epoch(), 0);
+    /// ```
+    pub fn as_nanos_since_epoch(&self) -> i128 {
+        self.time.as_nanos()
+    }
+
+    /// Calculates the duration since a specified duration ago until this DateTime instance.
+    ///
+    /// # Arguments
+    /// * `duration`: A `std::time::Duration` to measure back from now.
+    ///
+    /// # Returns
+    /// * `Duration`: The amount of time from the duration specified until now.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// let duration_since = dt.duration_since(Duration::from_secs(300));
+    /// assert_eq!(duration_since, Duration::from_secs(-300));
+    /// ```
+    pub fn duration_since(self, duration: Duration) -> Duration {
+        self.time - duration
+    }
 }
 
-/// DateTime - Short and long formating
+/// Provides methods to format date components into human-readable strings.
+///
+/// This implementation includes methods for retrieving the month and day of the week
+/// in both full-name and abbreviated formats.
+///
+/// # Examples
+///
+/// ```
+/// use gearbox::time::*;
+///
+/// let dt = DateTime::new();
+/// assert_eq!(dt.month_long(), "January");
+/// assert_eq!(dt.month_short(), "Jan");
+/// assert_eq!(dt.day_of_week_long(), "Thursday");
+/// assert_eq!(dt.day_of_week_short(), "Thu");
+/// ```
 impl DateTime {
+    /// Returns the full name of the month.
+    ///
+    /// # Returns
+    /// * `&str`: The full name of the month corresponding to the current date.
+    ///
+    /// # Examples
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.month_long(), "January");
+    /// ```
     pub fn month_long(&self) -> &str {
         let month = self.month();
         match month {
@@ -353,6 +969,18 @@ impl DateTime {
         }
     }
 
+    /// Returns the abbreviated name of the month.
+    ///
+    /// # Returns
+    /// * `&str`: The three-letter abbreviation of the month.
+    ///
+    /// # Examples
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.month_short(), "Jan");
+    /// ```
     pub fn month_short(&self) -> &str {
         let month = self.month();
         match month {
@@ -371,6 +999,19 @@ impl DateTime {
             _ => "Invalid Month",
         }
     }
+
+    /// Returns the full name of the day of the week.
+    ///
+    /// # Returns
+    /// * `&str`: The full name of the day of the week.
+    ///
+    /// # Examples
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.day_of_week_long(), "Thursday");
+    /// ```
     pub fn day_of_week_long(&self) -> &str {
         let day = self.day_of_week();
         match day {
@@ -385,6 +1026,18 @@ impl DateTime {
         }
     }
 
+    /// Returns the abbreviated name of the day of the week.
+    ///
+    /// # Returns
+    /// * `&str`: The three-letter abbreviation of the day of the week.
+    ///
+    /// # Examples
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.day_of_week_short(), "Thu");
+    /// ```
     pub fn day_of_week_short(&self) -> &str {
         let day = self.day_of_week();
         match day {
@@ -461,15 +1114,15 @@ impl DateTime {
                 // Since we previously send time into the negative we now need to remove the time
                 // from a full year of seconds to get the overflow from start of the year.
                 if is_leap_year(&year) {
-                    time = (SECS_PER_LEAP_YEAR as i64 + time);
+                    time = SECS_PER_LEAP_YEAR as i64 + time;
                 } else {
-                    time = (SECS_PER_YEAR as i64 + time);
+                    time = SECS_PER_YEAR as i64 + time;
                 }
             }
             // if there is some nanoseconds in overflow, we will need to remove 1 sec, and add the
             // missing nanoseconds by `NANOS_PER_SEC - nanos_overflow`.
             if nanos_overflow > 0 {
-                nanos_overflow = (NANOS_PER_SEC as u64 - nanos_overflow);
+                nanos_overflow = NANOS_PER_SEC as u64 - nanos_overflow;
                 time -= 1;
             }
         }
@@ -488,7 +1141,8 @@ impl DateTime {
 
         let (year, overflow_dur) = self.year_with_overflow();
         let overflow_sec = overflow_dur.as_secs();
-        let days = overflow_sec / (SECS_PER_DAY as i64);
+        // Day starts from 1 and not 0 so we add 1 to the days elapsed in the year.
+        let days = (overflow_sec / (SECS_PER_DAY as i64)) + 1;
         let overflow = overflow_sec % SECS_PER_DAY as i64;
         let month = Mdf::from_ol(days as i32, YearFlags::from_year(year)).month();
 
@@ -528,7 +1182,7 @@ impl DateTime {
 
         (
             day_of_month,
-            Duration::from_secs_nanos(excess, overflow_dur.as_sub_nanos()),
+            Duration::from_secs_nanos(&excess, &overflow_dur.as_sub_nanos()),
         )
     }
 
@@ -567,7 +1221,7 @@ impl DateTime {
         let start_day = YearFlags::from_year(year).first_day_of_year();
         let overflow_sec = overflow_dur.as_secs();
         let overflow = overflow_sec % SECS_PER_DAY as i64;
-        let day = ((overflow_sec / SECS_PER_DAY as i64) + start_day as i64) % 7;
+        let day = ((overflow_sec / SECS_PER_DAY as i64) + start_day as i64) % 7 + 1;
         let day_of_week = if day == 0 { 7 } else { day };
 
         self.cache_update(
@@ -662,7 +1316,19 @@ impl DateTime {
 
 /// Implementation for to_* conversions
 impl DateTime {
-    fn to_rfc2822(&self) -> String {
+    /// Formats the date and time to the RFC 2822 standard, commonly used in email headers.
+    ///
+    /// # Returns
+    /// * `String`: The formatted date and time as a string in RFC 2822 format.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.to_rfc2822(), "Thu, 01 Jan 1970 00:00:00 +0000");
+    /// ```
+    pub fn to_rfc2822(&self) -> String {
         let day = self.day_of_week_short();
         let month = self.month_short();
         let day_of_month = self.day_of_month();
@@ -670,13 +1336,31 @@ impl DateTime {
         let hour = self.hour();
         let minute = self.minute();
         let second = self.second();
-        let zone = self.timezone_offset_hours();
+        let zone_sign = if self.timezone().is_negative() {
+            "-"
+        } else {
+            "+"
+        };
+        let zone = format!("{}{:02}{:02}", zone_sign, self.timezone_offset_hours(), 00);
+
         format!(
-            "{}, {} {} {} {:02}:{:02}:{:02} {}",
+            "{}, {:02} {} {} {:02}:{:02}:{:02} {}",
             day, day_of_month, month, year, hour, minute, second, zone
         )
     }
 
+    /// Formats the date and time to the RFC 3339 standard, commonly used in internet protocols.
+    ///
+    /// # Returns
+    /// * `String`: The formatted date and time as a string in RFC 3339 format.
+    ///
+    /// # Example
+    /// ```rust
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.to_rfc3339(), "1970-01-01T00:00:00Z");
+    /// ```
     pub fn to_rfc3339(&self) -> String {
         let year = self.year();
         let month = format!("{:02}", self.month());
@@ -713,15 +1397,91 @@ impl DateTime {
         )
     }
 
+    /// Converts the date and time to Unix timestamp.
+    ///
+    /// # Returns
+    /// * `i64`: The number of seconds since January 1, 1970, 00:00:00 UTC.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.to_unix(), 0);
+    /// ```
     pub fn to_unix(&self) -> i64 {
         self.time.as_secs()
     }
 
-    pub fn to_unix_with_zone(&self) -> i64 {
+    /// Converts the date and time to Unix timestamp adjusted for the timezone.
+    ///
+    /// # Returns
+    /// * `i64`: The number of seconds since January 1, 1970, 00:00:00 UTC adjusted by the timezone.
+    ///
+    /// # Example
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.to_unix_in_utc(), 0);
+    /// ```
+    pub fn to_unix_in_utc(&self) -> i64 {
         self.time.as_secs() + self.zone.as_secs()
     }
-    // Other implementations...
 
+    /// Formats the date and time according to the provided format string.
+    ///
+    /// The format string can contain special format specifiers that start with `%`, which will be replaced by corresponding values from the `DateTime` instance.
+    ///
+    /// # Format Specifiers
+    /// | Specifier | Description                                        | Example               |
+    /// |-----------|----------------------------------------------------|-----------------------|
+    /// | `%d`      | Day of the month, zero-padded (01-31)              | 01, 31                |
+    /// | `%D`      | Abbreviated day of the week (Mon-Sun)              | Mon, Wed, Fri         |
+    /// | `%j`      | Day of the month, not zero-padded (1-31)           | 1, 9, 31              |
+    /// | `%l`      | Full textual representation of the day of the week | Monday, Wednesday     |
+    /// | `%N`      | ISO-8601 numeric representation of the day of week | 1 (Monday) - 7 (Sunday) |
+    /// | `%S`      | English ordinal suffix for the day of the month    | st, nd, rd, th        |
+    /// | `%w`      | Numeric representation of the day of the week      | 0 (Sunday) - 6 (Saturday) |
+    /// | `%z`      | Day of the year (001-366)                          | 001, 365              |
+    /// | `%W`      | ISO-8601 week number                               | 42, 52                |
+    /// | `%F`      | Full textual representation of a month             | January, December     |
+    /// | `%m`      | Month as a zero-padded decimal number              | 01, 12                |
+    /// | `%M`      | Abbreviated month name                             | Jan, Dec              |
+    /// | `%n`      | Month as a decimal number without zero-padding     | 1, 12                 |
+    /// | `%t`      | Number of days in the given month                  | 28, 31                |
+    /// | `%Y`      | Full numeric year                                  | 1999, 2023            |
+    /// | `%y`      | Two-digit year                                     | 99, 23                |
+    /// | `%a`      | Lowercase Ante meridiem and Post meridiem (am/pm)  | am, pm                |
+    /// | `%A`      | Uppercase Ante meridiem and Post meridiem (AM/PM)  | AM, PM                |
+    /// | `%H`      | Hour in 24-hour format, zero-padded                | 00, 23                |
+    /// | `%h`      | Hour in 12-hour format, zero-padded                | 01, 12                |
+    /// | `%i`      | Minute, zero-padded                                | 00, 59                |
+    /// | `%s`      | Second, zero-padded                                | 00, 59                |
+    /// | `%u`      | Microsecond                                        | 000001 - 999999       |
+    /// | `%v`      | Millisecond                                        | 001 - 999             |
+    /// | `%O`      | GMT/UTC timezone offset in hours                   | -0400, +0300          |
+    /// | `%P`      | GMT/UTC timezone offset in hours and minutes       | -04:00, +03:00        |
+    /// | `%T`      | Timezone abbreviation                              | EST, UTC              |
+    /// | `%Z`      | Timezone offset in seconds                         | -14400, 10800         |
+    /// | `%r`      | RFC 2822 formatted date                            | Tue, 20 Jul 2021 03:00:00 +0000 |
+    /// | `%c`      | ISO 8601 formatted date and time                   | 2021-07-20T03:00:00+00:00 |
+    /// | `%U`      | Seconds since the Unix Epoch                       | 1626762000            |
+    ///
+    /// # Arguments
+    /// * `format` - A string slice that specifies the desired format.
+    ///
+    /// # Returns
+    /// * `String`: A string representing the formatted date and time.
+    ///
+    /// # Examples
+    /// ```
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.format_to_str("%Y-%m-%d"), "1970-01-01");
+    /// assert_eq!(dt.format_to_str("It's %H:%i on %l"), "It's 00:00 on Thursday");
+    /// ```
     pub fn format_to_str(&self, format: &str) -> String {
         let mut result = String::new();
         let mut chars = format.chars().peekable();
@@ -787,6 +1547,7 @@ impl DateTime {
                         }
                         _ => result.push(next_char),
                     }
+                    chars.next();
                 }
             } else {
                 result.push(c);
@@ -796,10 +1557,66 @@ impl DateTime {
         result
     }
 
-    fn to_swatch_internet_time(&self) -> String {
+    pub fn to_swatch_internet_time(&self) -> String {
         let time = self.time.as_secs() % SECS_PER_DAY as i64;
         let beats = (time * 1000 / SECS_PER_DAY as i64) as u16;
         format!("@{:03}", beats)
+    }
+}
+
+impl Add for DateTime {
+    type Output = Self;
+
+    fn add(self, mut rhs: Self) -> Self::Output {
+        rhs.shift_timezone(self.timezone().clone());
+        Self {
+            time: self.time + rhs.time,
+            zone: self.zone,
+            cache: Default::default(),
+        }
+    }
+}
+impl Add for &DateTime {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let _self = self.clone();
+        let mut _rhs = rhs.clone();
+
+        self + rhs
+    }
+}
+
+impl Sub for DateTime {
+    type Output = Self;
+
+    fn sub(self, mut rhs: Self) -> Self::Output {
+        let mut _self = self.clone();
+        let mut rhs_clone = rhs.clone();
+
+        let zone = _self.timezone();
+
+        rhs_clone.shift_timezone(zone.clone());
+
+        _self.time.subtract_time(rhs_clone.time);
+        _self
+    }
+}
+
+impl Sub for &mut DateTime {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        let mut _self = self.clone();
+        let mut rhs_clone = rhs.clone();
+
+        let zone = _self.timezone();
+
+        rhs_clone.shift_timezone(zone.clone());
+
+        _self.time.subtract_time(rhs_clone.time);
+        *self = _self;
+        self
     }
 }
 

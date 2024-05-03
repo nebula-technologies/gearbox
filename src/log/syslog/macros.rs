@@ -1,12 +1,60 @@
 #[macro_export]
-macro_rules! emergency {
-    ($($arg:tt)*) => {
-        tracing::error!(log_level=crate::log::syslog::Severity::Emergency.as_int(), log_level_name=crate::log::syslog::Severity::Emergency.as_str(), $($arg)*);
+macro_rules! log_func_generator {
+    ($r:expr, $t:ident, $m:ident, $f:ident, $s:literal) => {
+        |res| match ($r, res) {
+            (Ok(()), Ok(t)) => tracing::$m!(
+                log_level = crate::log::syslog::Severity::$t.as_int(),
+                log_level_name = crate::log::syslog::Severity::$t.as_str(),
+                log_facility = crate::log::syslog::Facility::$f.as_int(),
+                log_facility_name = crate::log::syslog::Facility::$f.as_str(),
+                $s,
+                t
+            ),
+            (Err(()), Err(e)) => tracing::$m!(
+                log_level = crate::log::syslog::Severity::$t.as_int(),
+                log_level_name = crate::log::syslog::Severity::$t.as_str(),
+                log_facility = crate::log::syslog::Facility::$f.as_int(),
+                log_facility_name = crate::log::syslog::Facility::$f.as_str(),
+                $s,
+                e
+            ),
+            _ => {}
+        }
     };
+}
+#[macro_export]
+macro_rules! emergency {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Emergency, error, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Emergency, error, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Emergency, error, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Emergency, error, $f, $s)
+    };
+    ($($arg:tt)*) => {
+              tracing::error!(log_level=crate::log::syslog::Severity::Emergency.as_int(), log_level_name=crate::log::syslog::Severity::Emergency.as_str(), $($arg)*);
+          };
 }
 
 #[macro_export]
 macro_rules! emerg {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Emergency, error, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Emergency, error, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Emergency, error, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Emergency, error, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::error!(log_level=crate::log::syslog::Severity::Emergency.as_int(), log_level_name=crate::log::syslog::Severity::Emergency.as_str(), $($arg)*);
     };
@@ -14,6 +62,18 @@ macro_rules! emerg {
 
 #[macro_export]
 macro_rules! alert {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Alert, error, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Alert, error, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Alert, error, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Alert, error, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::error!(log_level=crate::log::syslog::Severity::Alert.as_int(), log_level_name=crate::log::syslog::Severity::Alert.as_str(), $($arg)*);
     };
@@ -21,6 +81,18 @@ macro_rules! alert {
 
 #[macro_export]
 macro_rules! critical {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Critical, error, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Critical, error, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Critical, error, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Critical, error, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::error!(log_level=crate::log::syslog::Severity::Critical.as_int(), log_level_name=crate::log::syslog::Severity::Critical.as_str(), $($arg)*);
     };
@@ -28,6 +100,18 @@ macro_rules! critical {
 
 #[macro_export]
 macro_rules! crit {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Critical, error, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Critical, error, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Critical, error, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Critical, error, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::error!(log_level=crate::log::syslog::Severity::Critical.as_int(), log_level_name=crate::log::syslog::Severity::Critical.as_str(), $($arg)*);
     };
@@ -35,6 +119,18 @@ macro_rules! crit {
 
 #[macro_export]
 macro_rules! error {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Error, error, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Error, error, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Error, error, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Error, error, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::error!(log_level=crate::log::syslog::Severity::Error.as_int(), log_level_name=crate::log::syslog::Severity::Error.as_str(), $($arg)*);
     };
@@ -42,6 +138,18 @@ macro_rules! error {
 
 #[macro_export]
 macro_rules! err {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Error, error, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Error, error, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Error, error, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Error, error, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::error!(log_level=crate::log::syslog::Severity::Error.as_int(), log_level_name=crate::log::syslog::Severity::Error.as_str(), $($arg)*);
     };
@@ -49,6 +157,18 @@ macro_rules! err {
 
 #[macro_export]
 macro_rules! warning {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Warning, warn, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Warning, warn, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Warning, warn, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Warning, warn, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::warn!(log_level=crate::log::syslog::Severity::Warning.as_int(), log_level_name=crate::log::syslog::Severity::Warning.as_str(), $($arg)*);
     };
@@ -56,6 +176,18 @@ macro_rules! warning {
 
 #[macro_export]
 macro_rules! warn {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Warning, warn, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Warning, warn, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Warning, warn, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Warning, warn, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::warn!(log_level=crate::log::syslog::Severity::Warning.as_int(), log_level_name=crate::log::syslog::Severity::Warning.as_str(), $($arg)*);
     };
@@ -63,6 +195,18 @@ macro_rules! warn {
 
 #[macro_export]
 macro_rules! notice {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Notice, info, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Notice, info, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Notice, info, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Notice, info, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::info!(log_level=crate::log::syslog::Severity::Notice.as_int(), log_level_name=crate::log::syslog::Severity::Notice.as_str(), $($arg)*);
     };
@@ -70,6 +214,18 @@ macro_rules! notice {
 
 #[macro_export]
 macro_rules! info {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Info, debug, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Info, debug, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Info, debug, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Info, debug, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::debug!(log_level=crate::log::syslog::Severity::Info.as_int(), log_level_name=crate::log::syslog::Severity::Info.as_str(), $($arg)*);
     };
@@ -77,175 +233,19 @@ macro_rules! info {
 
 #[macro_export]
 macro_rules! debug {
+    ($i:ident) => {
+        crate::log_func_generator!($i(()), Debug, trace, User, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Debug, trace, User, $s)
+    };
+    ($i:ident, $f:ident) => {
+        crate::log_func_generator!($i(()), Debug, trace, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        crate::log_func_generator!($i(()), Debug, trace, $f, $s)
+    };
     ($($arg:tt)*) => {
         tracing::trace!(log_level=crate::log::syslog::Severity::Debug.as_int(), log_level_name=crate::log::syslog::Severity::Debug.as_str(), $($arg)*);
-    };
-}
-
-#[macro_export]
-macro_rules! kernel {
-    () => {
-        crate::log::Facility::Kernel
-    };
-}
-
-#[macro_export]
-macro_rules! user {
-    () => {
-        crate::log::Facility::User
-    };
-}
-
-#[macro_export]
-macro_rules! mail {
-    () => {
-        crate::log::Facility::Mail
-    };
-}
-
-#[macro_export]
-macro_rules! system {
-    () => {
-        crate::log::Facility::System
-    };
-}
-
-#[macro_export]
-macro_rules! security {
-    () => {
-        crate::log::Facility::Security
-    };
-}
-
-#[macro_export]
-macro_rules! syslog {
-    () => {
-        crate::log::Facility::Syslog
-    };
-}
-
-#[macro_export]
-macro_rules! printer {
-    () => {
-        crate::log::Facility::Printer
-    };
-}
-
-#[macro_export]
-macro_rules! news {
-    () => {
-        crate::log::Facility::News
-    };
-}
-
-#[macro_export]
-macro_rules! uucp {
-    () => {
-        crate::log::Facility::Uucp
-    };
-}
-
-#[macro_export]
-macro_rules! clock {
-    () => {
-        crate::log::Facility::Clock
-    };
-}
-
-#[macro_export]
-macro_rules! auth {
-    () => {
-        crate::log::Facility::Auth
-    };
-}
-
-#[macro_export]
-macro_rules! ftp {
-    () => {
-        crate::log::Facility::Ftp
-    };
-}
-
-#[macro_export]
-macro_rules! ntp {
-    () => {
-        crate::log::Facility::Ntp
-    };
-}
-
-#[macro_export]
-macro_rules! audit {
-    () => {
-        crate::log::Facility::Audit
-    };
-}
-
-#[macro_export]
-macro_rules! f_alert {
-    () => {
-        crate::log::Facility::Alert
-    };
-}
-
-#[macro_export]
-macro_rules! clock2 {
-    () => {
-        crate::log::Facility::Clock2
-    };
-}
-
-#[macro_export]
-macro_rules! local0 {
-    () => {
-        crate::log::Facility::Local0
-    };
-}
-
-#[macro_export]
-macro_rules! local1 {
-    () => {
-        crate::log::Facility::Local1
-    };
-}
-
-#[macro_export]
-macro_rules! local2 {
-    () => {
-        crate::log::Facility::Local2
-    };
-}
-
-#[macro_export]
-macro_rules! local3 {
-    () => {
-        crate::log::Facility::Local3
-    };
-}
-
-#[macro_export]
-macro_rules! local4 {
-    () => {
-        crate::log::Facility::Local4
-    };
-}
-
-#[macro_export]
-macro_rules! local5 {
-    () => {
-        crate::log::Facility::Local5
-    };
-}
-
-#[macro_export]
-macro_rules! local6 {
-    () => {
-        crate::log::Facility::Local6
-    };
-}
-
-#[macro_export]
-macro_rules! local7 {
-    () => {
-        crate::log::Facility::Local7
     };
 }

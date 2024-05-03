@@ -3,8 +3,8 @@ use crate::rails::ext::map_into::RailsMapErrIntoBox;
 #[cfg(target_arch = "x86_64")]
 use crate::storage::io::file::error::Error as FileError;
 use crate::storage::KeyStoreExt;
+use core::fmt::{Debug, Display, Formatter};
 use serde_json::Error as JsonError;
-use std::fmt::{Debug, Display, Formatter};
 
 pub trait SelectiveStorage
 where
@@ -51,13 +51,13 @@ pub enum Error {
 }
 
 impl Debug for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self, f)
     }
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Error::NoFileConfigured(s) => write!(f, "No file configured: {}", s),
             Error::SerializationError(e) => write!(f, "Serialization error: {}", e),

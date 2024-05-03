@@ -1,240 +1,131 @@
 use crate::log::syslog::Facility;
 use crate::log::syslog::Severity;
 use crate::{alert, critical, debug, emergency, error, info, notice, warning};
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 pub trait RailsSyslog<T> {
-    fn log<'a>(self, o: Syslog<'a, Result<(), ()>>) -> Self;
+    fn log<L: FnOnce(&T)>(self, o: L) -> Self;
 }
 
-impl<T: Debug, E: Debug> RailsSyslog<Result<T, E>> for Result<T, E> {
-    fn log<'a>(self, log: Syslog<'a, Result<(), ()>>) -> Self {
-        match (log.state, &self) {
-            (Ok(_), Ok(t)) => match log.level {
-                Severity::Emergency => {
-                    emergency!("{}{:?}", log.msg, t);
-                }
-                Severity::Alert => {
-                    alert!("{}{:?}", log.msg, t);
-                }
-                Severity::Critical => {
-                    critical!("{}{:?}", log.msg, t);
-                }
-                Severity::Error => {
-                    error!("{}{:?}", log.msg, t);
-                }
-                Severity::Warning => {
-                    warning!("{}{:?}", log.msg, t);
-                }
-                Severity::Notice => {
-                    notice!("{}{:?}", log.msg, t);
-                }
-                Severity::Info => {
-                    info!("{}{:?}", log.msg, t);
-                }
-                Severity::Debug => {
-                    debug!("{}{:?}", log.msg, t);
-                }
-            },
-            (Err(_), Err(e)) => match log.level {
-                Severity::Emergency => {
-                    emergency!("{}{:?}", log.msg, e);
-                }
-                Severity::Alert => {
-                    alert!("{}{:?}", log.msg, e);
-                }
-                Severity::Critical => {
-                    critical!("{}{:?}", log.msg, e);
-                }
-                Severity::Error => {
-                    error!("{}{:?}", log.msg, e);
-                }
-                Severity::Warning => {
-                    warning!("{}{:?}", log.msg, e);
-                }
-                Severity::Notice => {
-                    notice!("{}{:?}", log.msg, e);
-                }
-                Severity::Info => {
-                    info!("{}{:?}", log.msg, e);
-                }
-                Severity::Debug => {
-                    debug!("{}{:?}", log.msg, e);
-                }
-            },
-            (_, _) => {}
-        };
-        self
-    }
-}
-
-pub struct Syslog<'a, T> {
-    msg: &'a str,
-    state: T,
-    level: Severity,
-    facility: Facility,
-}
-
-impl<'a, T> Syslog<'a, T> {
-    fn kernel(mut self) -> Self {
-        self.facility = Facility::Kernel;
-        self
-    }
-    fn user(mut self) -> Self {
-        self.facility = Facility::User;
-        self
-    }
-    fn mail(mut self) -> Self {
-        self.facility = Facility::Mail;
-        self
-    }
-    fn system(mut self) -> Self {
-        self.facility = Facility::System;
-        self
-    }
-    fn security(mut self) -> Self {
-        self.facility = Facility::Security;
-        self
-    }
-    fn syslog(mut self) -> Self {
-        self.facility = Facility::Syslog;
-        self
-    }
-    fn printer(mut self) -> Self {
-        self.facility = Facility::Printer;
-        self
-    }
-    fn news(mut self) -> Self {
-        self.facility = Facility::News;
-        self
-    }
-    fn uucp(mut self) -> Self {
-        self.facility = Facility::Uucp;
-        self
-    }
-    fn clock(mut self) -> Self {
-        self.facility = Facility::Clock;
-        self
-    }
-    fn auth(mut self) -> Self {
-        self.facility = Facility::Auth;
-        self
-    }
-    fn ftp(mut self) -> Self {
-        self.facility = Facility::Ftp;
-        self
-    }
-    fn ntp(mut self) -> Self {
-        self.facility = Facility::Ntp;
-        self
-    }
-    fn audit(mut self) -> Self {
-        self.facility = Facility::Audit;
-        self
-    }
-    fn alert(mut self) -> Self {
-        self.facility = Facility::Alert;
-        self
-    }
-    fn clock2(mut self) -> Self {
-        self.facility = Facility::Clock2;
-        self
-    }
-    fn local0(mut self) -> Self {
-        self.facility = Facility::Local0;
-        self
-    }
-    fn local1(mut self) -> Self {
-        self.facility = Facility::Local1;
-        self
-    }
-    fn local2(mut self) -> Self {
-        self.facility = Facility::Local2;
-        self
-    }
-    fn local3(mut self) -> Self {
-        self.facility = Facility::Local3;
-        self
-    }
-    fn local4(mut self) -> Self {
-        self.facility = Facility::Local4;
-        self
-    }
-    fn kerne5(mut self) -> Self {
-        self.facility = Facility::Local5;
-        self
-    }
-    fn local6(mut self) -> Self {
-        self.facility = Facility::Local6;
-        self
-    }
-    fn local7(mut self) -> Self {
-        self.facility = Facility::Local7;
-        self
-    }
-}
-
-pub trait RailsSyslogState<'a, O> {
-    fn event(self, level: Severity, facility: Facility) -> Syslog<'a, O>;
-    fn emergency(self) -> Syslog<'a, O>;
-}
-
-impl<'a, O> RailsSyslogState<'a, Result<(), ()>> for O
+impl<T, E> RailsSyslog<Result<T, E>> for Result<T, E>
 where
-    O: FnOnce(()) -> Result<(), ()>,
+    T: Debug,
+    E: Debug,
 {
-    fn event(self, level: Severity, facility: Facility) -> Syslog<'a, Result<(), ()>> {
-        Syslog {
-            msg: "",
-            state: self(()),
-            level,
-            facility,
-        }
-    }
-    fn emergency(self) -> Syslog<'a, Result<(), ()>> {
-        self.event(Severity::Emergency, Facility::User)
-    }
-}
-
-pub trait RailsSyslogMsgState<'a, O> {
-    fn event_msg(
-        self,
-        level: Severity,
-        facility: Facility,
-        msg: &'a str,
-    ) -> Syslog<'a, Result<(), ()>>;
-    fn emergency_msg(self, msg: &'a str) -> Syslog<'a, O>;
-}
-
-impl<'a, O> RailsSyslogMsgState<'a, Result<(), ()>> for O
-where
-    O: FnOnce(()) -> Result<(), ()>,
-{
-    fn event_msg(
-        self,
-        level: Severity,
-        facility: Facility,
-        msg: &'a str,
-    ) -> Syslog<'a, Result<(), ()>> {
-        Syslog {
-            msg,
-            state: self(()),
-            level,
-            facility,
-        }
-    }
-    fn emergency_msg(self, msg: &'a str) -> Syslog<'a, Result<(), ()>> {
-        self.event_msg(Severity::Emergency, Facility::User, msg)
+    fn log<L: FnOnce(&Result<T, E>)>(self, log: L) -> Self {
+        log(&self);
+        self
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{RailsSyslog, RailsSyslogState};
+    use super::RailsSyslog;
+    use crate::{
+        alert, crit, critical, debug, emerg, emergency, err, error, info, notice, warn, warning,
+    };
+    use core::fmt::Debug;
 
     #[test]
     fn test_logging_implementation() {
         let res: Result<&str, &str> = Ok("Hello");
-        res.log(Ok.emergency()).log(Err.emergency());
+
+        res.log(emergency!(Ok))
+            .log(emergency!(Err))
+            .log(emergency!(Ok, Kernel))
+            .log(emergency!(Err, Kernel))
+            .log(emergency!(Ok, "Hello {}"))
+            .log(emergency!(Err, "Hello: {}"))
+            .log(emergency!(Ok, Kernel, "Hello {}"))
+            .log(emergency!(Err, Kernel, "Hello: {}"))
+            .log(emerg!(Ok))
+            .log(emerg!(Err))
+            .log(emerg!(Ok, Kernel))
+            .log(emerg!(Err, Kernel))
+            .log(emerg!(Ok, "Hello {}"))
+            .log(emerg!(Err, "Hello: {}"))
+            .log(emerg!(Ok, Kernel, "Hello {}"))
+            .log(emerg!(Err, Kernel, "Hello: {}"))
+            .log(alert!(Ok))
+            .log(alert!(Err))
+            .log(alert!(Ok, Kernel))
+            .log(alert!(Err, Kernel))
+            .log(alert!(Ok, "Hello {}"))
+            .log(alert!(Err, "Hello: {}"))
+            .log(alert!(Ok, Kernel, "Hello {}"))
+            .log(alert!(Err, Kernel, "Hello: {}"))
+            .log(critical!(Ok))
+            .log(critical!(Err))
+            .log(critical!(Ok, Kernel))
+            .log(critical!(Err, Kernel))
+            .log(critical!(Ok, "Hello {}"))
+            .log(critical!(Err, "Hello: {}"))
+            .log(critical!(Ok, Kernel, "Hello {}"))
+            .log(critical!(Err, Kernel, "Hello: {}"))
+            .log(crit!(Ok))
+            .log(crit!(Err))
+            .log(crit!(Ok, Kernel))
+            .log(crit!(Err, Kernel))
+            .log(crit!(Ok, "Hello {}"))
+            .log(crit!(Err, "Hello: {}"))
+            .log(crit!(Ok, Kernel, "Hello {}"))
+            .log(crit!(Err, Kernel, "Hello: {}"))
+            .log(error!(Ok))
+            .log(error!(Err))
+            .log(error!(Ok, Kernel))
+            .log(error!(Err, Kernel))
+            .log(error!(Ok, "Hello {}"))
+            .log(error!(Err, "Hello: {}"))
+            .log(error!(Ok, Kernel, "Hello {}"))
+            .log(error!(Err, Kernel, "Hello: {}"))
+            .log(err!(Ok))
+            .log(err!(Err))
+            .log(err!(Ok, Kernel))
+            .log(err!(Err, Kernel))
+            .log(err!(Ok, "Hello {}"))
+            .log(err!(Err, "Hello: {}"))
+            .log(err!(Ok, Kernel, "Hello {}"))
+            .log(err!(Err, Kernel, "Hello: {}"))
+            .log(warning!(Ok))
+            .log(warning!(Err))
+            .log(warning!(Ok, Kernel))
+            .log(warning!(Err, Kernel))
+            .log(warning!(Ok, "Hello {}"))
+            .log(warning!(Err, "Hello: {}"))
+            .log(warning!(Ok, Kernel, "Hello {}"))
+            .log(warning!(Err, Kernel, "Hello: {}"))
+            .log(warn!(Ok))
+            .log(warn!(Err))
+            .log(warn!(Ok, Kernel))
+            .log(warn!(Err, Kernel))
+            .log(warn!(Ok, "Hello {}"))
+            .log(warn!(Err, "Hello: {}"))
+            .log(warn!(Ok, Kernel, "Hello {}"))
+            .log(warn!(Err, Kernel, "Hello: {}"))
+            .log(notice!(Ok))
+            .log(notice!(Err))
+            .log(notice!(Ok, Kernel))
+            .log(notice!(Err, Kernel))
+            .log(notice!(Ok, "Hello {}"))
+            .log(notice!(Err, "Hello: {}"))
+            .log(notice!(Ok, Kernel, "Hello {}"))
+            .log(notice!(Err, Kernel, "Hello: {}"))
+            .log(info!(Ok))
+            .log(info!(Err))
+            .log(info!(Ok, Kernel))
+            .log(info!(Err, Kernel))
+            .log(info!(Ok, "Hello {}"))
+            .log(info!(Err, "Hello: {}"))
+            .log(info!(Ok, Kernel, "Hello {}"))
+            .log(info!(Err, Kernel, "Hello: {}"))
+            .log(debug!(Ok))
+            .log(debug!(Err))
+            .log(debug!(Ok, Kernel))
+            .log(debug!(Err, Kernel))
+            .log(debug!(Ok, "Hello {}"))
+            .log(debug!(Err, "Hello: {}"))
+            .log(debug!(Ok, Kernel, "Hello {}"))
+            .log(debug!(Err, Kernel, "Hello: {}"))
+            .expect("TODO: panic message");
     }
 }

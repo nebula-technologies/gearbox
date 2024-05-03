@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 use web_sys::wasm_bindgen::JsValue;
 
 #[derive(Debug)]
@@ -10,7 +10,7 @@ pub enum Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Error::FailedToGetLocalStorage(s) => {
                 write!(f, "Failed to get local storage: {}", s)

@@ -1,6 +1,7 @@
-use crate::time::constants::{A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
+use crate::time::constants::{
+    LFR, LMO, LSA, LSU, LTH, LTU, LWE, NFR, NMO, NSA, NSU, NTH, NTU, NWE,
+};
 use core::fmt;
-use std::fmt::Debug;
 
 /// Year flags (aka the dominical letter).
 ///
@@ -170,7 +171,15 @@ impl Mdf {
     ///
     /// The `ol` is trusted to be valid, and the `flags` are trusted to match it.
     #[inline]
-    pub(super) fn from_ol(ol: i32, YearFlags(flags): YearFlags) -> Mdf {
+    pub(super) fn from_ol(mut ol: i32, flags: YearFlags) -> Mdf {
+        ol = if flags.is_leap_year() {
+            (ol * 2) | 1
+        } else {
+            (ol * 2) | 0
+        };
+
+        let YearFlags(flags) = flags;
+
         debug_assert!(ol > 1 && ol <= crate::time::constants::MAX_OL as i32);
         // Array is indexed from `[2..=MAX_OL]`, with a `0` index having a meaningless value.
         Mdf(
@@ -243,7 +252,7 @@ impl Mdf {
     pub(super) const fn ordinal(&self) -> Option<u32> {
         let mdl = self.0 >> 3;
         match crate::time::constants::MDL_TO_OL[mdl as usize] {
-            XX => None,
+            _XX => None,
             v => Some((mdl - v as u8 as u32) >> 1),
         }
     }
@@ -267,7 +276,7 @@ impl Mdf {
     pub(super) const fn ordinal_and_flags(&self) -> Option<i32> {
         let mdl = self.0 >> 3;
         match crate::time::constants::MDL_TO_OL[mdl as usize] {
-            XX => None,
+            _XX => None,
             v => Some(self.0 as i32 - ((v as i32) << 3)),
         }
     }
@@ -296,11 +305,13 @@ impl fmt::Debug for Mdf {
 #[cfg(test)]
 mod tests {
     use super::Mdf;
-    use super::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
+    use super::{YearFlags, LFR, LMO, LSA, LSU, LTH, LTU, LWE, NFR, NMO, NSA, NSU, NTH, NTU, NWE};
 
-    const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
-    const LEAP_FLAGS: [YearFlags; 7] = [AG, BA, CB, DC, ED, FE, GF];
-    const FLAGS: [YearFlags; 14] = [A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF];
+    const NONLEAP_FLAGS: [YearFlags; 7] = [NSA, NFR, NTH, NWE, NTU, NMO, NSU];
+    const LEAP_FLAGS: [YearFlags; 7] = [LSA, LFR, LTH, LWE, LTU, LMO, LSU];
+    const FLAGS: [YearFlags; 14] = [
+        NSA, NFR, NTH, NWE, NTU, NMO, NSU, LSA, LFR, LTH, LWE, LTU, LMO, LSU,
+    ];
 
     #[test]
     fn test_year_flags_ndays_from_year() {
@@ -321,20 +332,20 @@ mod tests {
 
     #[test]
     fn test_year_flags_nisoweeks() {
-        assert_eq!(A.nisoweeks(), 52);
-        assert_eq!(B.nisoweeks(), 52);
-        assert_eq!(C.nisoweeks(), 52);
-        assert_eq!(D.nisoweeks(), 53);
-        assert_eq!(E.nisoweeks(), 52);
-        assert_eq!(F.nisoweeks(), 52);
-        assert_eq!(G.nisoweeks(), 52);
-        assert_eq!(AG.nisoweeks(), 52);
-        assert_eq!(BA.nisoweeks(), 52);
-        assert_eq!(CB.nisoweeks(), 52);
-        assert_eq!(DC.nisoweeks(), 53);
-        assert_eq!(ED.nisoweeks(), 53);
-        assert_eq!(FE.nisoweeks(), 52);
-        assert_eq!(GF.nisoweeks(), 52);
+        assert_eq!(NSA.nisoweeks(), 52);
+        assert_eq!(NFR.nisoweeks(), 52);
+        assert_eq!(NTH.nisoweeks(), 52);
+        assert_eq!(NWE.nisoweeks(), 53);
+        assert_eq!(NTU.nisoweeks(), 52);
+        assert_eq!(NMO.nisoweeks(), 52);
+        assert_eq!(NSU.nisoweeks(), 52);
+        assert_eq!(LSA.nisoweeks(), 52);
+        assert_eq!(LFR.nisoweeks(), 52);
+        assert_eq!(LTH.nisoweeks(), 52);
+        assert_eq!(LWE.nisoweeks(), 53);
+        assert_eq!(LTU.nisoweeks(), 53);
+        assert_eq!(LMO.nisoweeks(), 52);
+        assert_eq!(LSU.nisoweeks(), 52);
     }
 
     #[test]
