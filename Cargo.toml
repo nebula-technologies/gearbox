@@ -1,6 +1,6 @@
 [package]
 name = "gearbox"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 description = "Excessive tooling for Rust, boosting productivity and operations"
@@ -9,6 +9,7 @@ categories = ["tooling", "date-and-time-tools", "error-tools", "log-tools", "htt
 keywords = ["tooling"]
 license = "MIT"
 repository = "https://github.com/nebula-technologies/gearbox"
+resolver = "2"
 
 [badges]
 maintenance = { status = "actively-developed" }
@@ -16,14 +17,19 @@ maintenance = { status = "actively-developed" }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["web", "http-request", "net-signature", "common-dirs", "std"]
-web = ["web-sys", "web-storage"]
+default = ["web", "http-request", "net-signature", "common-dirs", "std", "did"]
+web = ["web-sys", "web-storage", "js-sys"]
 web-storage = ["web-sys/Storage", "web-sys/Window"]
 http-request = ["http"]
 http = ["reqwest"]
-net-signature = ["hex", "base64", "hmac", "sha2", "simple_serde", "bs58"]
+net-signature = ["hex", "base64", "hmac", "sha2", "simple_serde", "bs58", "sign-toml", "sign-yaml", "sign-json", "sign-query-string"]
 common-dirs = ["dirs"]
 std = []
+did = ["didkit"]
+sign-toml = ["simple_serde/toml"]
+sign-yaml = ["simple_serde/yaml"]
+sign-json = ["simple_serde/json"]
+sign-query-string = ["simple_serde/query-string"]
 
 # This is for activating all features for the current Arch
 full = ["net-signature", "web", "http-request", "http"]
@@ -37,7 +43,8 @@ libc = "0.2.153"
 tracing-subscriber = "0.3.18"
 num-traits = "0.2.18"
 spin = "0.9.8"
-hashbrown = "0.14.3"
+hashbrown = "0.12"
+getrandom = "0.2.15"
 url = "2.5.0"
 serde_derive = "1.0.198"
 
@@ -56,12 +63,17 @@ base64 = { version = "0.22.0", optional = true }
 hmac = { version = "0.13.0-pre.3", optional = true }
 sha2 = { version = "0.11.0-pre.3", optional = true }
 bs58 = { version = "0.5.1", optional = true }
-simple_serde = { version = "1.1.2", optional = true }
+simple_serde = { version = "2.0.0", optional = true, no-default-features = true }
+
+## These are mainly used for "DID" feature
+didkit = { version = "0.6.0", optional = true }
+
+## These are mainly used for "web" feature
+web-sys = { version = "0.3.69", optional = true }
+js-sys = { version = "0.3.69", optional = true }
 
 
-[dependencies.web-sys]
-version = "0.3.67"
-optional = true
+
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tokio]
 version = "1"

@@ -37,6 +37,8 @@ extern crate base64;
 #[cfg(feature = "net-signature")]
 extern crate bs58;
 extern crate core;
+#[cfg(feature = "did")]
+extern crate didkit;
 extern crate hashbrown;
 #[cfg(feature = "net-signature")]
 extern crate hex;
@@ -59,6 +61,8 @@ extern crate tracing;
 extern crate web_sys;
 
 pub mod common;
+
+#[cfg(feature = "did")]
 pub mod did;
 pub mod error;
 pub mod log;
