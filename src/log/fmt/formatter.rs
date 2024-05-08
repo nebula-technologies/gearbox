@@ -1,6 +1,7 @@
 use crate::log::fmt::log_layer::LogLayer;
 use crate::log::fmt::log_layer::Type;
 use crate::log::fmt::storage::Storage;
+use alloc::string::String;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::registry::SpanRef;

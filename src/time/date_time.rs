@@ -9,11 +9,16 @@ use crate::time::utils::{days_in_month, is_leap_year};
 
 use crate::time::constants_utils::{Mdf, YearFlags};
 use crate::time::{utils, TimeNow};
+use alloc::{
+    format,
+    string::{String, ToString},
+};
 use core::cmp::Ordering;
 use core::fmt::{Display, Formatter};
 use core::hash::{Hash, Hasher};
-use std::ops::{Add, Sub};
+use core::ops::{Add, Sub};
 use std::time::{SystemTime, UNIX_EPOCH};
+
 /// Represents a point in time with associated timezone information.
 ///
 /// `DateTime` is a struct that combines a `Duration` since the UNIX epoch
@@ -1711,49 +1716,53 @@ impl From<(i32, u8, u8, u8, u8, u8, u64, (i8, u8))> for DateTime {
 #[cfg(test)]
 mod test {
     use crate::time::constants::COMMON_TIMESTAMP_FORMATS;
-    use crate::time::error::Error;
     use crate::time::{utils, DateTime};
+    use alloc::{
+        string::{String, ToString},
+        vec,
+        vec::Vec,
+    };
 
     fn get_test_data() -> Vec<(String, DateTime)> {
         vec![
             (
-                "2031-03-05 12:03:45".to_owned(),
+                "2031-03-05 12:03:45".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 0, (0, 0))),
             ),
             (
-                "2031-03-05T12:03:45".to_owned(),
+                "2031-03-05T12:03:45".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 0, (0, 0))),
             ),
             (
-                "2031-03-05 12:03:45.123".to_owned(),
+                "2031-03-05 12:03:45.123".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 123000000, (0, 0))),
             ),
             (
-                "2031-03-05T12:03:45.123".to_owned(),
+                "2031-03-05T12:03:45.123".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 123000000, (0, 0))),
             ),
             (
-                "2031-03-05 12:03:45.123+01:00".to_owned(),
+                "2031-03-05 12:03:45.123+01:00".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 123000000, (1, 0))),
             ),
             (
-                "2031-03-05T12:03:45.123+01:00".to_owned(),
+                "2031-03-05T12:03:45.123+01:00".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 123000000, (1, 0))),
             ),
             (
-                "2031-03-05 12:03:45.123-01:00".to_owned(),
+                "2031-03-05 12:03:45.123-01:00".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 123, (-1, 0))),
             ),
             (
-                "2031-03-05T12:03:45.123-01:00".to_owned(),
+                "2031-03-05T12:03:45.123-01:00".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 123, (-1, 0))),
             ),
             (
-                "2031-03-05 12:03:45.123Z".to_owned(),
+                "2031-03-05 12:03:45.123Z".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 123, (0, 0))),
             ),
             (
-                "2031-03-05T12:03:45.123456Z".to_owned(),
+                "2031-03-05T12:03:45.123456Z".to_string(),
                 DateTime::from((2031, 3, 5, 12, 3, 45, 123456, (0, 0))),
             ),
         ]

@@ -1,6 +1,11 @@
 use crate::log::fmt::severity::Severity;
 use crate::log::fmt::util::{IntegerConversionError, UtilTryInto};
 use crate::time::DateTime;
+use alloc::{
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use core::fmt::{Debug, Display, Formatter};
 
 pub enum LogValueConvertionError {
@@ -61,7 +66,7 @@ impl From<String> for LogValue {
 
 impl From<&str> for LogValue {
     fn from(v: &str) -> Self {
-        LogValue::String(v.to_owned())
+        LogValue::String(v.to_string())
     }
 }
 

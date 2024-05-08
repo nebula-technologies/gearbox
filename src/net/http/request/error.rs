@@ -1,3 +1,4 @@
+use alloc::string::String;
 use url::ParseError;
 
 pub enum Error {

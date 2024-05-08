@@ -1,6 +1,13 @@
 use crate::error::tracer::{Error, ErrorTracer};
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    sync::Arc,
+    vec,
+    vec::Vec,
+};
+use core::any::Any;
 use core::fmt::{Debug, Display};
-use std::any::Any;
 
 pub struct ErrorTracerExtInfo {
     line: Option<u32>,
@@ -25,7 +32,7 @@ impl ErrorTracerExtInfo {
     }
 
     pub fn with_file(mut self, file: &str) -> Self {
-        self.file = Option::from(file.to_owned());
+        self.file = Option::from(file.to_string());
         self
     }
 

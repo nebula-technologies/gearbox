@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+
 pub trait RailsMapErrInto<T, E> {
     fn map_err_into<U>(self) -> Result<T, U>
     where
@@ -57,7 +59,7 @@ impl<T, E> RailsBoxErr<T, E> for Result<T, E> {
 }
 pub trait RailsMapErrIntoBox<T, E>
 where
-    E: std::error::Error,
+    E: crate::error::tracer::Error,
 {
     fn map_err_box_into<U>(self) -> Result<T, U>
     where
@@ -67,7 +69,7 @@ where
 
 impl<T, E> RailsMapErrIntoBox<T, E> for Result<T, E>
 where
-    E: std::error::Error,
+    E: crate::error::tracer::Error,
 {
     fn map_err_box_into<U>(self) -> Result<T, U>
     where

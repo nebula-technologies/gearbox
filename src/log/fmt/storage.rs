@@ -1,5 +1,6 @@
 use crate::log::fmt::log_value::LogValue;
 use crate::time::DateTime;
+use alloc::format;
 use core::fmt;
 use core::ops::{Deref, DerefMut};
 use hashbrown::HashMap;

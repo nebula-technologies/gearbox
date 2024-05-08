@@ -2,6 +2,7 @@ use crate::log::fmt::formatter::LogFormatter;
 use crate::log::fmt::get_exec_name;
 use crate::log::fmt::log_value::LogValue;
 use crate::log::fmt::storage::Storage;
+use alloc::{string::String, vec::Vec};
 use core::fmt;
 use core::marker::PhantomData;
 use hashbrown::HashMap;
@@ -35,14 +36,14 @@ impl<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> LogLayer<W,
         _default_fields: HashMap<String, LogValue>,
     ) -> Self {
         println!("PROCESS ID: {}", std::process::id());
-        #[cfg(any(unix, windows))]
+        #[cfg(all(any(unix, windows), feature = "std"))]
         let hostname = Option::from(
             crate::net::hostname::gethostname()
                 .to_string_lossy()
                 .into_owned(),
         );
 
-        #[cfg(not(any(unix, windows)))]
+        #[cfg(not(any(unix, windows, feature = "std")))]
         let hostname = None;
 
         Self {

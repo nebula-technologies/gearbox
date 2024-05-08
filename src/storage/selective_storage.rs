@@ -3,6 +3,10 @@ use crate::rails::ext::map_into::RailsMapErrIntoBox;
 #[cfg(target_arch = "x86_64")]
 use crate::storage::io::file::error::Error as FileError;
 use crate::storage::KeyStoreExt;
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+};
 use core::fmt::{Debug, Display, Formatter};
 use serde_json::Error as JsonError;
 
@@ -19,7 +23,7 @@ where
 
 impl<S, E> SelectiveStorage for S
 where
-    E: std::error::Error + 'static,
+    E: crate::error::tracer::Error + 'static,
     S: KeyStoreExt<Error = E> + TryDefault<Error = E>,
 {
     type Error = Error;
@@ -47,7 +51,7 @@ pub enum Error {
     NoFileConfigured(String),
     SerializationError(JsonError),
     FailedToGetMutableInstance,
-    UnderlyingLayerError(Box<dyn std::error::Error>),
+    UnderlyingLayerError(Box<dyn crate::error::tracer::Error>),
 }
 
 impl Debug for Error {
@@ -62,12 +66,12 @@ impl Display for Error {
             Error::NoFileConfigured(s) => write!(f, "No file configured: {}", s),
             Error::SerializationError(e) => write!(f, "Serialization error: {}", e),
             Error::FailedToGetMutableInstance => write!(f, "Failed to get mutable instance"),
-            Error::UnderlyingLayerError(e) => write!(f, "Underlying layer error: {}", e),
+            Error::UnderlyingLayerError(e) => write!(f, "Underlying layer error: {:?}", e),
         }
     }
 }
 
-impl std::error::Error for Error {}
+impl crate::error::tracer::Error for Error {}
 
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
@@ -84,7 +88,7 @@ impl From<Error> for FileError {
 
 impl<E> From<Box<E>> for Error
 where
-    E: std::error::Error + 'static,
+    E: crate::error::tracer::Error + 'static,
 {
     fn from(e: Box<E>) -> Self {
         Error::UnderlyingLayerError(e)

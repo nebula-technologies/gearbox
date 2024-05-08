@@ -17,7 +17,7 @@ maintenance = { status = "actively-developed" }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["web", "http-request", "net-signature", "common-dirs", "std", "did"]
+default = ["web", "http-request", "net-signature", "common-dirs", "did", "std"]
 web = ["web-sys", "web-storage", "js-sys"]
 web-storage = ["web-sys/Storage", "web-sys/Window"]
 http-request = ["http"]

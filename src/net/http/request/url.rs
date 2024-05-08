@@ -1,4 +1,5 @@
 use crate::net::http::request::error::Error;
+use alloc::string::{String, ToString};
 use core::str::FromStr;
 use url::Host;
 

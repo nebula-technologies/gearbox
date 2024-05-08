@@ -1,5 +1,5 @@
 use crate::time::DateTime;
-use alloc::collections::btree_map::BTreeMap;
+use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
 
 pub type DocumentId = String;
 pub type NameSpace = String;

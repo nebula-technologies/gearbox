@@ -1,8 +1,12 @@
 use crate::log::fmt::index::Index;
+use alloc::{
+    collections::btree_map::BTreeMap,
+    string::{String, ToString},
+    vec::Vec,
+};
 use core::fmt::{self, Debug};
 use core::mem;
 use core::str;
-use std::collections::BTreeMap;
 
 #[derive(Clone)]
 pub enum Value {

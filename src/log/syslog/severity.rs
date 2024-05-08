@@ -1,3 +1,5 @@
+use alloc::string::{String, ToString};
+
 pub enum Severity {
     Emergency,
     Alert,

@@ -1,4 +1,4 @@
-//#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 //! [![pipeline status](https://gitlab.nebula.technology/libraries/rust/gearbox/badges/main/pipeline.svg)](https://gitlab.nebula.technology/libraries/rust/gearbox/-/commits/main)
 //! [![coverage report](https://gitlab.nebula.technology/libraries/rust/gearbox/badges/main/coverage.svg)](https://gitlab.nebula.technology/libraries/rust/gearbox/-/commits/main)
 //! [![Latest Release](https://gitlab.nebula.technology/libraries/rust/gearbox/-/badges/release.svg)](https://gitlab.nebula.technology/libraries/rust/gearbox/-/releases)
@@ -19,7 +19,7 @@
 //! | Logging    | Tracing Log Formatter | gearbox::log::fmt::*                | This is a custom subscriber for formatting logs when using the rust Tracing libaray                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 //! | Networking | hostname              | gearbox::net::hostname              | Get the hostname of the local machine.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 //! |            | HTTP Request          | gearbox::net::http::*               | Send an HTTP request, this is currently an extension on top of `Reqwest` but simplifies the implementation of mTLS and payload signing.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-//! | Error      | ErrorTracer           | gearbox::error::tracer::*           | This is an error structure that builds a traceable stack of errors over time as errors are passed. It allows for later breaking down the error into a TypeId to define the encapsulated error for further operations on the error. This error type contains information about file, line, module path, and optional error_code with display and debug. Its an advanced alternative to std::error::Error that also works outside the std. This also comes with the macro `Error!()` which sets up the `ErrorTracerExtInfo` with all the needed information (file, line, module) |
+//! | Error      | ErrorTracer           | gearbox::error::tracer::*           | This is an error structure that builds a traceable stack of errors over time as errors are passed. It allows for later breaking down the error into a TypeId to define the encapsulated error for further operations on the error. This error type contains information about file, line, module path, and optional error_code with display and debug. Its an advanced alternative to crate::error::tracer::Error that also works outside the std. This also comes with the macro `Error!()` which sets up the `ErrorTracerExtInfo` with all the needed information (file, line, module) |
 //! |            | Rail ErrorTracer      | gearbox::rails::ext::map_err_tracer | this is a simplification for `map_err` for operating with the ErrorTracer, this allows for passing an `Error!()` or an `ErrorTracerExtInfo` for the collection of all the information                                                                                                                                                                                                                                                                                                                                                                                          |
 //! | Paths      | Common Paths          | gearbox::path::*                    | This is common paths under windows linux and more, eg under linux the config path is usually `~/.config/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 //! | Time       | Time Stamps and more  | gearbox::time::*                    | This is a timestamp system similar to Chrono, this is more like the library under PHP but handles times and time calculations, this library is used through out gearbox instead of Chrono                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -30,7 +30,7 @@
 //! - [ ] ( gearbox::path::* ) current this system is mainly just exposing the dirs::* library, this should be removed.
 //! - [ ] ( gearbox::* ) Remove usage for Vec or move usage of std::vec::Vec to another no-std library
 //!
-//!
+//!// When the `std` feature is enabled, bring in the Rust standard library
 extern crate alloc;
 #[cfg(feature = "net-signature")]
 extern crate base64;
@@ -54,6 +54,8 @@ extern crate sha2;
 #[cfg(feature = "net-signature")]
 extern crate simple_serde;
 extern crate spin;
+#[cfg(feature = "std")]
+extern crate std;
 #[cfg(not(target_arch = "wasm32"))]
 extern crate tokio;
 extern crate tracing;

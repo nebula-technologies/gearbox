@@ -1,4 +1,5 @@
 use crate::log::fmt::log_value::LogValue;
+use alloc::string::{String, ToString};
 
 #[derive(Debug)]
 pub enum Facility {

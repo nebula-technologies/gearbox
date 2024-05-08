@@ -1,4 +1,8 @@
-use std::ops::Deref;
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::ops::Deref;
 
 pub struct StatusCode {
     code: u16,

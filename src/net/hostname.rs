@@ -1,11 +1,12 @@
+#[cfg(feature = "std")]
 use std::ffi::OsString;
 
-#[cfg(any(unix, windows))]
+#[cfg(all(any(unix, windows), feature = "std"))]
 pub fn gethostname() -> OsString {
     gethostname_impl()
 }
 
-#[cfg(unix)]
+#[cfg(all(unix, feature = "std"))]
 #[inline]
 fn gethostname_impl() -> OsString {
     use libc::{c_char, sysconf, _SC_HOST_NAME_MAX};
@@ -33,7 +34,7 @@ fn gethostname_impl() -> OsString {
     OsString::from_vec(buffer)
 }
 
-#[cfg(windows)]
+#[cfg(all(windows, feature = "std"))]
 #[inline]
 fn gethostname_impl() -> OsString {
     use std::os::windows::ffi::OsStringExt;
@@ -87,7 +88,7 @@ fn gethostname_impl() -> OsString {
     OsString::from_wide(&buffer[0..end])
 }
 
-#[cfg(test)]
+#[cfg(all(test, any(unix, windows), feature = "std"))]
 mod tests {
     use std::process::Command;
 

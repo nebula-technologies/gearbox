@@ -1,3 +1,4 @@
+use alloc::string::{String, ToString};
 use core::fmt::{Display, Formatter};
 use web_sys::wasm_bindgen::JsValue;
 
@@ -28,7 +29,7 @@ impl Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl crate::error::tracer::Error for Error {}
 
 impl From<JsValue> for Error {
     fn from(value: JsValue) -> Self {

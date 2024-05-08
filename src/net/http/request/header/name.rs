@@ -1,4 +1,5 @@
-use std::ops::Deref;
+use alloc::string::{String, ToString};
+use core::ops::Deref;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Name<T = String>(pub T);

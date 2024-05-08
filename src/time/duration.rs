@@ -1,5 +1,6 @@
 use crate::time::constants::{MILLIS_PER_SEC, NANOS_PER_SEC};
 use crate::time::NANOS_PER_MILLI;
+use alloc::string::ToString;
 use core::ops::{Add, Sub};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -276,6 +277,7 @@ impl Duration {
     }
 }
 
+#[cfg(feature = "std")]
 impl From<std::time::Duration> for Duration {
     fn from(duration: std::time::Duration) -> Self {
         let sec = duration.as_secs() as i64;

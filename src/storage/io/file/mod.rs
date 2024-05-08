@@ -1,6 +1,12 @@
 use crate::rails::ext::if_then::RailsIfExt;
 use crate::rails::ext::map_into::RailsMapErrInto;
 use crate::rails::tracing::common::{RailsLog, RailsLogState};
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use std::fs::File as StdFile;
 use std::io::{Read, Write};
 use std::path::PathBuf;

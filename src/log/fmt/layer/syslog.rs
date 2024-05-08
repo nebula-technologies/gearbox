@@ -5,9 +5,15 @@ use crate::log::fmt::log_value::LogValue;
 use crate::log::fmt::severity::Severity;
 use crate::log::fmt::storage::Storage;
 use crate::time::DateTime;
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use core::fmt;
+use core::ops::{Deref, DerefMut};
 use hashbrown::HashMap;
-use std::ops::{Deref, DerefMut};
 use tracing::{Event, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::registry::{LookupSpan, SpanRef};

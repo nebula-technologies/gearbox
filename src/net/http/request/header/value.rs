@@ -1,4 +1,5 @@
 use crate::net::http::request::Error;
+use alloc::{string::String, vec::Vec};
 use reqwest::header::InvalidHeaderName;
 
 #[derive(Clone)]

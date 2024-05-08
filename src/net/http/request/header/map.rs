@@ -2,6 +2,7 @@ use super::{Header, Name, Value};
 use crate::common::TryDefault;
 use crate::net::http::request::header::values::Values;
 use crate::rails::ext::RailsMapErrInto;
+use alloc::{string::ToString, vec::Vec};
 use hashbrown::HashMap;
 
 pub struct HeaderMap {

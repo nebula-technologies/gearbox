@@ -1,7 +1,13 @@
 mod helpers;
 
 use crate::time::DateTime;
-use alloc::sync::Arc;
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    sync::Arc,
+    vec,
+    vec::Vec,
+};
 use core::ops::Deref;
 use hashbrown::HashMap;
 use serde_derive::{Deserialize, Serialize};

@@ -3,6 +3,7 @@ use crate::time::constants::{
 };
 use crate::time::constants_utils::YearFlags;
 use crate::time::error::Error;
+use alloc::string::{String, ToString};
 use core::fmt::Display;
 
 pub(super) const fn is_leap_year(year: &i32) -> bool {
@@ -158,6 +159,15 @@ pub(crate) fn str_to_zone(zone: &str) -> Result<(i8, u8), Error> {
 mod safe_calc {
     use crate::rails::ext::Merge;
     use crate::time::error::Error;
+    use alloc::{
+        boxed::Box,
+        collections::btree_map::BTreeMap,
+        format,
+        string::{String, ToString},
+        sync::Arc,
+        vec,
+        vec::Vec,
+    };
 
     pub(super) fn calc_u8(mut v: u8, c: char) -> Result<u8, Error> {
         v.checked_mul(10)
@@ -326,9 +336,9 @@ impl TimestampChunks {
         if self.month == 0 && !self.month_str.is_empty() {
             let cleaned_month = {
                 if self.month_str.len() > 3 {
-                    self.month_str.to_lowercase().as_str()[0..3].to_owned()
+                    self.month_str.to_lowercase().as_str()[0..3].to_string()
                 } else {
-                    self.month_str.to_lowercase().to_owned()
+                    self.month_str.to_lowercase().to_string()
                 }
             };
             match cleaned_month.as_str() {
@@ -661,7 +671,7 @@ trait ResultCompare
 where
     Self: Sized,
 {
-    type Error: std::error::Error;
+    type Error: crate::error::tracer::Error;
     fn if_gt(self, other: &Self) -> Result<Self, Self::Error>;
     fn if_lt(self, other: &Self) -> Result<Self, Self::Error>;
 }
@@ -733,7 +743,7 @@ impl Display for CompareError {
     }
 }
 
-impl std::error::Error for CompareError {}
+impl crate::error::tracer::Error for CompareError {}
 
 #[cfg(test)]
 mod test {

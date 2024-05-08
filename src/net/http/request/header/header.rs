@@ -1,5 +1,9 @@
-use super::{Name, Value};
+use super::Name;
 use crate::net::http::request::header::values::Values;
+use alloc::{
+    string::{String, ToString},
+    vec,
+};
 
 pub trait HeaderTrait {
     fn name(&self) -> &Name;

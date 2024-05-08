@@ -1,3 +1,4 @@
+use alloc::{string::ToString, vec::Vec};
 use hmac::{Hmac, KeyInit, Mac};
 use sha2::{Digest, Sha256, Sha512};
 

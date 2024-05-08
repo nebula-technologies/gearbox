@@ -5,7 +5,7 @@ use crate::net::http::request::{Error, Header, HeaderMap, Response, Url};
 #[cfg(feature = "net-signature")]
 use crate::net::signature::Signature;
 use crate::rails::ext::{RailsMapErrInto, RailsMapInto};
-use tokio::join;
+use alloc::string::{String, ToString};
 
 pub struct RequestBuilder {
     pub client: Option<Client>,

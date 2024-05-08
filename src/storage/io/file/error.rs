@@ -1,3 +1,9 @@
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use core::fmt::{Display, Formatter};
 use serde_json::Error as JsonError;
 use serde_yaml::Error as YamlError;
@@ -11,7 +17,7 @@ pub enum Error {
     JsonError(JsonError),
     YamlError(YamlError),
     FileDoesNotExist,
-    ExtensionError(Box<dyn std::error::Error>),
+    ExtensionError(Box<dyn crate::error::tracer::Error>),
     NoPath,
 }
 
@@ -24,13 +30,13 @@ impl Display for Error {
             Error::JsonError(e) => write!(f, "JSON error: {}", e),
             Error::YamlError(e) => write!(f, "YAML error: {}", e),
             Error::FileDoesNotExist => write!(f, "File does not exist"),
-            Error::ExtensionError(e) => write!(f, "Extension error: {}", e),
+            Error::ExtensionError(e) => write!(f, "Extension error: {:?}", e),
             Error::NoPath => write!(f, "No path provided for file"),
         }
     }
 }
 
-impl std::error::Error for Error {}
+impl crate::error::tracer::Error for Error {}
 
 impl From<IoError> for Error {
     fn from(e: IoError) -> Self {

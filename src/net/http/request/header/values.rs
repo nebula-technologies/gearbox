@@ -1,20 +1,26 @@
 use crate::net::http::request::header::Value;
+use alloc::{
+    slice::Iter,
+    string::String,
+    vec,
+    vec::{IntoIter, Vec},
+};
 
 #[derive(Clone)]
 pub struct Values(pub Vec<Value>);
 
 impl Values {
     // Returns an iterator that yields references to the elements.
-    pub fn iter(&self) -> std::slice::Iter<'_, Value> {
+    pub fn iter(&self) -> Iter<'_, Value> {
         self.0.iter()
     }
 }
 
 impl IntoIterator for Values {
     type Item = Value;
-    type IntoIter = std::vec::IntoIter<Value>;
+    type IntoIter = IntoIter<Value>;
 
-    fn into_iter(self) -> std::vec::IntoIter<Value> {
+    fn into_iter(self) -> IntoIter<Value> {
         self.0.into_iter()
     }
 }

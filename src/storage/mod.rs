@@ -3,7 +3,7 @@ use crate::rails::ext::map_into::RailsMapErrInto;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "std"))]
 pub mod io;
 pub mod json;
 #[cfg(all(target_arch = "wasm32", feature = "web"))]

@@ -1,8 +1,11 @@
 use crate::log::fmt::value::Value;
+use alloc::{
+    collections::btree_map::BTreeMap,
+    string::{String, ToString},
+};
 use core::fmt;
 use core::fmt::Display;
-use std::collections::BTreeMap;
-use std::ops;
+use core::ops;
 
 pub trait Index: private::Sealed {
     /// Return None if the key is not already in the array or object.
@@ -68,7 +71,7 @@ impl Index for str {
             *v = Value::Map(BTreeMap::new());
         }
         match v {
-            Value::Map(map) => map.entry(self.to_owned()).or_insert(Value::Null),
+            Value::Map(map) => map.entry(self.to_string()).or_insert(Value::Null),
             _ => panic!("cannot access key {:?} in JSON {}", self, Type(v)),
         }
     }
@@ -103,6 +106,7 @@ where
 
 // Prevent users from implementing the Index trait.
 mod private {
+    use alloc::string::String;
     pub trait Sealed {}
     impl Sealed for usize {}
     impl Sealed for str {}

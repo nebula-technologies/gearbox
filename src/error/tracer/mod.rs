@@ -2,10 +2,11 @@
 pub mod error_macro;
 pub mod extended_info;
 // Local uses
+use alloc::{boxed::Box, format, string::ToString};
+use core::any::Any;
 use core::any::TypeId;
 use core::fmt::Display;
 use core::fmt::{Debug, Formatter};
-use std::any::Any;
 #[cfg(feature = "std")]
 use std::time::SystemTimeError;
 

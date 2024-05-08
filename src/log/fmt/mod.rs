@@ -8,6 +8,9 @@ pub mod severity;
 pub mod storage;
 pub mod util;
 pub mod value;
+
+use alloc::string::{String, ToString};
+
 pub fn get_exec_name() -> Option<String> {
     std::env::current_exe()
         .ok()
