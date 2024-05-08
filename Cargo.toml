@@ -1,6 +1,6 @@
 [package]
 name = "gearbox"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 description = "Excessive tooling for Rust, boosting productivity and operations"
