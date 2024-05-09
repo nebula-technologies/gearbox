@@ -30,7 +30,12 @@
 //! - [ ] ( gearbox::path::* ) current this system is mainly just exposing the dirs::* library, this should be removed.
 //! - [ ] ( gearbox::* ) Remove usage for Vec or move usage of std::vec::Vec to another no-std library
 //!
-//!// When the `std` feature is enabled, bring in the Rust standard library
+//!
+//!
+
+#[cfg(all(feature = "syslog-macro", feature = "log-macro"))]
+compile_error!("`syslog-macro` and `log-macro` cannot be enabled at the same time.");
+
 extern crate alloc;
 #[cfg(feature = "net-signature")]
 extern crate base64;
@@ -54,6 +59,7 @@ extern crate sha2;
 #[cfg(feature = "net-signature")]
 extern crate simple_serde;
 extern crate spin;
+// When the `std` feature is enabled, bring in the Rust standard library
 #[cfg(feature = "std")]
 extern crate std;
 #[cfg(not(target_arch = "wasm32"))]
@@ -75,6 +81,11 @@ pub mod storage;
 pub mod time;
 
 #[allow(unused_imports)]
+#[cfg(feature = "log-macro")]
+pub use crate::log::common::macros::*;
+
+#[allow(unused_imports)]
+#[cfg(feature = "syslog-macro")]
 pub use crate::log::syslog::macros::*;
 
 #[cfg(test)]

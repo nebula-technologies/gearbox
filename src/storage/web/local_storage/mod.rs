@@ -3,7 +3,7 @@ pub mod ext;
 
 use crate::common::TryDefault;
 use crate::rails::ext::map_into::RailsMapErrInto;
-use crate::rails::tracing::common::{RailsLog, RailsLogState};
+use crate::rails::tracing::common::RailsLog;
 pub use error::Error;
 use web_sys::{window, Storage};
 
@@ -24,7 +24,7 @@ impl LocalStorage {
                         "local_storage was not found for the web platform".to_string(),
                     ))
                 })
-                .log(Err.error())
+                .log(crate::error!(Err))
                 .ok(),
         }
     }

@@ -1,2 +1,2 @@
 pub mod common;
-mod syslog;
+pub mod syslog;

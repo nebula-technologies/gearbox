@@ -43,7 +43,7 @@ impl<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> LogLayer<W,
                 .into_owned(),
         );
 
-        #[cfg(not(any(unix, windows, feature = "std")))]
+        #[cfg(all(not(any(unix, windows)), feature = "std"))]
         let hostname = None;
 
         Self {

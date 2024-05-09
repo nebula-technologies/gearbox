@@ -1,4 +1,5 @@
 pub mod facility;
+#[cfg(feature = "syslog-macro")]
 pub mod macros;
 pub mod severity;
 

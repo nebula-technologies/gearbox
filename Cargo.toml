@@ -11,13 +11,16 @@ license = "MIT"
 repository = "https://github.com/nebula-technologies/gearbox"
 resolver = "2"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [badges]
 maintenance = { status = "actively-developed" }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["web", "http-request", "net-signature", "common-dirs", "did", "std"]
+default = ["web", "http-request", "net-signature", "common-dirs", "did", "std", "syslog-macro"]
 web = ["web-sys", "web-storage", "js-sys"]
 web-storage = ["web-sys/Storage", "web-sys/Window"]
 http-request = ["http"]
@@ -30,6 +33,8 @@ sign-toml = ["simple_serde/toml"]
 sign-yaml = ["simple_serde/yaml"]
 sign-json = ["simple_serde/json"]
 sign-query-string = ["simple_serde/query-string"]
+syslog-macro = []
+log-macro = []
 
 # This is for activating all features for the current Arch
 full = ["net-signature", "web", "http-request", "http"]

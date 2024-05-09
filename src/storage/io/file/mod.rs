@@ -1,6 +1,6 @@
 use crate::rails::ext::if_then::RailsIfExt;
 use crate::rails::ext::map_into::RailsMapErrInto;
-use crate::rails::tracing::common::{RailsLog, RailsLogState};
+use crate::rails::tracing::common::RailsLog;
 use alloc::{
     boxed::Box,
     string::{String, ToString},
@@ -38,13 +38,13 @@ impl File {
     pub fn get_contents_mut(&mut self) -> Result<String, crate::storage::io::file::error::Error> {
         self.create_if_not_exists()
             .and_then(|t| Self::contents_map(t).map_err_into())
-            .log(Err.error())
+            .log(crate::error!(Err))
     }
 
     pub fn get_contents(&self) -> Result<String, crate::storage::io::file::error::Error> {
         self.get_if_exists()
             .and_then(|t| Self::contents_map(&t).map_err_into())
-            .log(Err.error())
+            .log(crate::error!(Err))
     }
 
     pub fn write_to_file(
