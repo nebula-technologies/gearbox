@@ -410,7 +410,6 @@ pub enum Error {
 
 // Test for this from is disabled as its not possible to create the external
 // `core::convert::Infallible` object
-#[cfg(not(tarpaulin_include))]
 impl From<Infallible> for Error {
     fn from(_: Infallible) -> Self {
         Error::Infallible
@@ -418,7 +417,6 @@ impl From<Infallible> for Error {
 }
 
 // Unable to test due to no access to object
-#[cfg(not(tarpaulin_include))]
 impl From<Utf8Error> for Error {
     fn from(e: Utf8Error) -> Self {
         Error::ByteToUTF8ConversionFailure(e)
