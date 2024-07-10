@@ -1,6 +1,6 @@
 [package]
 name = "gearbox"
-version = "2.0.2"
+version = "2.0.3"
 edition = "2021"
 authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 description = "Excessive tooling for Rust, boosting productivity and operations"
@@ -13,7 +13,7 @@ resolver = "2"
 
 [package.metadata.docs.rs]
 # Indicate that the README should be used as the main page
-rustdoc-args = ["--document-private-items", "--crate-name", "gearbox", "--html-in-header", "README.md"]
+rustdoc-args = ["--document-private-items", "--html-in-header", "README.md"]
 
 
 [lib]
