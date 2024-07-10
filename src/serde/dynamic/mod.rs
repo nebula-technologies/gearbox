@@ -143,7 +143,7 @@ pub mod prelude {
 use core::convert::{Infallible, Into, TryFrom, TryInto};
 use core::ops::{Deref, DerefMut};
 use core::str::Utf8Error;
-#[cfg(feature = "ron")]
+#[cfg(feature = "serde-ron")]
 use ron::de::SpannedError;
 use serde::de::DeserializeOwned;
 use serde::Serialize;

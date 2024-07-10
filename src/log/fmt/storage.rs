@@ -175,9 +175,6 @@ impl<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>> Layer
                 .unwrap_or(0)
         };
 
-        #[cfg(not(feature = "arbitrary-precision"))]
-        // without the arbitrary_precision feature u128 values are not supported,
-        // but u64 is still more than enough for our purposes
         let elapsed_milliseconds: u64 = { elapsed_milliseconds.try_into().unwrap_or_default() };
 
         let mut extensions_mut = span.extensions_mut();

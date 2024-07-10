@@ -1,7 +1,5 @@
 //! Internal helper types for working with dates.
 
-#![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
-
 use crate::time::constants_utils::YearFlags;
 
 pub const COMMON_TIMESTAMP_FORMATS: [&str; 16] = [

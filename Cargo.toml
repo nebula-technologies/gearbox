@@ -31,6 +31,9 @@ did = ["didkit"]
 syslog-macro = []
 log-macro = []
 
+## Tracing Loggers
+bunyan = []
+
 ## TypeRegistry
 type-registry = []
 
