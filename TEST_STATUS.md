@@ -1,0 +1,34 @@
+| File | Coverage Bar | Line Coverage | Lines Covered | Lines Total |
+|------|--------------|---------------|---------------|-------------|
+| src | ![](https://geps.dev/progress/0) | 0.0% | 0 | 2 |
+| src/collections/const_hash_map | ![](https://geps.dev/progress/0) | 0.0% | 0 | 240 |
+| src/collections/hash_map | ![](https://geps.dev/progress/26) | 25.76% | 51 | 198 |
+| src/collections/simple_linked_list | ![](https://geps.dev/progress/100) | 100.0% | 146 | 146 |
+| src/collections/vec_deque | ![](https://geps.dev/progress/96) | 96.02% | 193 | 201 |
+| src/common | ![](https://geps.dev/progress/91) | 91.3% | 21 | 23 |
+| src/error | ![](https://geps.dev/progress/35) | 35.14% | 13 | 37 |
+| src/error/tracer | ![](https://geps.dev/progress/41) | 41.47% | 265 | 639 |
+| src/log/fmt | ![](https://geps.dev/progress/36) | 36.42% | 409 | 1123 |
+| src/log/fmt/layer | ![](https://geps.dev/progress/0) | 0.0% | 0 | 130 |
+| src/log/syslog | ![](https://geps.dev/progress/100) | 100.0% | 166 | 166 |
+| src/net | ![](https://geps.dev/progress/74) | 74.29% | 52 | 70 |
+| src/net/http/request | ![](https://geps.dev/progress/42) | 42.33% | 527 | 1245 |
+| src/net/http/request/header | ![](https://geps.dev/progress/47) | 47.48% | 151 | 318 |
+| src/net/http/request_chaining | ![](https://geps.dev/progress/95) | 95.04% | 613 | 645 |
+| src/net/http/test | ![](https://geps.dev/progress/87) | 86.76% | 59 | 68 |
+| src/net/signature | ![](https://geps.dev/progress/83) | 83.3% | 404 | 485 |
+| src/rails/ext/blocking | ![](https://geps.dev/progress/33) | 32.71% | 174 | 532 |
+| src/rails/ext/future | ![](https://geps.dev/progress/98) | 98.49% | 718 | 729 |
+| src/rails/ext/future/ext/option | ![](https://geps.dev/progress/84) | 84.19% | 378 | 449 |
+| src/rails/ext/future/ext/result | ![](https://geps.dev/progress/81) | 80.98% | 315 | 389 |
+| src/rails/tracing | ![](https://geps.dev/progress/100) | 100.0% | 115 | 115 |
+| src/serde/dynamic | ![](https://geps.dev/progress/76) | 76.09% | 261 | 343 |
+| src/serde/dynamic/test | ![](https://geps.dev/progress/15) | 14.71% | 5 | 34 |
+| src/storage | ![](https://geps.dev/progress/0) | 0.0% | 0 | 39 |
+| src/storage/io/file | ![](https://geps.dev/progress/58) | 58.44% | 180 | 308 |
+| src/sync | ![](https://geps.dev/progress/81) | 81.15% | 538 | 663 |
+| src/task | ![](https://geps.dev/progress/97) | 96.84% | 306 | 316 |
+| src/task/multicommand | ![](https://geps.dev/progress/63) | 62.64% | 114 | 182 |
+| src/template | ![](https://geps.dev/progress/84) | 84.38% | 281 | 333 |
+| src/template/pipelines | ![](https://geps.dev/progress/81) | 81.16% | 56 | 69 |
+| src/time | ![](https://geps.dev/progress/47) | 47.11% | 1116 | 2369 |

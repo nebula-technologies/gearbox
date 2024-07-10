@@ -1,0 +1,15 @@
+/target
+/.idea
+
+# Wasm build artifacts
+/pkg
+
+# Ignore everything under .artifacts/
+.artifacts/*
+
+# Except the coverage directory
+!.artifacts/coverage/
+
+# But ignore the contents of the coverage directory
+.artifacts/coverage/*
+*.txt

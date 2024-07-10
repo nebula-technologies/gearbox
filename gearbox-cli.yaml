@@ -1,0 +1,62 @@
+projects:
+  gearbox:
+    name: ~
+    description: Gearbox Library
+    path: $HOME/Projects/Libraries/Rust/gearbox
+    config:
+      destination: ~
+      language: ~
+    tasks:
+      init:
+        - name: git
+          type: Git
+          git: "git@gitlab.nebula.technology:libraries/rust/gearbox.git"
+          protocol:
+            type: ssh
+            identity: ~
+          branch: ~
+          tag: ~
+          commit: ~
+          auto_clone: true
+          action: Pull
+      test-cov:
+        - name: custom_command
+          command: cargo
+          args:
+            - test
+          env:
+            - name: CARGO_INCREMENTAL
+              value: '0'
+            - name: RUSTFLAGS
+              value: '-C link-dead-code -Cinstrument-coverage'
+            - name: LLVM_PROFILE_FILE
+              value: target/coverage/%p-%m.profraw
+        - name: custom_command
+          command: grcov
+          args:
+            - ./target/coverage
+            - -s
+            - .
+            - --binary-path
+            - ./target/debug/
+            - -t
+            - lcov
+            - --branch
+            - --ignore-not-existing
+            - -o
+            - ./.artifacts/coverage
+            - --keep-only
+            - 'src/*'
+            - --output-types
+            - html,cobertura,lcov
+        - name: custom_command
+          command: xmllint
+          args:
+            - --xpath
+            - "concat('Coverage: ', 100 * string(//coverage/@line-rate), '%')"
+            - .artifacts/coverage/cobertura.xml
+        - name: custom_command
+          command: python
+          args:
+            - grcov-to-markdown.py
+
