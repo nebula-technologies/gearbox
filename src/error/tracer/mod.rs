@@ -42,38 +42,38 @@ impl<T> Serializable for T where T: Serialize {}
 serialize_trait_object!(Serializable);
 
 pub trait AnyBoxError: Any {
-    fn as_any(&self) -> &dyn Any;
+    fn as_any(&self) -> Box<&dyn Any>;
 }
 pub trait AnyMutBoxError: Any {
-    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn as_any_mut(&mut self) -> Box<&mut dyn Any>;
 }
 
-#[cfg(target_arch = "wasm32")]
-impl<T: ErrorDebug> AnyBoxError for Box<T> {
-    fn as_any(&self) -> &dyn Any {
-        self
+// #[cfg(target_arch = "wasm32")]
+impl<T: ErrorDebug> AnyBoxError for T {
+    fn as_any(&self) -> Box<&dyn Any> {
+        Box::new(self)
     }
 }
-#[cfg(target_arch = "wasm32")]
-impl<T: ErrorDebug> AnyMutBoxError for Box<T> {
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
+// #[cfg(target_arch = "wasm32")]
+impl<T: ErrorDebug> AnyMutBoxError for T {
+    fn as_any_mut(&mut self) -> Box<&mut dyn Any> {
+        Box::new(self)
     }
 }
-
-#[cfg(not(target_arch = "wasm32"))]
-impl AnyBoxError for Box<dyn ErrorDebug> {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-impl AnyMutBoxError for Box<dyn ErrorDebug> {
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-}
+//
+// #[cfg(not(target_arch = "wasm32"))]
+// impl AnyBoxError for Box<dyn ErrorDebug> {
+//     fn as_any(&self) -> &Box<dyn Any> {
+//         self
+//     }
+// }
+//
+// #[cfg(not(target_arch = "wasm32"))]
+// impl AnyMutBoxError for Box<dyn ErrorDebug> {
+//     fn as_any_mut(&mut self) -> &mut Box<dyn Any> {
+//         self
+//     }
+// }
 
 pub struct TracerError<T>
 where
@@ -438,6 +438,11 @@ impl DynTracerError {
 
     pub fn cause_mut(&mut self) -> Option<&mut Vec<DynTracerError>> {
         self.cause.as_mut()
+    }
+
+    pub fn downcast_ref<T: ErrorDebug + AnyBoxError>(&self) -> Option<&T> {
+        let error = self.error.as_any();
+        error.downcast_ref::<T>()
     }
 
     pub fn digest(&self) -> ErrorDigest {
