@@ -16,6 +16,7 @@ use alloc::{string::String, sync::Arc, vec::Vec};
 use core::future::Future;
 use serde::{de, ser, Deserializer, Serializer};
 use spin::Mutex;
+use std::ops::{Deref, DerefMut};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -31,7 +32,7 @@ use wasm_bindgen::prelude::*;
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RequestChain {
     template_requests: HashMap<String, RequestNode>,
-    call_structures: HashMap<String, Vec<String>>,
+    call_structures: HashMap<String, CallStructure>,
 }
 
 impl RequestChain {
@@ -134,7 +135,10 @@ impl RequestChain {
     /// chain.add_call_structure("example_chain", vec!["request1".to_string(), "request2".to_string()]);
     /// ```
     pub fn add_call_structure(&mut self, name: &str, calls: Vec<String>) {
-        self.call_structures.insert(name.to_string(), calls);
+        self.call_structures.insert(
+            name.to_string(),
+            CallStructure::new(Some(name.to_string()), None, calls),
+        );
     }
 }
 
@@ -331,6 +335,82 @@ impl RequestNodeBuilder {
         self.requests.push(returned_builder);
 
         self
+    }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub struct CallStructure {
+    name: Option<String>,
+    description: Option<String>,
+    calls: Vec<String>,
+}
+
+impl CallStructure {
+    pub fn new(
+        name: Option<String>,
+        description: Option<String>,
+        calls: Vec<String>,
+    ) -> CallStructure {
+        CallStructure {
+            name,
+            description,
+            calls,
+        }
+    }
+
+    pub fn name(&self) -> Option<String> {
+        self.name.clone()
+    }
+
+    pub fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    pub fn calls(&self) -> Vec<String> {
+        self.calls.clone()
+    }
+
+    pub fn set_name(&mut self, name: Option<String>) {
+        self.name = name;
+    }
+
+    pub fn set_description(&mut self, description: Option<String>) {
+        self.description = description;
+    }
+
+    pub fn set_calls(&mut self, calls: Vec<String>) {
+        self.calls = calls;
+    }
+}
+
+impl From<Vec<String>> for CallStructure {
+    fn from(v: Vec<String>) -> CallStructure {
+        CallStructure {
+            name: None,
+            description: None,
+            calls: v,
+        }
+    }
+}
+
+impl From<CallStructure> for Vec<String> {
+    fn from(v: CallStructure) -> Vec<String> {
+        v.calls
+    }
+}
+
+impl Deref for CallStructure {
+    type Target = Vec<String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.calls
+    }
+}
+
+impl DerefMut for CallStructure {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.calls
     }
 }
 
@@ -641,7 +721,7 @@ impl RequestProcessor {
             .get(chain_name)
             .map(Clone::clone)
         {
-            for call in calls {
+            for call in calls.calls() {
                 if let Some(request_node) = self.request_chain.template_requests.get(&call) {
                     self.execute_request(request_node.clone()).await?;
                 }
@@ -873,7 +953,7 @@ mod tests {
 
         chain.call_structures.insert(
             "test_chain".to_string(),
-            vec!["test_node_1".to_string(), "test_node_2".to_string()],
+            vec!["test_node_1".to_string(), "test_node_2".to_string()].into(),
         );
 
         let serialized_chain = serde_json::to_string(&chain).unwrap();
@@ -924,8 +1004,8 @@ mod tests {
             vec!["request1".to_string(), "request2".to_string()],
         );
         assert_eq!(
-            chain.call_structures.get("test_chain").unwrap(),
-            &vec!["request1", "request2"]
+            chain.call_structures.get("test_chain").unwrap().calls(),
+            vec!["request1".to_string(), "request2".to_string()]
         );
     }
 
