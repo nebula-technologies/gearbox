@@ -372,6 +372,8 @@ pub extern crate uniffi_macros;
 pub extern crate web_sys;
 #[macro_use]
 pub extern crate derive_more;
+#[macro_use]
+pub extern crate gearbox_macros;
 
 // ## For Testing!
 #[cfg(test)]
@@ -409,6 +411,12 @@ pub use crate::log::syslog::macros::*;
 
 #[allow(unused_imports)]
 pub use crate::error::tracer::error_macro::*;
+
+pub mod macros {
+    pub mod loaders {
+        pub use gearbox_macros::load_consts;
+    }
+}
 
 pub mod externs {
 
