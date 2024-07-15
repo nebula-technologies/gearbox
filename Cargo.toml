@@ -1,6 +1,6 @@
 [package]
 name = "gearbox"
-version = "2.0.4"
+version = "2.0.5"
 edition = "2021"
 authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 description = "Excessive tooling for Rust, boosting productivity and operations"
@@ -139,6 +139,7 @@ chrono = "0.4.38"
 lazy_static = "1.5.0"
 erased-serde = "0.4.5"
 lock_api = "0.4.12"
+gearbox-macros = "0.0.1"
 
 
 ## These are mainly used for "Wasm32" implementations
