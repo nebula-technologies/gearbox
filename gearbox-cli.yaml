@@ -19,6 +19,13 @@ projects:
           commit: ~
           auto_clone: true
           action: Pull
+      clean-test-cov:
+        - name: custom_command
+          command: cargo
+          args:
+            - clean
+          dependency:
+            - test-cov
       test-cov:
         - name: custom_command
           command: cargo
@@ -26,7 +33,7 @@ projects:
             - test
           env:
             - name: CARGO_INCREMENTAL
-              value: '0'
+              value: '1'
             - name: RUSTFLAGS
               value: '-C link-dead-code -Cinstrument-coverage'
             - name: LLVM_PROFILE_FILE

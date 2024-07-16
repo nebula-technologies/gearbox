@@ -706,6 +706,16 @@ mod tests {
         let hyper_read_guard = lock.hyper_read();
         assert_eq!(*hyper_read_guard, 5);
     }
+
+    #[test]
+    fn doc_write_lock() {
+        let lock = RwArc::new(0);
+        {
+            let mut write_guard = lock.write();
+            *write_guard += 1;
+            println!("Write: {}", *write_guard);
+        }
+    }
 }
 
 #[cfg(target_arch = "wasm32")]

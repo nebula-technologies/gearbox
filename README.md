@@ -47,38 +47,38 @@ developers seeking to build efficient, scalable applications across a broad spec
 ## Test Status
 | File | Coverage Bar | Line Coverage | Lines Covered | Lines Total |
 |------|--------------|---------------|---------------|-------------|
-| src | ![](https://geps.dev/progress/0) | 0.0% | 0 | 2 |
 | src/collections/const_hash_map | ![](https://geps.dev/progress/0) | 0.0% | 0 | 240 |
 | src/collections/hash_map | ![](https://geps.dev/progress/26) | 25.76% | 51 | 198 |
-| src/collections/simple_linked_list | ![](https://geps.dev/progress/100) | 100.0% | 146 | 146 |
-| src/collections/vec_deque | ![](https://geps.dev/progress/96) | 96.02% | 193 | 201 |
-| src/common | ![](https://geps.dev/progress/91) | 91.3% | 21 | 23 |
-| src/error | ![](https://geps.dev/progress/35) | 35.14% | 13 | 37 |
-| src/error/tracer | ![](https://geps.dev/progress/41) | 41.47% | 265 | 639 |
-| src/log/fmt | ![](https://geps.dev/progress/36) | 36.42% | 409 | 1123 |
-| src/log/fmt/layer | ![](https://geps.dev/progress/0) | 0.0% | 0 | 130 |
-| src/log/syslog | ![](https://geps.dev/progress/100) | 100.0% | 166 | 166 |
-| src/net | ![](https://geps.dev/progress/74) | 74.29% | 52 | 70 |
-| src/net/http/request | ![](https://geps.dev/progress/42) | 42.33% | 527 | 1245 |
-| src/net/http/request/header | ![](https://geps.dev/progress/47) | 47.48% | 151 | 318 |
-| src/net/http/request_chaining | ![](https://geps.dev/progress/95) | 95.04% | 613 | 645 |
-| src/net/http/test | ![](https://geps.dev/progress/87) | 86.76% | 59 | 68 |
-| src/net/signature | ![](https://geps.dev/progress/83) | 83.3% | 404 | 485 |
-| src/rails/ext/blocking | ![](https://geps.dev/progress/33) | 32.71% | 174 | 532 |
-| src/rails/ext/future | ![](https://geps.dev/progress/98) | 98.49% | 718 | 729 |
-| src/rails/ext/future/ext/option | ![](https://geps.dev/progress/84) | 84.19% | 378 | 449 |
-| src/rails/ext/future/ext/result | ![](https://geps.dev/progress/81) | 80.98% | 315 | 389 |
-| src/rails/tracing | ![](https://geps.dev/progress/100) | 100.0% | 115 | 115 |
-| src/serde/dynamic | ![](https://geps.dev/progress/76) | 76.09% | 261 | 343 |
+| src/collections/simple_linked_list | ![](https://geps.dev/progress/100) | 100.0% | 138 | 138 |
+| src/collections/vec_deque | ![](https://geps.dev/progress/96) | 95.79% | 182 | 190 |
+| src/common | ![](https://geps.dev/progress/70) | 70.37% | 19 | 27 |
+| src/error | ![](https://geps.dev/progress/33) | 33.33% | 12 | 36 |
+| src/error/tracer | ![](https://geps.dev/progress/27) | 27.32% | 150 | 549 |
+| src/log/fmt | ![](https://geps.dev/progress/36) | 35.84% | 396 | 1105 |
+| src/log/fmt/layer | ![](https://geps.dev/progress/0) | 0.0% | 0 | 128 |
+| src/log/syslog | ![](https://geps.dev/progress/95) | 95.4% | 166 | 174 |
+| src/net | ![](https://geps.dev/progress/69) | 68.63% | 35 | 51 |
+| src/net/http/request | ![](https://geps.dev/progress/44) | 43.78% | 401 | 916 |
+| src/net/http/request/header | ![](https://geps.dev/progress/48) | 47.78% | 129 | 270 |
+| src/net/http/request_chaining | ![](https://geps.dev/progress/89) | 88.85% | 526 | 592 |
+| src/net/http/test | ![](https://geps.dev/progress/80) | 79.63% | 43 | 54 |
+| src/net/signature | ![](https://geps.dev/progress/85) | 85.17% | 333 | 391 |
+| src/rails/ext/blocking | ![](https://geps.dev/progress/31) | 30.52% | 159 | 521 |
+| src/rails/ext/future | ![](https://geps.dev/progress/98) | 97.57% | 643 | 659 |
+| src/rails/ext/future/ext/option | ![](https://geps.dev/progress/87) | 86.65% | 305 | 352 |
+| src/rails/ext/future/ext/result | ![](https://geps.dev/progress/83) | 82.57% | 270 | 327 |
+| src/rails/tracing | ![](https://geps.dev/progress/100) | 100.0% | 113 | 113 |
+| src/serde/dynamic | ![](https://geps.dev/progress/75) | 75.38% | 251 | 333 |
 | src/serde/dynamic/test | ![](https://geps.dev/progress/15) | 14.71% | 5 | 34 |
 | src/storage | ![](https://geps.dev/progress/0) | 0.0% | 0 | 39 |
-| src/storage/io/file | ![](https://geps.dev/progress/58) | 58.44% | 180 | 308 |
-| src/sync | ![](https://geps.dev/progress/81) | 81.15% | 538 | 663 |
-| src/task | ![](https://geps.dev/progress/97) | 96.84% | 306 | 316 |
-| src/task/multicommand | ![](https://geps.dev/progress/63) | 62.64% | 114 | 182 |
-| src/template | ![](https://geps.dev/progress/84) | 84.38% | 281 | 333 |
-| src/template/pipelines | ![](https://geps.dev/progress/81) | 81.16% | 56 | 69 |
-| src/time | ![](https://geps.dev/progress/47) | 47.11% | 1116 | 2369 |
+| src/storage/io/file | ![](https://geps.dev/progress/57) | 57.39% | 163 | 284 |
+| src/sync | ![](https://geps.dev/progress/100) | 100.0% | 6 | 6 |
+| src/sync/rw_arc | ![](https://geps.dev/progress/75) | 74.82% | 523 | 699 |
+| src/task | ![](https://geps.dev/progress/97) | 96.74% | 297 | 307 |
+| src/task/multicommand | ![](https://geps.dev/progress/62) | 62.05% | 103 | 166 |
+| src/template | ![](https://geps.dev/progress/83) | 83.16% | 242 | 291 |
+| src/template/pipelines | ![](https://geps.dev/progress/80) | 80.3% | 53 | 66 |
+| src/time | ![](https://geps.dev/progress/48) | 47.66% | 1029 | 2159 |
 
 
 
@@ -377,119 +377,6 @@ assert_eq!(b64_nonce, cal_sign.sign());
 > Using nonce_lock will lock the nonce until the next signing, as soon as a signing has happened the lock will be removed!
 > Also running the lock multiple times will force the signature generator to create new nonce values.
 
-
-
-## Dynamic Serialization/Deserialization (gearbox::serde::dynamic)
-Simple serde is as its said, a simplified implementation of multiple repositories for
-serialization and deserialization.
-
-In Short the goal is to have a single tool for serialization and deserialization, with a common
-interface.
-
-### Usage
-Simple Serde uses `.encode` and `.decode` for encoding and decoding. Decode can be done on any
-`Vec<u8>` or `&[u8]` this allows for the cleanest implementation.
-The same goes for anything that needs to be serialized/encoded. Any type that implements the
-`#[derive(Serialize)]` can easily be encoded using `.encode`
-
-### Encode/Decode
-`.encode` and `.decode` both takes a `ContentType` which defines what you are encoding/decoding
-from/to.
-an example would be `[some Vec<u8>].decode("bson")` or `my_struct.encode("bson")`.
-This is possible as `ContentType` implements the `TryFrom` trait for `&str`, `String`.
-In case the implementation is unable to decode what type you are trying to encode/decode from/to
-an `Err` result with `Error::UnknownContentTypeMatchFromStr` will be returned from the
-encoder/decoder
-
-Anything coming out of the encoder will be of type `Vec<u8>` further the `Vec<u8>` is wrapped in
-a struct called `Encoded` this allow for further simplifications on implementation like,
-`TryToString` which will automatically try to convert `Encoded` to a `String`, in addition
-`Encoded` had implemented the `Deref` and `DerefMut` traits to make it easier to gain access to
-encapsulated data.
-
-### Supported formats
-- Bson
-- Cbor
-- FlexBuffers
-- Json
-- Json5
-- Lexpr
-- MessagePack
-- Pickle
-- Postcard
-- Ron
-- Toml
-- Url
-- Yaml
-- Xml (Awaiting serde-xml-rs v. >0.51)
-
-further all string definitions of `ContentType` is case insensitive, and has an alternate
-- `application/[format]`
-- `application/x-[format]`
-
-### Serialization/Encode example
-```rust
-use core::ops::Deref;
-use serde::Serialize;
-#[macro_use]
-use serde_derive;
-use gearbox::serde::dynamic::{Encoded, SimpleEncoder, TryToString};
-
-#[derive(Serialize)]
-struct Foo {
-    bar: String,
-}
-
-let my_foo = Foo {
-  bar: "foobar".to_string(),
-};
-
-let encoded: Encoded = my_foo
-  .encode("yaml")
-  .expect("Should have been encoded in yaml");
-
-assert_eq!(
-    &vec![98, 97, 114, 58, 32, 102, 111, 111, 98, 97, 114, 10],
-    encoded.deref()
-);
-assert_eq!(r#"bar: foobar
-"#, encoded.try_to_string().unwrap())
-```
-
-### Deserialization/Decode example
-```rust
-use core::ops::Deref;
-use serde::Deserialize;
-#[macro_use]
-use serde_derive;
-use gearbox::serde::dynamic::{Decoded, SimpleDecoder};
-
-#[derive(Deserialize, Debug, PartialEq)]
-struct Foo {
-    bar: String,
-}
-
-let my_foo = Foo {
-  bar: "foobar".to_string(),
-};
-
-let v_u8_data = &vec![45, 45, 45, 10, 98, 97, 114, 58, 32, 102, 111, 111, 98, 97, 114, 10];
-let string_data = r#"---
-bar: foobar
-"#;
-
-let decoded_from_v_u8: Decoded<Foo> = v_u8_data.decode("yaml").expect("Should have decoded the Vec<u8>");
-let decoded_from_string: Decoded<Foo> = string_data.decode("yaml").expect("Should have decoded the String");
-
-assert_eq!(
-    Foo{bar: "foobar".to_string()},
-    decoded_from_v_u8.into()
-);
-assert_eq!(
-    Foo{bar: "foobar".to_string()},
-    decoded_from_string.into()
-);
-```
 
 
 ## Railway Future extension (gearbox::rails::ext::future)
@@ -950,6 +837,478 @@ assert_eq!(res.await, Ok(15));
 ```
 
 
+## Dynamic Serialization/Deserialization (gearbox::serde::dynamic)
+Simple serde is as its said, a simplified implementation of multiple repositories for
+serialization and deserialization.
+
+In Short the goal is to have a single tool for serialization and deserialization, with a common
+interface.
+
+### Usage
+Simple Serde uses `.encode` and `.decode` for encoding and decoding. Decode can be done on any
+`Vec<u8>` or `&[u8]` this allows for the cleanest implementation.
+The same goes for anything that needs to be serialized/encoded. Any type that implements the
+`#[derive(Serialize)]` can easily be encoded using `.encode`
+
+### Encode/Decode
+`.encode` and `.decode` both takes a `ContentType` which defines what you are encoding/decoding
+from/to.
+an example would be `[some Vec<u8>].decode("bson")` or `my_struct.encode("bson")`.
+This is possible as `ContentType` implements the `TryFrom` trait for `&str`, `String`.
+In case the implementation is unable to decode what type you are trying to encode/decode from/to
+an `Err` result with `Error::UnknownContentTypeMatchFromStr` will be returned from the
+encoder/decoder
+
+Anything coming out of the encoder will be of type `Vec<u8>` further the `Vec<u8>` is wrapped in
+a struct called `Encoded` this allow for further simplifications on implementation like,
+`TryToString` which will automatically try to convert `Encoded` to a `String`, in addition
+`Encoded` had implemented the `Deref` and `DerefMut` traits to make it easier to gain access to
+encapsulated data.
+
+### Supported formats
+- Bson
+- Cbor
+- FlexBuffers
+- Json
+- Json5
+- Lexpr
+- MessagePack
+- Pickle
+- Postcard
+- Ron
+- Toml
+- Url
+- Yaml
+- Xml (Awaiting serde-xml-rs v. >0.51)
+
+further all string definitions of `ContentType` is case insensitive, and has an alternate
+- `application/[format]`
+- `application/x-[format]`
+
+### Serialization/Encode example
+```rust
+use core::ops::Deref;
+use serde::Serialize;
+#[macro_use]
+use serde_derive;
+use gearbox::serde::dynamic::{Encoded, SimpleEncoder, TryToString};
+
+#[derive(Serialize)]
+struct Foo {
+    bar: String,
+}
+
+let my_foo = Foo {
+  bar: "foobar".to_string(),
+};
+
+let encoded: Encoded = my_foo
+  .encode("yaml")
+  .expect("Should have been encoded in yaml");
+
+assert_eq!(
+    &vec![98, 97, 114, 58, 32, 102, 111, 111, 98, 97, 114, 10],
+    encoded.deref()
+);
+assert_eq!(r#"bar: foobar
+"#, encoded.try_to_string().unwrap())
+```
+
+### Deserialization/Decode example
+```rust
+use core::ops::Deref;
+use serde::Deserialize;
+#[macro_use]
+use serde_derive;
+use gearbox::serde::dynamic::{Decoded, SimpleDecoder};
+
+#[derive(Deserialize, Debug, PartialEq)]
+struct Foo {
+    bar: String,
+}
+
+let my_foo = Foo {
+  bar: "foobar".to_string(),
+};
+
+let v_u8_data = &vec![45, 45, 45, 10, 98, 97, 114, 58, 32, 102, 111, 111, 98, 97, 114, 10];
+let string_data = r#"---
+bar: foobar
+"#;
+
+let decoded_from_v_u8: Decoded<Foo> = v_u8_data.decode("yaml").expect("Should have decoded the Vec<u8>");
+let decoded_from_string: Decoded<Foo> = string_data.decode("yaml").expect("Should have decoded the String");
+
+assert_eq!(
+    Foo{bar: "foobar".to_string()},
+    decoded_from_v_u8.into()
+);
+assert_eq!(
+    Foo{bar: "foobar".to_string()},
+    decoded_from_string.into()
+);
+```
+
+
+## RwArc (gearbox::sync::rw_arc)
+The `rw_arc` module provides a robust and flexible mechanism for handling concurrent data access in Rust, allowing either multiple readers or a single writer to access the data. This module is designed to provide high performance and safety in multi-threaded environments. It includes various structures such as `ReadArc`, `DetachedArc`, `HyperWriteArc`, `UpgradableArc`, and `WriteArc`, each tailored for specific concurrent access patterns. It combines the functionality of `Arc` and `RwLock` while avoiding the constraints of lifetimes, offering more versatility and some inherent risks.
+
+### Overview
+
+#### Features
+
+- **Reader-Writer Locks**: Allows multiple readers or a single writer to access the data, ensuring efficient data access without contention.
+- **Upgradeable Locks**: Enables a lock to be upgraded from read to write access, allowing more flexible and efficient lock management.
+- **DetachedArcs**: Provides a way to create detached instances of locks that can be later attached to the main lock, enabling flexible lock management across different contexts.
+- **HyperLocks (Write-on-Destruct)**: Efficient write operations that ensure data is written back to the main storage upon destruction, optimizing for cases where write operations are deferred.
+
+#### Benefits and Risks
+
+- **Versatility**: By combining the features of `Arc` and `RwLock`, `rw_arc` allows for cross-clones and other operations that are not constrained by lifetimes. This increases the flexibility of concurrent programming.
+- **Danger**: The absence of lifetime constraints can make the `rw_arc` module more dangerous to use, as it relies on manual guarantees of safety that are normally enforced by the Rust compiler's borrow checker.
+
+### Architecture
+
+```mermaid
+graph TD;
+    RwArc -->|Has| RwArcInner;
+    RwArcInner -->|Contains| Arc;
+    Arc -->|References| Data;
+    RwArc -->|Provides| ReadArc;
+    RwArc -->|Provides| WriteArc;
+    RwArc -->|Provides| UpgradableArc;
+    RwArc -->|Provides| DetachedArc;
+    RwArc -->|Provides| HyperReadArc;
+    RwArc -->|Provides| HyperWriteArc;
+```
+
+### Usage Example
+
+```rust
+use gearbox::sync::rw_arc::RwArc;
+use std::sync::Arc;
+
+let lock: RwArc<i32> = RwArc::new(0);
+
+// Read access
+{
+    let read_guard = lock.read();
+    println!("Read: {}", *read_guard);
+}
+
+// Write access
+{
+    let mut write_guard = lock.write();
+    *write_guard += 1;
+    println!("Write: {}", *write_guard);
+}
+
+// Upgradeable read//!
+{
+    let upgradable_guard = lock.upgradeable_read();
+    let write_guard = upgradable_guard.upgrade();
+    println!("Upgradeable to Write: {}", *write_guard);
+}
+
+```
+
+### Detailed Descriptions
+
+#### `ReadArc`
+A read-only lock guard that allows multiple concurrent readers. Even if the underlying data is dropped, `ReadArc` will continue to hold the data, making it a true clone of the existing data.
+
+##### Example
+```rust
+use gearbox::sync::rw_arc::RwArc;
+use std::sync::Arc;
+
+let lock : RwArc<i32>= RwArc::new(0);
+
+let read_arc = lock.read();
+println!("ReadArc value: {}", *read_arc);
+```
+
+#### `DetachedArc`
+A detached lock guard that can be attached to an existing `RwArc`. This allows for flexible lock management where locks can be created and attached later.
+
+##### Example
+```rust
+use gearbox::sync::rw_arc::{DetachedArc, RwArc};
+
+let rw_arc: RwArc<i32> = RwArc::new(10);
+let detached_arc = DetachedArc::new(20);
+
+if let Some(read_arc) = detached_arc.attach_read(&rw_arc) {
+    println!("Attached ReadArc value: {}", *read_arc);
+}
+```
+
+#### `HyperWriteArc`
+A write lock guard that ensures data written is properly stored back into the main data structure upon destruction. This is known as Write-on-Destruct (WOD) and is designed for efficient deferred write operations.
+
+##### Example
+```rust
+use gearbox::sync::rw_arc::RwArc;
+
+let lock: RwArc<i32> = RwArc::new(5);
+{
+    let mut hyper_write_guard = lock.hyper_write();
+    *hyper_write_guard = 10;
+}
+{
+    let read_guard = lock.read();
+    assert_eq!(*read_guard, 10);
+}
+```
+
+#### `UpgradableArc`
+An upgradable read lock guard that can be upgraded to a write lock, allowing more flexible and efficient lock management.
+
+##### Example
+```rust
+use gearbox::sync::rw_arc::RwArc;
+
+let lock: RwArc<i32> = RwArc::new(5);
+{
+    let upgradable_guard = lock.upgradeable_read();
+    let write_guard = upgradable_guard.upgrade();
+    assert_eq!(*write_guard, 5);
+}
+{
+    let read_guard = lock.read();
+    assert_eq!(*read_guard, 5);
+}
+```
+
+#### `WriteArc`
+A write lock guard that allows modifying the data while ensuring that the modifications are safely committed.
+
+##### Example
+```rust
+use gearbox::sync::rw_arc::RwArc;
+
+let lock: RwArc<i32> = RwArc::new(0);
+{
+    let mut write_guard = lock.write();
+    *write_guard += 1;
+    println!("Write: {}", *write_guard);
+}
+```
+
+
+
+## RwArc (gearbox::template)
+### Description:
+The `template` module provides a robust and flexible mechanism for rendering templates in Rust, allowing dynamic content insertion and transformation through pipelines. This module is designed to provide high performance and safety in template rendering and data transformation. It includes various structures such as `TemplateEngine`, `TemplateContext`, `PipelineManager`, `DatePipeline`, and `PrefixPipeline`, each tailored for specific templating patterns. It combines the functionality of a template parser and a pipeline manager, offering versatility and simplicity in template rendering.
+
+### Features
+
+- **TemplateEngine**: Responsible for rendering templates using context data and applying pipelines for data transformations.
+- **TemplateContext**: Manages the context data for templates, allowing dynamic insertion and retrieval of values.
+- **PipelineManager**: Manages the available pipelines for data transformation, supporting default and custom pipelines.
+- **DatePipeline**: A pipeline for formatting dates.
+- **PrefixPipeline**: A pipeline for prefixing strings.
+
+### Benefits and Risks
+
+- **Versatility**: The module's flexibility enhances development by allowing dynamic template rendering and easy extension with custom pipelines.
+- **Danger**: Potential risks include improper pipeline usage and performance overhead from locking mechanisms in multithreaded environments.
+
+### Thread Safety
+
+The `TemplateEngine` and its associated components use atomic operations and locking mechanisms for thread safety. The `Mutex` used for `PIPELINES` ensures safe concurrent access, though it may introduce performance overhead.
+
+### Breaking Cycles with Weak References
+
+The module does not directly use weak references but employs `Mutex` for safe concurrent access to shared resources.
+
+### Cloning References
+
+Creating a new reference from an existing template engine or context is done using the `Clone` trait implemented for `TemplateEngine` and `TemplateContext`.
+
+```rust
+use gearbox::template::{TemplateEngine, TemplateContext};
+
+let engine = TemplateEngine::new();
+let engine_clone = engine.clone();
+let context = TemplateContext::new();
+let context_clone = context.clone();
+```
+
+### Deref Behavior
+
+`TemplateContext` provides direct access to its internal `HashMap` for managing context variables, allowing easy insertion and retrieval of values.
+
+### Usage Examples
+
+**Sharing Some Immutable Data Between Threads**
+
+```rust
+use gearbox::template::{TemplateEngine, TemplateContext};
+use std::thread;
+
+let engine = TemplateEngine::new();
+let mut context = TemplateContext::new();
+context.insert("name", Box::new("World".to_string()));
+
+for _ in 0..10 {
+    let engine = engine.clone();
+    let context = context.clone();
+
+    thread::spawn(move || {
+        let result = engine.render("Hello, {{ name }}!", &context).unwrap();
+        println!("{}", result);
+    });
+}
+```
+
+#### Sharing a Mutable Atomic Value
+
+```rust
+use gearbox::template::{TemplateEngine, TemplateContext};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::thread;
+
+let engine = TemplateEngine::new();
+let val = Arc::new(AtomicUsize::new(5));
+
+for _ in 0..10 {
+    let val = Arc::clone(&val);
+
+    thread::spawn(move || {
+        let v = val.fetch_add(1, Ordering::Relaxed);
+        println!("{}", v);
+    });
+}
+```
+
+### Detailed Descriptions
+
+#### TemplateEngine
+
+The `TemplateEngine` structure is the core of the `template` module. It is responsible for rendering templates by applying context data and utilizing pipelines for data transformation. The `TemplateEngine` maintains a `PipelineManager` which holds all available pipelines.
+
+- **Fields**:
+  - `pipelines`: A `PipelineManager` instance that manages all registered pipelines.
+
+- **Methods**:
+  - `new() -> Self`: Creates a new `TemplateEngine` instance with default pipelines.
+  - `get_pipelines_default() -> PipelineManager`: Returns the default set of pipelines.
+  - `update_pipeline<P: Pipeline + Send + Sync + 'static>(name: &str, pipeline: P)`: Updates or adds a pipeline with the specified name.
+  - `get_pipeline(name: &str) -> Option<Box<dyn Pipeline + Send + Sync>>`: Retrieves a specific pipeline by name.
+  - `get_pipelines() -> PipelineManager`: Retrieves all available pipelines.
+  - `render(&self, template: &str, context: &TemplateContext) -> Result<String, DynTracerError>`: Renders a template using the provided context.
+
+```rust
+use gearbox::template::{TemplateEngine, TemplateContext};
+
+let engine = TemplateEngine::new();
+let mut context = TemplateContext::new();
+context.insert("name", Box::new("World".to_string()));
+
+let result = engine.render("Hello, {{ name }}!", &context).unwrap();
+assert_eq!(result, "Hello, World!");
+```
+
+#### TemplateContext
+
+The `TemplateContext` structure manages the context data used in templates. It allows for dynamic insertion and retrieval of values.
+
+- **Fields**:
+  - `variables`: A `HashMap` that stores the context variables.
+
+- **Methods**:
+  - `new() -> Self`: Creates a new `TemplateContext` instance.
+  - `insert(&mut self, key: &str, value: Box<dyn PipelineValue + Send + Sync>)`: Inserts a new context variable.
+  - `get(&self, key: &str) -> Option<&Box<dyn PipelineValue + Send + Sync>>`: Retrieves a context variable by key.
+
+```rust
+use gearbox::template::TemplateContext;
+
+let mut context = TemplateContext::new();
+context.insert("key", Box::new("value".to_string()));
+println!("TemplateContext value: {}", context.get("key").unwrap());
+```
+
+#### PipelineManager
+
+The `PipelineManager` structure manages the available pipelines for data transformation.
+
+- **Fields**:
+  - `0`: A `HashMap` that stores the pipelines.
+
+- **Methods**:
+  - Implements `Deref` and `DerefMut` traits to provide access to the internal `HashMap`.
+  - Implements `Clone` trait to allow cloning of the `PipelineManager` along with its pipelines.
+
+```rust
+use gearbox::template::{PipelineManager, pipelines::DatePipeline, Pipeline};
+
+let mut manager = PipelineManager::default();
+manager.insert("date".to_string(), DatePipeline::new().boxed_clone());
+println!("PipelineManager contains date pipeline: {}", manager.contains_key("date"));
+```
+
+#### DatePipeline
+
+The `DatePipeline` structure is a pipeline for formatting dates. It implements the `Pipeline` trait.
+
+- **Fields**:
+  - `format`: A `String` that stores the date format.
+
+- **Methods**:
+  - `new() -> Self`: Creates a new `DatePipeline` with a default format.
+  - `format(&self, pipe_object: &Box<dyn PipelineValue + Send + Sync>) -> Box<dyn PipelineValue + Send + Sync>`: Formats the input value using the pipeline's transformation.
+  - `options(&self, options: &str) -> Box<dyn Pipeline + Send + Sync>`: Creates a new instance of the pipeline with the specified options.
+  - `boxed_clone(&self) -> Box<dyn Pipeline + Send + Sync>`: Clones the pipeline into a boxed instance.
+
+```rust
+use gearbox::template::{Pipeline, pipelines::DatePipeline, PipelineValue};
+use gearbox::time::DateTime;
+
+let date_pipeline = DatePipeline::new();
+let date = DateTime::from_date(2024, 7, 1);
+let value: Box<(dyn PipelineValue + Send + Sync + 'static)> = Box::new(date);
+let formatted = date_pipeline.format(&value);
+println!("Formatted date: {}", formatted);
+```
+
+#### PrefixPipeline
+
+The `PrefixPipeline` structure is a pipeline for prefixing strings. It implements the `Pipeline` trait.
+
+- **Fields**:
+  - `prefix`: A `String` that stores the prefix.
+
+- **Methods**:
+  - `new() -> Self`: Creates a new `PrefixPipeline` with a default prefix.
+  - `format(&self, pipe_object: &Box<dyn PipelineValue + Send + Sync>) -> Box<dyn PipelineValue + Send + Sync>`: Formats the input value using the pipeline's transformation.
+  - `options(&self, options: &str) -> Box<dyn Pipeline + Send + Sync>`: Creates a new instance of the pipeline with the specified options.
+  - `boxed_clone(&self) -> Box<dyn Pipeline + Send + Sync>`: Clones the pipeline into a boxed instance.
+
+```rust
+use gearbox::template::{Pipeline, pipelines::PrefixPipeline, PipelineValue};
+
+let prefix_pipeline = PrefixPipeline::new();
+let value: Box<(dyn PipelineValue + Send + Sync + 'static)> = Box::new("value".to_string());
+let prefixed = prefix_pipeline.format(&value);
+println!("Prefixed value: {}", prefixed);
+```
+
+### Architectural Diagram
+
+```mermaid
+graph TD;
+    TemplateEngine -->|Uses| PipelineManager;
+    PipelineManager -->|Contains| DatePipeline;
+    PipelineManager -->|Contains| PrefixPipeline;
+    TemplateEngine -->|Uses| TemplateContext;
+    TemplateContext -->|Contains| Variables;
+    TemplateEngine -->|Uses| Pipelines;
+```
+
+
 ### TODO
 
 - [ ] ( gearbox::log::* ) Clean up Log fmt/syslog, some of the code can be combined and cleaned up a bit better, also the formatter supports syslog, and bunyan, this should probably be cleared up a bit more, and separated better.
@@ -959,6 +1318,6 @@ assert_eq!(res.await, Ok(15));
 
 
 
-Current version: 2.0.0
+Current version: 3.0.0
 
 License: MIT
