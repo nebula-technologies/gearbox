@@ -5,7 +5,7 @@ use crate::log::fmt::storage::Storage;
 use alloc::{string::String, vec::Vec};
 use core::fmt;
 use core::marker::PhantomData;
-use core::{result::Result};
+use core::result::Result;
 use hashbrown::HashMap;
 use std::io::Write;
 use tracing::span::Attributes;
@@ -17,6 +17,8 @@ use tracing_subscriber::Layer;
 const TRACING_COMMON: &'static str = "tracing-log.";
 #[allow(unused)]
 const TRACING_OVERWRITES: &'static str = "tracing-log.overwrites.";
+
+pub enum Error {}
 
 pub struct LogLayer<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> {
     make_writer: W,
@@ -37,7 +39,6 @@ impl<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> LogLayer<W,
         make_writer: W,
         _default_fields: HashMap<String, LogValue>,
     ) -> Self {
-        println!("PROCESS ID: {}", std::process::id());
         #[cfg(all(any(unix, windows), feature = "std"))]
         let hostname = Option::from(
             crate::net::hostname::gethostname()
@@ -51,8 +52,8 @@ impl<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> LogLayer<W,
         Self {
             make_writer,
             version: Option::from(1),
-            proc_id: Option::from(std::process::id()),
-            hostname: hostname,
+            proc_id: Option::from(crate::common::process::id()),
+            hostname,
             application: name.or_else(|| get_exec_name()),
             phantom: Default::default(),
         }

@@ -289,11 +289,17 @@
 //! ([docs: gearbox::net::signature](./src/net/signature/mod.rs))
 //!
 //!
+//! # Railway Future extension (gearbox::rails::ext::future)
+//! ([docs: gearbox::serde::dynamic](./src/rails/ext/future/mod.rs))
+//!
 //! # Dynamic Serialization/Deserialization (gearbox::serde::dynamic)
 //! ([docs: gearbox::serde::dynamic](./src/serde/dynamic/mod.rs))
 //!
-//! # Railway Future extension (gearbox::rails::ext::future)
-//! ([docs: gearbox::serde::dynamic](./src/rails/ext/future/mod.rs))
+//! # RwArc (gearbox::sync::rw_arc)
+//! ([docs: gearbox::sync::rw_arc](./src/sync/rw_arc/mod.rs))
+//!
+//! # RwArc (gearbox::template)
+//! ([docs: gearbox::template](./src/template/mod.rs))
 //!
 //! ## TODO
 //!
@@ -419,6 +425,11 @@ pub mod macros {
 }
 
 pub mod externs {
+
+    pub mod collections {
+        pub use hashbrown::HashMap;
+        pub use hashbrown::HashSet;
+    }
 
     #[cfg(target_arch = "wasm32")]
     pub mod wasm_bindgen {

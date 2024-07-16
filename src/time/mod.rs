@@ -4,6 +4,7 @@ mod constants_utils;
 mod date_time;
 mod duration;
 mod error;
+mod seconds_format;
 mod utils;
 
 pub use constants::{
@@ -17,6 +18,7 @@ use crate::error_info;
 pub use date_time::DateTime;
 pub use duration::Duration;
 pub use error::Error;
+pub use seconds_format::SecondsFormat;
 
 use crate::rails::ext::syn::RailsMapErrTracer;
 #[cfg(feature = "std")]
