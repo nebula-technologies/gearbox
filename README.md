@@ -1317,6 +1317,6 @@ graph TD;
 
 
 
-Current version: 2.0.6
+Current version: 3.0.0
 
 License: MIT
