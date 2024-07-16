@@ -9,7 +9,7 @@ use crate::time::utils::{days_in_month, is_leap_year};
 
 use crate::template::PipelineValue;
 use crate::time::constants_utils::{Mdf, YearFlags};
-use crate::time::{utils, TimeNow};
+use crate::time::{utils, SecondsFormat, TimeNow};
 use alloc::{
     format,
     string::{String, ToString},
@@ -103,6 +103,38 @@ impl DateTime {
             time: duration.into(),
             zone: Duration::zero(),
             cache: Default::default(),
+        }
+    }
+
+    /// Constructs a new `DateTime` object representing the current time if std feature else zero.
+    ///
+    /// This function retrieves the system time, calculates the duration since the UNIX epoch,
+    /// and initializes the `time` field with this duration. The `zone` is set to zero, and the cache is empty.
+    /// If std feature is not available it will return 0 time, this is for allowing a unification
+    /// when either std or no-std is used. In short this remove possible gating of code in other places
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gearbox::time::DateTime;
+    ///
+    /// let now = DateTime::now();
+    /// println!("Current DateTime: {:?}", now);
+    /// ```
+    pub fn now_or_zero() -> Self {
+        #[cfg(not(feature = "std"))]
+        {
+            Self::default()
+        }
+        #[cfg(feature = "std")]
+        {
+            let system_time = SystemTime::now();
+            let duration = system_time.duration_since(UNIX_EPOCH).unwrap();
+            Self {
+                time: duration.into(),
+                zone: Duration::zero(),
+                cache: Default::default(),
+            }
         }
     }
 
@@ -1405,6 +1437,56 @@ impl DateTime {
         format!(
             "{}-{}-{}T{}:{}:{}{}",
             year, month, day, hour, minute, second, zone
+        )
+    }
+
+    /// Formats the date and time to the RFC 3339 standard, commonly used in internet protocols.
+    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds formatted as per SecondsFormat.
+    ///
+    /// If use_z is true and the timezone is UTC (offset 0), uses Z else it will use the full timezone
+    ///
+    /// # Returns
+    /// * `String`: The formatted date and time as a string in RFC 3339 format.
+    ///
+    /// # Example
+    /// ```rust
+    /// use gearbox::time::*;
+    ///
+    /// let dt = DateTime::new();
+    /// assert_eq!(dt.to_rfc3339(), "1970-01-01T00:00:00Z");
+    /// ```
+    pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
+        let year = self.year();
+        let month = format!("{:02}", self.month());
+        let day = format!("{:02}", self.day_of_month());
+        let hour = format!("{:02}", self.hour());
+        let minute = format!("{:02}", self.minute());
+        let second = format!("{:02}", self.second());
+
+        let subsecond = match secform {
+            SecondsFormat::Secs => String::new(),
+            SecondsFormat::Millis => format!(".{:03}", self.millisecond()),
+            SecondsFormat::Micros => format!(".{:06}", self.microsecond()),
+            SecondsFormat::Nanos => format!(".{:09}", self.nanosecond()),
+        };
+
+        let zone = if use_z && self.timezone().as_secs() == 0 {
+            "Z".to_string()
+        } else {
+            let zone_total_seconds = self.timezone().as_secs().abs();
+            let zone_hours = zone_total_seconds / 3600;
+            let zone_minutes = (zone_total_seconds % 3600) / 60;
+            let zone_sign = if self.timezone().is_negative() {
+                "-"
+            } else {
+                "+"
+            };
+            format!("{}{:02}:{:02}", zone_sign, zone_hours, zone_minutes)
+        };
+
+        format!(
+            "{}-{}-{}T{}:{}:{}{}{}",
+            year, month, day, hour, minute, second, subsecond, zone
         )
     }
 

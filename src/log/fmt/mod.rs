@@ -12,8 +12,15 @@ pub mod value;
 use alloc::string::String;
 
 pub fn get_exec_name() -> Option<String> {
-    std::env::current_exe()
-        .ok()
-        .and_then(|pb| pb.file_name().map(|s| s.to_os_string()))
-        .and_then(|s| s.into_string().ok())
+    #[cfg(feature = "std")]
+    {
+        std::env::current_exe()
+            .ok()
+            .and_then(|pb| pb.file_name().map(|s| s.to_os_string()))
+            .and_then(|s| s.into_string().ok())
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        None
+    }
 }

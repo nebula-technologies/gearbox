@@ -2,16 +2,12 @@ use crate::log::fmt::formatter::LogFormatter;
 use crate::log::fmt::log_layer::{LogLayer, Type};
 use crate::log::fmt::log_value::LogValue;
 use crate::log::fmt::storage::Storage;
-use core::fmt;
+use crate::time::{DateTime, SecondsFormat};
 use hashbrown::HashMap;
 use serde::ser::{SerializeMap, Serializer};
-use serde_json::Value;
-use std::io::Write;
-use tracing::{log, Event, Id, Level, Subscriber};
+use tracing::{Event, Id, Level, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
-use tracing_subscriber::layer::Context;
 use tracing_subscriber::registry::{LookupSpan, SpanRef};
-use tracing_subscriber::Layer;
 
 /// Keys for core fields of the Bunyan format (https://github.com/trentm/node-bunyan#core-fields)
 const BUNYAN_VERSION: &str = "v";
@@ -58,8 +54,10 @@ impl Bunyan {
     pub fn with_default_fields(name: String, default_fields: HashMap<String, LogValue>) -> Self {
         Self {
             name,
-            pid: core::process::id(),
-            hostname: gethostname::gethostname().to_string_lossy().into_owned(),
+            pid: crate::common::process::id(),
+            hostname: crate::common::hostname::gethostname()
+                .to_string_lossy()
+                .into_owned(),
             bunyan_version: 0,
             default_fields,
         }
@@ -79,7 +77,7 @@ impl Bunyan {
         map_serializer.serialize_entry(PID, &self.pid)?;
         map_serializer.serialize_entry(
             TIME,
-            &Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true),
+            &DateTime::now_or_zero().to_rfc3339_opts(SecondsFormat::Millis, true),
         )?;
         Ok(())
     }
