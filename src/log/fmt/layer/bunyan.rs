@@ -55,7 +55,7 @@ impl Bunyan {
         Self {
             name,
             pid: crate::common::process::id(),
-            hostname: crate::common::hostname::gethostname()
+            hostname: crate::net::hostname::gethostname()
                 .to_string_lossy()
                 .into_owned(),
             bunyan_version: 0,

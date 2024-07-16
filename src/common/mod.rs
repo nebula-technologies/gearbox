@@ -1,5 +1,4 @@
 pub mod boxed_future;
-pub mod hostname;
 pub mod process;
 pub mod try_default;
 

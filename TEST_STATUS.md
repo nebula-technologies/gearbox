@@ -4,12 +4,13 @@
 | src/collections/hash_map | ![](https://geps.dev/progress/26) | 25.76% | 51 | 198 |
 | src/collections/simple_linked_list | ![](https://geps.dev/progress/100) | 100.0% | 138 | 138 |
 | src/collections/vec_deque | ![](https://geps.dev/progress/96) | 95.79% | 182 | 190 |
-| src/common | ![](https://geps.dev/progress/69) | 69.23% | 54 | 78 |
+| src/common | ![](https://geps.dev/progress/70) | 70.37% | 19 | 27 |
 | src/error | ![](https://geps.dev/progress/33) | 33.33% | 12 | 36 |
 | src/error/tracer | ![](https://geps.dev/progress/27) | 27.32% | 150 | 549 |
 | src/log/fmt | ![](https://geps.dev/progress/36) | 35.84% | 396 | 1105 |
 | src/log/fmt/layer | ![](https://geps.dev/progress/0) | 0.0% | 0 | 128 |
 | src/log/syslog | ![](https://geps.dev/progress/95) | 95.4% | 166 | 174 |
+| src/net | ![](https://geps.dev/progress/69) | 68.63% | 35 | 51 |
 | src/net/http/request | ![](https://geps.dev/progress/44) | 43.78% | 401 | 916 |
 | src/net/http/request/header | ![](https://geps.dev/progress/48) | 47.78% | 129 | 270 |
 | src/net/http/request_chaining | ![](https://geps.dev/progress/89) | 88.85% | 526 | 592 |

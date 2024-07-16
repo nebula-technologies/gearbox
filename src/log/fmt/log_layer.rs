@@ -41,7 +41,7 @@ impl<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> LogLayer<W,
     ) -> Self {
         #[cfg(all(any(unix, windows), feature = "std"))]
         let hostname = Option::from(
-            crate::common::hostname::gethostname()
+            crate::net::hostname::gethostname()
                 .to_string_lossy()
                 .into_owned(),
         );
