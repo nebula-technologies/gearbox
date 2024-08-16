@@ -21,14 +21,13 @@ projects:
           action: Pull
       clean:
         - name: custom_command
-            command: cargo
-            args:
-              - clean
+          command: cargo
+          args:
+            - clean
       clean-test-cov:
         - name: custom_command
           command: sleep 
-          args: 
-            - "1"
+          args: ["1"]
           dependency:
             - project: gearbox
               task: clean
