@@ -19,13 +19,21 @@ projects:
           commit: ~
           auto_clone: true
           action: Pull
+      clean:
+        - name: custom_command
+            command: cargo
+            args:
+              - clean
       clean-test-cov:
         - name: custom_command
-          command: cargo
-          args:
-            - clean
+          command: sleep 
+          args: 
+            - "1"
           dependency:
-            - test-cov
+            - project: gearbox
+              task: clean
+            - project: gearbox
+              task: test-cov
       test-cov:
         - name: custom_command
           command: cargo
