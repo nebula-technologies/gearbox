@@ -24,7 +24,7 @@ path = "src/lib.rs"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = ["web", "http-request", "common-dirs", "syslog-macro", "http-request-chaining", "serde-dynamic-defaults", "net-signature", "std", "type-registry"]
+default = ["web", "http-request", "common-dirs", "syslog-macro", "http-request-chaining", "serde-dynamic-defaults", "net-signature", "std", "type-registry", "did"]
 web = ["web-sys", "web-storage", "js-sys"]
 web-storage = ["web-sys/Storage", "web-sys/Window"]
 http-request = ["http"]
@@ -134,6 +134,8 @@ toml = { version = "0.8.12", optional = true }
 futures = "0.3.30"
 regex = "1.10.5"
 erased-serde = "0.4.5"
+
+## Exposing the common gearbox macros
 gearbox-macros = "0.0.1"
 
 
