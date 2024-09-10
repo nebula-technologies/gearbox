@@ -3,14 +3,14 @@ macro_rules! log_func_generator {
     ($r:expr, $m:ident, $f:ident, $s:literal) => {
         |res| match ($r, res) {
             (Ok(()), Ok(t)) => tracing::$m!(
-                log_facility = $crate::log::syslog::Facility::$f.as_int(),
-                log_facility_name = $crate::log::syslog::Facility::$f.as_str(),
+                log_facility = $crate::log::tracing::subscriber::entity::Facility::$f.as_int(),
+                log_facility_name = $crate::log::tracing::subscriber::entity::Facility::$f.as_str(),
                 $s,
                 t
             ),
             (Err(()), Err(e)) => tracing::$m!(
-                log_facility = $crate::log::syslog::Facility::$f.as_int(),
-                log_facility_name = $crate::log::syslog::Facility::$f.as_str(),
+                log_facility = $crate::log::tracing::subscriber::entity::Facility::$f.as_int(),
+                log_facility_name = $crate::log::tracing::subscriber::entity::Facility::$f.as_str(),
                 $s,
                 e
             ),
