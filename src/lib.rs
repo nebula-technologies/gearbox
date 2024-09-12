@@ -380,6 +380,8 @@ pub extern crate web_sys;
 pub extern crate derive_more;
 #[macro_use]
 pub extern crate gearbox_macros;
+#[cfg(feature = "std")]
+extern crate pnet;
 
 // ## For Testing!
 #[cfg(test)]
@@ -396,6 +398,7 @@ pub mod common;
 pub mod did;
 pub mod error;
 pub mod log;
+mod log;
 pub mod net;
 pub mod path;
 pub mod rails;
