@@ -1,5 +1,5 @@
-use crate::log::tracing::subscriber::entity::ConversionError;
-use crate::log::tracing::subscriber::Value;
+use crate::log::tracing::entity::syslog::ConversionError;
+use crate::log::tracing::Value;
 use alloc::string::{String, ToString};
 
 #[derive(Debug, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
@@ -308,8 +308,8 @@ impl From<&Facility> for u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::log::tracing::subscriber::entity::Severity;
-    use crate::log::tracing::subscriber::Value;
+    use crate::log::tracing::entity::syslog::Severity;
+    use crate::log::tracing::Value;
     use crate::time::DateTime;
 
     #[test]

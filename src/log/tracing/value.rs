@@ -1,5 +1,5 @@
-use crate::log::tracing::subscriber::entity::Severity;
-use crate::log::tracing::subscriber::{ExtTryInto, Index, IntegerConversionError};
+use crate::log::tracing::entity::syslog::Severity;
+use crate::log::tracing::{ExtTryInto, Index, IntegerConversionError};
 use crate::time::DateTime;
 use alloc::{
     collections::btree_map::BTreeMap,
@@ -202,7 +202,7 @@ impl Value {
     ///
     /// ```
     /// # use std::collections::BTreeMap;
-    /// # use gearbox::log::tracing::subscriber::Value;
+    /// # use gearbox::log::tracing::Value;
     /// #
     /// let mut t = BTreeMap::new();
     /// t.insert("a".into(), Value::Null);
@@ -235,7 +235,7 @@ impl Value {
     ///
     /// ```
     /// use std::collections::BTreeMap;
-    /// use gearbox::log::tracing::subscriber::Value;
+    /// use gearbox::log::tracing::Value;
     ///
     /// let mut tree2 = BTreeMap::new();
     /// tree2.insert("y".to_string(),Value::Array(vec!["z".into(), "zz".into()]));
@@ -280,7 +280,7 @@ impl Value {
     /// ```
     ///
     /// use std::collections::BTreeMap;
-    /// use gearbox::log::tracing::subscriber::Value;
+    /// use gearbox::log::tracing::Value;
     ///
     /// let mut tree = BTreeMap::new();
     /// tree.insert("x".to_string(), Value::Float(1.0));
@@ -571,7 +571,7 @@ impl From<&Value> for serde_json::Value {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::log::tracing::subscriber::Value;
+    use crate::log::tracing::Value;
     use std::collections::BTreeMap;
 
     #[test]

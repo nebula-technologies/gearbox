@@ -310,9 +310,6 @@
 //!
 //!
 
-#[cfg(all(feature = "syslog-macro", feature = "log-macro"))]
-compile_error!("`syslog-macro` and `log-macro` cannot be enabled at the same time.");
-
 pub extern crate alloc;
 #[cfg(feature = "net-signature")]
 pub extern crate base64;
@@ -322,19 +319,29 @@ pub extern crate bs58;
 pub extern crate bson;
 pub extern crate bytes;
 pub extern crate core;
+#[macro_use]
+pub extern crate derive_more;
 #[cfg(feature = "did")]
 pub extern crate didkit;
 pub extern crate erased_serde;
 #[cfg(all(feature = "serde-flexbuffers", feature = "serde-dynamic"))]
 pub extern crate flexbuffers;
 pub extern crate futures;
+#[macro_use]
+pub extern crate gearbox_macros;
 pub extern crate hashbrown;
 #[cfg(feature = "net-signature")]
 pub extern crate hex;
 #[cfg(feature = "net-signature")]
-pub extern crate hmac;
+pub extern crate hmac; // ## For Testing!
+#[cfg(test)]
+pub extern crate hyper;
+#[cfg(feature = "std")]
+extern crate if_addrs;
 #[cfg(all(feature = "serde-json5", feature = "serde-dynamic"))]
 pub extern crate json5;
+#[cfg(feature = "std")]
+extern crate pnet;
 #[cfg(all(feature = "serde-postcard", feature = "serde-dynamic"))]
 pub extern crate postcard;
 #[cfg(feature = "http")]
@@ -374,21 +381,13 @@ pub extern crate tokio;
 pub extern crate tracing;
 pub extern crate uniffi;
 pub extern crate uniffi_macros;
-#[cfg(all(target_arch = "wasm32", feature = "web"))]
-pub extern crate web_sys;
-#[macro_use]
-pub extern crate derive_more;
-#[macro_use]
-pub extern crate gearbox_macros;
-#[cfg(feature = "std")]
-extern crate pnet;
-
-// ## For Testing!
-#[cfg(test)]
-pub extern crate hyper;
 #[cfg(test)]
 #[macro_use]
 pub extern crate wasm_bindgen_test;
+#[cfg(all(target_arch = "wasm32", feature = "web"))]
+pub extern crate web_sys;
+#[cfg(all(feature = "syslog-macro", feature = "log-macro"))]
+compile_error!("`syslog-macro` and `log-macro` cannot be enabled at the same time.");
 
 #[cfg(feature = "std")]
 // uniffi::setup_scaffolding!();
@@ -398,7 +397,6 @@ pub mod common;
 pub mod did;
 pub mod error;
 pub mod log;
-mod log;
 pub mod net;
 pub mod path;
 pub mod rails;
@@ -412,11 +410,11 @@ pub mod time;
 
 #[allow(unused_imports)]
 #[cfg(feature = "log-macro")]
-pub use crate::log::common::macros::*;
+pub use crate::log::tracing::macros::common::*;
 
 #[allow(unused_imports)]
 #[cfg(feature = "syslog-macro")]
-pub use crate::log::syslog::macros::*;
+pub use crate::log::tracing::macros::syslog::*;
 
 #[allow(unused_imports)]
 pub use crate::error::tracer::error_macro::*;

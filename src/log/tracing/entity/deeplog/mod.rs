@@ -6,6 +6,8 @@ pub mod system_info;
 pub mod timestamp;
 pub mod user;
 
+use crate::log::tracing::entity::syslog::{Facility, Severity};
+use crate::sync::rw_arc::RwArc;
 pub use caller::Caller;
 pub use device::Device;
 pub use process_info::ProcessInfo;
@@ -23,8 +25,7 @@ pub struct DeepLog {
     pub caller: Option<Caller>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub correlation_id: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub device: Option<Device>,
+    pub device: Device,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub duration: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -52,10 +53,32 @@ pub struct DeepLog {
     pub trace_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub facility: Option<Facility>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub process: Option<ProcessInfo>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub system_info: Option<SystemInfo>,
-    #[serde(skip)]
-    pub logging_config: RwArc<Option<Config>>,
+    pub process: ProcessInfo,
+    pub system_info: SystemInfo,
+}
+impl Default for DeepLog {
+    fn default() -> Self {
+        Self {
+            version: None,
+            caller: None,
+            correlation_id: None,
+            device: Device::default(),
+            duration: None,
+            environment: None,
+            id: None,
+            aid: None,
+            local_id: None,
+            message: None,
+            payload_data: Default::default(),
+            service: None,
+            severity: None,
+            span_id: None,
+            stacktrace: vec![],
+            timestamps: Default::default(),
+            trace_id: None,
+            facility: None,
+            process: ProcessInfo::default(),
+            system_info: SystemInfo::default(),
+        }
+    }
 }

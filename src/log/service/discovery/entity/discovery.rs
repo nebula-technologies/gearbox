@@ -1,10 +1,9 @@
 use crate::time::DateTime;
+use core::fmt::{Display, Formatter};
 use core::net::IpAddr;
-use core::num::NonZeroU16;
 use serde_derive::{Deserialize, Serialize};
-use std::net::Ipv4Addr;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct DiscoveryMessage {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub additional_info: Option<DiscoveryMessageAdditionalInfo>,
@@ -17,6 +16,25 @@ pub struct DiscoveryMessage {
     pub version: Option<String>,
     pub http: bool,
     pub http_api_schema_endpoint: Option<String>,
+}
+
+impl Display for DiscoveryMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "{} [{}]:{}",
+            self.service_name.clone().unwrap_or("<Unknown>".to_string()),
+            self.ip
+                .clone()
+                .map(|t| t
+                    .iter()
+                    .map(|i| i.to_string())
+                    .collect::<Vec<String>>()
+                    .join(","))
+                .unwrap_or("<empty>".to_string()),
+            self.port.clone().unwrap_or(0)
+        )
+    }
 }
 
 impl From<&DiscoveryMessage> for DiscoveryMessage {

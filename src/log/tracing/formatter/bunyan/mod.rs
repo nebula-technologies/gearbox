@@ -1,5 +1,5 @@
-use crate::log::tracing::subscriber::layer::{LogLayer, Storage, Type};
-use crate::log::tracing::subscriber::{LogFormatter, Value};
+use crate::log::tracing::layer::{LogLayer, Storage, Type};
+use crate::log::tracing::{LogFormatter, Value};
 use crate::time::{DateTime, SecondsFormat};
 use hashbrown::HashMap;
 use serde::ser::{SerializeMap, Serializer};
@@ -49,11 +49,7 @@ impl Bunyan {
         Self::with_default_fields(name, HashMap::new())
     }
 
-    pub fn with_default_fields(
-        name: String,
-        default_fields: HashMap<String, Value>,
-        pipelines: OutputPipelines,
-    ) -> Self {
+    pub fn with_default_fields(name: String, default_fields: HashMap<String, Value>) -> Self {
         Self {
             name,
             pid: crate::common::process::id(),

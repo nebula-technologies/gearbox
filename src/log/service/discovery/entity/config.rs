@@ -1,4 +1,4 @@
-use crate::log::tracing::subscriber::layer::fmt::discover_log::entity::discovery::DiscoveryMessage;
+use crate::log::service::discovery::entity::discovery::DiscoveryMessage;
 use core::net::IpAddr;
 use core::num::NonZeroU16;
 use std::net::Ipv4Addr;
@@ -10,6 +10,7 @@ pub struct Config {
     pub found_endpoint: Endpoint,
     // This is the config for the discovery service
     pub discovery: Option<DiscoveryConfig>,
+    pub broadcast: Option<DiscoveryConfig>,
 }
 
 impl Config {
@@ -28,9 +29,10 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config {
+        Self {
             found_endpoint: Endpoint::None,
             discovery: None,
+            broadcast: None,
         }
     }
 }
@@ -92,10 +94,15 @@ impl Default for DiscoveryConfig {
 
 impl Config {
     // Create a new configuration with optional discovery config
-    pub fn new(found_endpoint: Endpoint, discovery: Option<DiscoveryConfig>) -> Self {
+    pub fn new(
+        found_endpoint: Endpoint,
+        discovery: Option<DiscoveryConfig>,
+        broadcast: Option<DiscoveryConfig>,
+    ) -> Self {
         Self {
             found_endpoint,
             discovery,
+            broadcast,
         }
     }
 }

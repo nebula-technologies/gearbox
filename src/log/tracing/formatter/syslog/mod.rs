@@ -1,6 +1,7 @@
-use crate::log::tracing::subscriber::layer::LogLayer;
-use crate::log::tracing::subscriber::{
-    entity::{Facility, Severity},
+use crate::log::tracing::entity::syslog::Facility;
+use crate::log::tracing::entity::syslog::Severity;
+use crate::log::tracing::layer::LogLayer;
+use crate::log::tracing::{
     layer::{Storage, Type},
     LogFormatter, Value,
 };

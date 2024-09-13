@@ -2,6 +2,7 @@ pub mod entity;
 pub mod formatter;
 pub mod index;
 pub mod layer;
+pub mod macros;
 pub mod value;
 
 pub use formatter::LogFormatter;

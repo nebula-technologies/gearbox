@@ -1,4 +1,4 @@
-use crate::log::tracing::subscriber::Value;
+use crate::log::tracing::Value;
 use alloc::{
     collections::btree_map::BTreeMap,
     string::{String, ToString},
@@ -149,7 +149,7 @@ mod tests {
     use super::*;
     use crate::log;
     use alloc::collections::BTreeMap;
-    use log::tracing::subscriber::Value;
+    use log::tracing::Value;
 
     #[test]
     fn test_index_usize() {

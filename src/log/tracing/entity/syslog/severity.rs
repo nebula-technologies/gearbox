@@ -1,7 +1,5 @@
-use crate::log::tracing::subscriber::{
-    entity::{ConversionError, Facility},
-    ExtTryInto, Value,
-};
+use crate::log::tracing::entity::syslog::{ConversionError, Facility};
+use crate::log::tracing::{ExtTryInto, Value};
 use core::fmt::{Display, Formatter};
 use tracing::Level as TracingLevel;
 
