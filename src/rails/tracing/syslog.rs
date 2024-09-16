@@ -18,7 +18,7 @@ where
 #[cfg(test)]
 mod test {
     use super::RailsSyslog;
-    use crate::log::tracing::subscriber::entity::Facility::*;
+    use crate::log::tracing::entity::syslog::facility::Facility::*;
     use crate::{
         alert, crit, critical, debug, emerg, emergency, err, error, info, notice, warn, warning,
     };
