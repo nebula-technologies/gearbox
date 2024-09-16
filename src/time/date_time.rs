@@ -19,6 +19,8 @@ use core::cmp::Ordering;
 use core::fmt::{Display, Formatter};
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, Sub};
+use serde::de::Error as SerdeError;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -1793,6 +1795,26 @@ impl From<(i32, u8, u8, u8, u8, u8, u64, (i8, u8))> for DateTime {
             nanosecond,
             (zone_hour, zone_minute),
         )
+    }
+}
+
+impl Serialize for DateTime {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let rfc3339_str = self.to_rfc3339();
+        serializer.serialize_str(&rfc3339_str)
+    }
+}
+
+impl<'de> Deserialize<'de> for DateTime {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        DateTime::from_str(&s).map_err(D::Error::custom)
     }
 }
 
