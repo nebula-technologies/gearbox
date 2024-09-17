@@ -1,7 +1,10 @@
+use crate::collections::HashMap;
 use axum::body::HttpBody;
 use axum::handler::Handler;
-use axum::routing::MethodRouter;
+use axum::response::Response;
+use axum::routing::{MethodFilter, MethodRouter};
 use std::convert::Infallible;
+use std::future::Future;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
@@ -60,23 +63,33 @@ impl ServerBuilder {
     fn build(self) {}
 }
 
-pub struct RouteBuilder {
-    routes: Vec<(String, Handler)>,
+pub struct RouteBuilder<T, S> {
+    routes: HashMap<
+        String,
+        HashMap<
+            MethodFilter,
+            Box<dyn Handler<T, S, Future = dyn Future<Output = Response> + Send + 'static>>,
+        >,
+    >,
 }
 
-impl RouteBuilder {
-    pub fn post<H, T, S, B>(mut self, path: &str, handler: H) -> Self
+impl<T, S, B> RouteBuilder<T, S> {
+    pub fn post<H>(mut self, path: &str, handler: H) -> Self
     where
-        H: Handler<T, S, B>,
+        H: Handler<T, S>,
         B: HttpBody + Send + 'static,
         T: 'static,
         S: Clone + Send + Sync + 'static,
     {
-        on(MethodFilter::POST, handler)
-    }
-
-    pub fn route(mut self, path: &str, method_router: MethodRouter<S, B>) -> Self {
-        panic_on_err!(self.path_router.route(path, method_router));
+        if self
+            .routes
+            .entry(path.to_string())
+            .or_insert(HashMap::new())
+            .insert(MethodFilter::POST, handler)
+            .is_some()
+        {
+            println!("Override Warning: POST[{}]", path);
+        }
         self
     }
 }
