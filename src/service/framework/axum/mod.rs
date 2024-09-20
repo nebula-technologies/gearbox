@@ -1,45 +1,45 @@
+use crate::collections::HashMap;
+use crate::log::tracing::formatter::bunyan::Bunyan;
+use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
+use crate::log::tracing::formatter::syslog::Syslog;
+use crate::log::tracing::layer::LogLayer;
+use crate::service::discovery::DiscoveryService;
 use axum::serve::IncomingStream;
 use axum::{Router, ServiceExt};
-use gearbox::log::service::discovery::DiscoveryService;
-use gearbox::log::tracing::formatter::bunyan::Bunyan;
-use gearbox::log::tracing::formatter::deeplog::DeepLogFormatter;
-use gearbox::log::tracing::formatter::syslog::Syslog;
-use gearbox::log::tracing::layer::LogLayer;
+use futures::SinkExt;
 use std::any::{Any, TypeId};
-use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
 use tokio::sync::RwLock;
+use tower_http::timeout::TimeoutLayer;
+use tower_http::trace::TraceLayer;
 use tracing::event;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 
-#[derive(Clone)]
-pub struct AppStateBuilder {
-    // A map for storing application state keyed by TypeId
+pub trait ModuleDefinition {
+    const NAME: &'static str;
+    const ROUTER: fn() -> Router;
+    const STATES: fn(&mut RwAppState);
+}
+
+pub struct RwAppState {
     state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
 }
 
-impl AppStateBuilder {
-    pub fn add<T: 'static + Default + Send + Sync>(&mut self) -> &mut Self {
-        let state = T::default();
-        self.state.insert(state.type_id(), Arc::new(T::default()));
+impl RwAppState {
+    pub fn add<T: Any + Send + Sync>(&mut self, t: T) -> &mut Self {
+        self.state.insert(TypeId::of::<T>(), Arc::new(t));
         self
-    }
-
-    fn build(self) -> Arc<AppState> {
-        Arc::new(AppState {
-            state: self.clone().state,
-        })
     }
 }
 
-impl Default for AppStateBuilder {
+impl Default for RwAppState {
     fn default() -> Self {
-        AppStateBuilder {
+        Self {
             state: HashMap::new(),
         }
     }
@@ -65,16 +65,37 @@ impl AppState {
     }
 }
 
-pub struct ModuleBuilder<'a> {
-    router: &'a mut Router,
+pub struct ModuleBuilder {
+    router: Router,
+    app_states: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
 }
 
-impl<'a> ModuleBuilder<'a> {
-    pub fn new(router: &'a mut Router) -> Self {
-        Self { router }
+impl ModuleBuilder {
+    pub fn new() -> Self {
+        Self {
+            router: Router::new(),
+            app_states: HashMap::new(),
+        }
     }
-    pub fn router<O: FnOnce(&mut Router)>(mut self, o: O) -> Self {
-        o(&mut self.router);
+    pub fn add_router(mut self, base: &str, router: Router) -> Self {
+        self.router = self.router.nest(base, router);
+        self
+    }
+
+    pub fn add_state<T>(mut self) -> Self
+    where
+        T: Default + Send + Sync + 'static,
+    {
+        self.app_states
+            .insert(TypeId::of::<T>(), Arc::new(T::default()));
+        self
+    }
+
+    pub fn add_state_object<T>(mut self, o: T) -> Self
+    where
+        T: Default + Send + Sync + 'static,
+    {
+        self.app_states.insert(TypeId::of::<T>(), Arc::new(o));
         self
     }
 }
@@ -132,25 +153,33 @@ pub struct ServerBuilder {
     logger_discovery: bool,
     logger_discovery_builder: Option<DiscoveryBuilder>,
     trace_layer: bool,
-    app_state: Option<AppStateBuilder>,
+    app_state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+}
+
+impl Default for ServerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ServerBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
+        let router = Router::new();
+
         Self {
             address: IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
             port: 3000,
             worker_pool: None,
-            router: Router::new(),
+            router,
             logger: LogStyle::DeepLog,
             logger_discovery: false,
             logger_discovery_builder: None,
             trace_layer: false,
-            app_state: None,
+            app_state: HashMap::new(),
         }
     }
 
-    fn set_address(mut self, ip: &[u16]) -> Self {
+    pub fn set_address(mut self, ip: &[u16]) -> Self {
         if ip.len() == 4 {
             self.address = IpAddr::V4(Ipv4Addr::new(
                 ip[0] as u8,
@@ -169,11 +198,24 @@ impl ServerBuilder {
         self
     }
 
-    fn with_trace_layer(mut self) -> Self {
+    pub fn add_module<T: ModuleDefinition>(mut self) -> Self {
+        let router = T::ROUTER();
+        self.router = self.router.merge(router);
+
+        let mut rw_app_state = RwAppState::default();
+        T::STATES(&mut rw_app_state);
+        for (key, val) in rw_app_state.state {
+            self.app_state.insert(key, val);
+        }
+
+        self
+    }
+
+    pub fn with_trace_layer(mut self) -> Self {
         self.trace_layer = true;
         self
     }
-    fn with_log_service_discovery<O: FnOnce(DiscoveryBuilder) -> Option<DiscoveryBuilder>>(
+    pub fn with_log_service_discovery<O: FnOnce(DiscoveryBuilder) -> Option<DiscoveryBuilder>>(
         mut self,
         o: O,
     ) -> Self {
@@ -182,30 +224,45 @@ impl ServerBuilder {
         self
     }
 
-    fn set_port(mut self, port: u16) -> Self {
+    pub fn set_port(mut self, port: u16) -> Self {
         self.port = port;
         self
     }
 
-    fn add_module<O: FnOnce(ModuleBuilder) -> ModuleBuilder>(mut self, o: O) -> Self {
-        o(ModuleBuilder::new(&mut self.router));
-
+    pub fn add_state<T>(mut self) -> Self
+    where
+        T: Default + Send + Sync + 'static,
+    {
+        self.app_state
+            .insert(TypeId::of::<T>(), Arc::new(T::default()));
         self
     }
 
-    fn set_worker_pool(mut self, max_workers: usize) -> Self {
+    pub fn add_state_object<T>(mut self, o: T) -> Self
+    where
+        T: Default + Send + Sync + 'static,
+    {
+        self.app_state.insert(TypeId::of::<T>(), Arc::new(o));
+        self
+    }
+
+    pub fn set_worker_pool(mut self, max_workers: usize) -> Self {
         self.worker_pool = Some(max_workers);
         self
     }
 
-    fn build(self) {
+    fn build_inner(self, start_server: bool) {
         println!("Building body closure");
         let body = async {
             println!("Creating app");
-            let mut app: Router = self.router;
+            let mut router_with_state =
+                Router::new().with_state(Arc::new(AppState::new(self.app_state)));
+
+            let app = self.router;
+            let mut app_with_state = router_with_state.merge(app);
 
             if self.trace_layer {
-                app = app.layer((
+                app_with_state = app_with_state.layer((
                     TraceLayer::new_for_http(),
                     // Graceful shutdown will wait for outstanding requests to complete. Add a timeout so
                     // requests don't hang forever.
@@ -248,10 +305,14 @@ impl ServerBuilder {
             }
 
             println!("Starting server");
-            axum::serve(listener, app)
-                .with_graceful_shutdown(shutdown_signal())
-                .await
-                .unwrap()
+            let server_config =
+                axum::serve(listener, app_with_state).with_graceful_shutdown(shutdown_signal());
+
+            if start_server {
+                server_config.await.unwrap()
+            } else {
+                return ();
+            }
         };
 
         println!("Setting up the thread builder for tokio");
@@ -269,6 +330,14 @@ impl ServerBuilder {
             .build()
             .expect("Failed building the Runtime")
             .block_on(body);
+    }
+
+    pub fn build(self) {
+        self.build_inner(true)
+    }
+
+    pub(crate) fn build_test(self) {
+        self.build_inner(false)
     }
 }
 
@@ -309,4 +378,48 @@ fn setup_logger(logger: LogStyle, discovery: bool, builder: Option<DiscoveryBuil
         level = "emergency",
         "Testing subscriber with level override"
     );
+}
+
+#[cfg(test)]
+mod test {
+    use super::{ModuleDefinition, RwAppState};
+    use axum::Router;
+
+    pub struct TestState {}
+    pub struct TestModule {}
+
+    impl TestModule {
+        pub fn routes() -> Router {
+            Router::new()
+        }
+        pub fn states(state: &mut RwAppState) {
+            state.add(TestState {});
+        }
+    }
+
+    impl ModuleDefinition for TestModule {
+        const NAME: &'static str = "TestModule";
+        const ROUTER: fn() -> Router = TestModule::routes;
+        const STATES: fn(&mut RwAppState) = TestModule::states;
+    }
+
+    #[test]
+    fn setup_builder() {
+        //
+        // fn audit_module(m: ModuleBuilder)
+        //
+        // let mut state = AppState::default();
+        // state.add::<crate::AppState>();
+        //
+        // let router = Router::new()
+        //     .nest("/", modules::audit_log::routes())
+        //     .with_state(Arc::new(state.build()));
+
+        let server_builder = crate::service::framework::axum::ServerBuilder::new();
+        server_builder
+            .add_module::<TestModule>()
+            .set_worker_pool(30)
+            .with_log_service_discovery(|t| None)
+            .build_test();
+    }
 }
