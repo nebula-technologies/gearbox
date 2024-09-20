@@ -20,6 +20,31 @@ use tracing::event;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 
+pub trait ModuleDefinition {
+    const NAME: &'static str;
+    const ROUTER: fn() -> Router;
+    const STATES: fn(&mut RwAppState);
+}
+
+pub struct RwAppState {
+    state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+}
+
+impl RwAppState {
+    pub fn add<T: Any + Send + Sync>(&mut self, t: T) -> &mut Self {
+        self.state.insert(TypeId::of::<T>(), Arc::new(t));
+        self
+    }
+}
+
+impl Default for RwAppState {
+    fn default() -> Self {
+        Self {
+            state: HashMap::new(),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct AppState {
     // A map for storing application state keyed by TypeId
@@ -131,6 +156,12 @@ pub struct ServerBuilder {
     app_state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
 }
 
+impl Default for ServerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ServerBuilder {
     pub fn new() -> Self {
         let router = Router::new();
@@ -167,6 +198,19 @@ impl ServerBuilder {
         self
     }
 
+    pub fn add_module<T: ModuleDefinition>(mut self) -> Self {
+        let router = T::ROUTER();
+        self.router = self.router.merge(router);
+
+        let mut rw_app_state = RwAppState::default();
+        T::STATES(&mut rw_app_state);
+        for (key, val) in rw_app_state.state {
+            self.app_state.insert(key, val);
+        }
+
+        self
+    }
+
     pub fn with_trace_layer(mut self) -> Self {
         self.trace_layer = true;
         self
@@ -182,11 +226,6 @@ impl ServerBuilder {
 
     pub fn set_port(mut self, port: u16) -> Self {
         self.port = port;
-        self
-    }
-
-    pub fn add_router(mut self, base: &str, r: Router) -> Self {
-        self.router = self.router.nest(base, r);
         self
     }
 
@@ -212,14 +251,18 @@ impl ServerBuilder {
         self
     }
 
-    pub fn build(self) {
+    fn build_inner(self, start_server: bool) {
         println!("Building body closure");
         let body = async {
             println!("Creating app");
-            let mut app = self.router;
+            let mut router_with_state =
+                Router::new().with_state(Arc::new(AppState::new(self.app_state)));
+
+            let app = self.router;
+            let mut app_with_state = router_with_state.merge(app);
 
             if self.trace_layer {
-                app = app.layer((
+                app_with_state = app_with_state.layer((
                     TraceLayer::new_for_http(),
                     // Graceful shutdown will wait for outstanding requests to complete. Add a timeout so
                     // requests don't hang forever.
@@ -262,10 +305,14 @@ impl ServerBuilder {
             }
 
             println!("Starting server");
-            axum::serve(listener, app)
-                .with_graceful_shutdown(shutdown_signal())
-                .await
-                .unwrap()
+            let server_config =
+                axum::serve(listener, app_with_state).with_graceful_shutdown(shutdown_signal());
+
+            if start_server {
+                server_config.await.unwrap()
+            } else {
+                return ();
+            }
         };
 
         println!("Setting up the thread builder for tokio");
@@ -283,6 +330,14 @@ impl ServerBuilder {
             .build()
             .expect("Failed building the Runtime")
             .block_on(body);
+    }
+
+    pub fn build(self) {
+        self.build_inner(true)
+    }
+
+    pub(crate) fn build_test(self) {
+        self.build_inner(false)
     }
 }
 
@@ -323,4 +378,48 @@ fn setup_logger(logger: LogStyle, discovery: bool, builder: Option<DiscoveryBuil
         level = "emergency",
         "Testing subscriber with level override"
     );
+}
+
+#[cfg(test)]
+mod test {
+    use super::{ModuleDefinition, RwAppState};
+    use axum::Router;
+
+    pub struct TestState {}
+    pub struct TestModule {}
+
+    impl TestModule {
+        pub fn routes() -> Router {
+            Router::new()
+        }
+        pub fn states(state: &mut RwAppState) {
+            state.add(TestState {});
+        }
+    }
+
+    impl ModuleDefinition for TestModule {
+        const NAME: &'static str = "TestModule";
+        const ROUTER: fn() -> Router = TestModule::routes;
+        const STATES: fn(&mut RwAppState) = TestModule::states;
+    }
+
+    #[test]
+    fn setup_builder() {
+        //
+        // fn audit_module(m: ModuleBuilder)
+        //
+        // let mut state = AppState::default();
+        // state.add::<crate::AppState>();
+        //
+        // let router = Router::new()
+        //     .nest("/", modules::audit_log::routes())
+        //     .with_state(Arc::new(state.build()));
+
+        let server_builder = crate::service::framework::axum::ServerBuilder::new();
+        server_builder
+            .add_module::<TestModule>()
+            .set_worker_pool(30)
+            .with_log_service_discovery(|t| None)
+            .build_test();
+    }
 }
