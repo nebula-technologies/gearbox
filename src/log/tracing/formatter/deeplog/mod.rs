@@ -3,14 +3,12 @@ use crate::log::tracing::entity::deeplog::{
 };
 use crate::{
     collections::HashMap,
-    log::{
-        service::discovery::entity::Config,
-        tracing::{
-            entity::syslog::{Facility, Severity},
-            layer::{LogLayer, Storage, Type},
-            LogFormatter, Value,
-        },
+    log::tracing::{
+        entity::syslog::{Facility, Severity},
+        layer::{LogLayer, Storage, Type},
+        LogFormatter, Value,
     },
+    service::discovery::entity::Config,
     sync::rw_arc::RwArc,
     time::DateTime,
 };

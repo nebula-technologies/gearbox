@@ -1,4 +1,4 @@
-use crate::service::discovery::entity::Config;
+use crate::log::service::discovery::entity::Config;
 use tokio::task::JoinHandle;
 
 pub mod entity;

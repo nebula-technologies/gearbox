@@ -1,8 +1,8 @@
 use crate::common::get_ips;
+use crate::log::service::discovery::entity::discovery::DiscoveryMessage;
+use crate::log::service::discovery::entity::{Broadcast, Config};
+use crate::log::service::discovery::DiscoveryService;
 use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
-use crate::service::discovery::entity::discovery::DiscoveryMessage;
-use crate::service::discovery::entity::{Broadcast, Config};
-use crate::service::discovery::DiscoveryService;
 use crate::time::DateTime;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;

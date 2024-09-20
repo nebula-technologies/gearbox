@@ -1,6 +1,6 @@
 pub mod discovery;
 
-pub use crate::service::discovery::entity::discovery::DiscoveryMessage;
+pub use crate::log::service::discovery::entity::discovery::DiscoveryMessage;
 use serde_derive::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr};
 
