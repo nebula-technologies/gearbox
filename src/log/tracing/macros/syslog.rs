@@ -37,7 +37,7 @@ macro_rules! emergency {
         $crate::syslog_func_generator!($i(()), Emergency, error, $f, $s)
     };
     ($($arg:tt)*) => {
-              tracing::error!(log_level=$crate::log::tracing::subscriber::entity::Severity::Emergency.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Emergency.as_str(), $($arg)*);
+              tracing::error!(log_level=$crate::log::tracing::entity::syslog::Severity::Emergency.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Emergency.as_str(), $($arg)*);
           };
 }
 
@@ -56,7 +56,7 @@ macro_rules! emerg {
         $crate::syslog_func_generator!($i(()), Emergency, error, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::error!(log_level=$crate::log::tracing::subscriber::entity::Severity::Emergency.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Emergency.as_str(), $($arg)*);
+        tracing::error!(log_level=$crate::log::tracing::entity::syslog::Severity::Emergency.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Emergency.as_str(), $($arg)*);
     };
 }
 
@@ -75,7 +75,7 @@ macro_rules! alert {
         $crate::syslog_func_generator!($i(()), Alert, error, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::error!(log_level=$crate::log::tracing::subscriber::entity::Severity::Alert.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Alert.as_str(), $($arg)*);
+        tracing::error!(log_level=$crate::log::tracing::entity::syslog::Severity::Alert.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Alert.as_str(), $($arg)*);
     };
 }
 
@@ -94,7 +94,7 @@ macro_rules! critical {
         $crate::syslog_func_generator!($i(()), Critical, error, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::error!(log_level=$crate::log::tracing::subscriber::entity::Severity::Critical.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Critical.as_str(), $($arg)*);
+        tracing::error!(log_level=$crate::log::tracing::entity::syslog::Severity::Critical.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Critical.as_str(), $($arg)*);
     };
 }
 
@@ -113,7 +113,7 @@ macro_rules! crit {
         $crate::syslog_func_generator!($i(()), Critical, error, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::error!(log_level=$crate::log::tracing::subscriber::entity::Severity::Critical.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Critical.as_str(), $($arg)*);
+        tracing::error!(log_level=$crate::log::tracing::entity::syslog::Severity::Critical.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Critical.as_str(), $($arg)*);
     };
 }
 
@@ -132,7 +132,7 @@ macro_rules! error {
         $crate::syslog_func_generator!($i(()), Error, error, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::error!(log_level=$crate::log::tracing::subscriber::entity::Severity::Error.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Error.as_str(), $($arg)*);
+        tracing::error!(log_level=$crate::log::tracing::entity::syslog::Severity::Error.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Error.as_str(), $($arg)*);
     };
 }
 
@@ -151,7 +151,7 @@ macro_rules! err {
         $crate::syslog_func_generator!($i(()), Error, error, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::error!(log_level=$crate::log::tracing::subscriber::entity::Severity::Error.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Error.as_str(), $($arg)*);
+        tracing::error!(log_level=$crate::log::tracing::entity::syslog::Severity::Error.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Error.as_str(), $($arg)*);
     };
 }
 
@@ -170,7 +170,7 @@ macro_rules! warning {
         $crate::syslog_func_generator!($i(()), Warning, warn, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::warn!(log_level=$crate::log::tracing::subscriber::entity::Severity::Warning.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Warning.as_str(), $($arg)*);
+        tracing::warn!(log_level=$crate::log::tracing::entity::syslog::Severity::Warning.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Warning.as_str(), $($arg)*);
     };
 }
 
@@ -189,7 +189,7 @@ macro_rules! warn {
         $crate::syslog_func_generator!($i(()), Warning, warn, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::warn!(log_level=$crate::log::tracing::subscriber::entity::Severity::Warning.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Warning.as_str(), $($arg)*);
+        tracing::warn!(log_level=$crate::log::tracing::entity::syslog::Severity::Warning.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Warning.as_str(), $($arg)*);
     };
 }
 
@@ -208,7 +208,7 @@ macro_rules! notice {
         $crate::syslog_func_generator!($i(()), Notice, info, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::info!(log_level=$crate::log::tracing::subscriber::entity::Severity::Notice.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Notice.as_str(), $($arg)*);
+        tracing::info!(log_level=$crate::log::tracing::entity::syslog::Severity::Notice.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Notice.as_str(), $($arg)*);
     };
 }
 
@@ -227,7 +227,7 @@ macro_rules! info {
         $crate::syslog_func_generator!($i(()), Informational, debug, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::debug!(log_level=$crate::log::tracing::subscriber::entity::Severity::Info.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Info.as_str(), $($arg)*);
+        tracing::debug!(log_level=$crate::log::tracing::entity::syslog::Severity::Informational.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Informational.as_str(), $($arg)*);
     };
 }
 
@@ -246,6 +246,6 @@ macro_rules! debug {
         $crate::syslog_func_generator!($i(()), Debug, trace, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::trace!(log_level=$crate::log::tracing::subscriber::entity::Severity::Debug.as_int(), log_level_name=$crate::log::tracing::subscriber::entity::Severity::Debug.as_str(), $($arg)*);
+        tracing::trace!(log_level=$crate::log::tracing::entity::syslog::Severity::Debug.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Debug.as_str(), $($arg)*);
     };
 }

@@ -1,4 +1,6 @@
 use crate::collections::HashMap;
+use crate::info;
+use crate::log::tracing::entity::syslog::Severity;
 use crate::log::tracing::formatter::bunyan::Bunyan;
 use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
 use crate::log::tracing::formatter::syslog::Syslog;
@@ -168,7 +170,7 @@ impl ServerBuilder {
 
         Self {
             address: IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
-            port: 3000,
+            port: 65000,
             worker_pool: None,
             router,
             logger: LogStyle::DeepLog,
@@ -276,7 +278,7 @@ impl ServerBuilder {
                 self.logger_discovery_builder,
             );
 
-            println!("Setting up listener socket address");
+            info!("Setting up listener socket address");
             let socket_addr = SocketAddr::new(self.address, self.port);
             let listener = tokio::net::TcpListener::bind(socket_addr).await.unwrap();
 
@@ -304,14 +306,13 @@ impl ServerBuilder {
                 }
             }
 
-            println!("Starting server");
-            let server_config =
-                axum::serve(listener, app_with_state).with_graceful_shutdown(shutdown_signal());
-
             if start_server {
-                server_config.await.unwrap()
-            } else {
-                return ();
+                info!("Starting server");
+
+                axum::serve(listener, app_with_state)
+                    .with_graceful_shutdown(shutdown_signal())
+                    .await
+                    .unwrap()
             }
         };
 
