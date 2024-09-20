@@ -1,18 +1,21 @@
+use crate::collections::HashMap;
+use crate::log::tracing::formatter::bunyan::Bunyan;
+use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
+use crate::log::tracing::formatter::syslog::Syslog;
+use crate::log::tracing::layer::LogLayer;
+use crate::service::discovery::DiscoveryService;
 use axum::serve::IncomingStream;
 use axum::{Router, ServiceExt};
-use gearbox::log::service::discovery::DiscoveryService;
-use gearbox::log::tracing::formatter::bunyan::Bunyan;
-use gearbox::log::tracing::formatter::deeplog::DeepLogFormatter;
-use gearbox::log::tracing::formatter::syslog::Syslog;
-use gearbox::log::tracing::layer::LogLayer;
+use futures::SinkExt;
 use std::any::{Any, TypeId};
-use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
 use tokio::sync::RwLock;
+use tower_http::timeout::TimeoutLayer;
+use tower_http::trace::TraceLayer;
 use tracing::event;
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
@@ -30,7 +33,7 @@ impl AppStateBuilder {
         self
     }
 
-    fn build(self) -> Arc<AppState> {
+    pub fn build(self) -> Arc<AppState> {
         Arc::new(AppState {
             state: self.clone().state,
         })
@@ -66,14 +69,14 @@ impl AppState {
 }
 
 pub struct ModuleBuilder<'a> {
-    router: &'a mut Router,
+    router: &'a mut Option<Router>,
 }
 
 impl<'a> ModuleBuilder<'a> {
-    pub fn new(router: &'a mut Router) -> Self {
+    pub fn new(router: &'a mut Option<Router>) -> Self {
         Self { router }
     }
-    pub fn router<O: FnOnce(&mut Router)>(mut self, o: O) -> Self {
+    pub fn router<O: FnOnce(&mut Option<Router>)>(mut self, o: O) -> Self {
         o(&mut self.router);
         self
     }
@@ -136,12 +139,14 @@ pub struct ServerBuilder {
 }
 
 impl ServerBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
+        let router = Router::new().with_state(Arc::new(AppState::new(HashMap::new())));
+
         Self {
             address: IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
             port: 3000,
             worker_pool: None,
-            router: Router::new(),
+            router,
             logger: LogStyle::DeepLog,
             logger_discovery: false,
             logger_discovery_builder: None,
@@ -150,7 +155,7 @@ impl ServerBuilder {
         }
     }
 
-    fn set_address(mut self, ip: &[u16]) -> Self {
+    pub fn set_address(mut self, ip: &[u16]) -> Self {
         if ip.len() == 4 {
             self.address = IpAddr::V4(Ipv4Addr::new(
                 ip[0] as u8,
@@ -169,11 +174,11 @@ impl ServerBuilder {
         self
     }
 
-    fn with_trace_layer(mut self) -> Self {
+    pub fn with_trace_layer(mut self) -> Self {
         self.trace_layer = true;
         self
     }
-    fn with_log_service_discovery<O: FnOnce(DiscoveryBuilder) -> Option<DiscoveryBuilder>>(
+    pub fn with_log_service_discovery<O: FnOnce(DiscoveryBuilder) -> Option<DiscoveryBuilder>>(
         mut self,
         o: O,
     ) -> Self {
@@ -182,27 +187,26 @@ impl ServerBuilder {
         self
     }
 
-    fn set_port(mut self, port: u16) -> Self {
+    pub fn set_port(mut self, port: u16) -> Self {
         self.port = port;
         self
     }
 
-    fn add_module<O: FnOnce(ModuleBuilder) -> ModuleBuilder>(mut self, o: O) -> Self {
-        o(ModuleBuilder::new(&mut self.router));
-
+    pub fn add_router(mut self, r: Router) -> Self {
+        self.router = self.router.nest("", r);
         self
     }
 
-    fn set_worker_pool(mut self, max_workers: usize) -> Self {
+    pub fn set_worker_pool(mut self, max_workers: usize) -> Self {
         self.worker_pool = Some(max_workers);
         self
     }
 
-    fn build(self) {
+    pub fn build(self) {
         println!("Building body closure");
         let body = async {
             println!("Creating app");
-            let mut app: Router = self.router;
+            let mut app = self.router;
 
             if self.trace_layer {
                 app = app.layer((

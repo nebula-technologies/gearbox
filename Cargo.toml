@@ -24,7 +24,7 @@ path = "src/lib.rs"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = ["web", "http-request", "common-dirs", "syslog-macro", "http-request-chaining", "serde-dynamic-defaults", "net-signature", "std", "type-registry", "discover_log"]
+default = ["web", "http-request", "common-dirs", "syslog-macro", "http-request-chaining", "serde-dynamic-defaults", "net-signature", "std", "type-registry", "discover_log", "framework-axum"]
 web = ["web-sys", "web-storage", "js-sys"]
 web-storage = ["web-sys/Storage", "web-sys/Window"]
 http-request = ["http"]
@@ -80,7 +80,7 @@ serde-toml = ["dep:toml"]
 
 #
 # Axum
-framework-axum = ["dep:axum"]
+framework-axum = ["dep:axum", "dep:tower-http", "dep:tower-service"]
 
 # This is for activating all features for the current Arch
 full = ["net-signature", "web", "http-request", "http"]
@@ -169,11 +169,13 @@ if-addrs = { version = "0.13", optional = true }
 ## Axum
 ##
 axum = { version = "0.7.5", optional = true }
+tower-http = { version = "0.5", features = ["timeout", "trace"], optional = true }
+tower-service = { version = "0.3.3", optional = true }
 
 ## These are mainly used for "Wasm32" implementations
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tokio]
 version = "1"
-features = ["rt-multi-thread", "rt", "macros"]
+features = ["rt-multi-thread", "rt", "macros", "signal"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
 version = "0.2.92"
