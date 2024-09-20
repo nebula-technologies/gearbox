@@ -24,7 +24,7 @@ use tracing_subscriber::{layer::SubscriberExt, Registry};
 
 pub trait ModuleDefinition {
     const NAME: &'static str;
-    const ROUTER: fn() -> Router;
+    const ROUTER: fn() -> Router<Arc<AppState>>;
     const STATES: fn(&mut RwAppState);
 }
 
@@ -150,7 +150,7 @@ pub struct ServerBuilder {
     address: IpAddr,
     port: u16,
     worker_pool: Option<usize>,
-    router: Router,
+    router: Router<Arc<AppState>>,
     logger: LogStyle,
     logger_discovery: bool,
     logger_discovery_builder: Option<DiscoveryBuilder>,
@@ -257,10 +257,11 @@ impl ServerBuilder {
         println!("Building body closure");
         let body = async {
             println!("Creating app");
-            let mut router_with_state =
-                Router::new().with_state(Arc::new(AppState::new(self.app_state)));
+            let mut router_with_state = Router::new();
 
-            let app = self.router;
+            let app = self
+                .router
+                .with_state(Arc::new(AppState::new(self.app_state)));
             let mut app_with_state = router_with_state.merge(app);
 
             if self.trace_layer {
@@ -383,14 +384,15 @@ fn setup_logger(logger: LogStyle, discovery: bool, builder: Option<DiscoveryBuil
 
 #[cfg(test)]
 mod test {
-    use super::{ModuleDefinition, RwAppState};
+    use super::{AppState, ModuleDefinition, RwAppState};
     use axum::Router;
+    use std::sync::Arc;
 
     pub struct TestState {}
     pub struct TestModule {}
 
     impl TestModule {
-        pub fn routes() -> Router {
+        pub fn routes() -> Router<Arc<AppState>> {
             Router::new()
         }
         pub fn states(state: &mut RwAppState) {
@@ -400,7 +402,7 @@ mod test {
 
     impl ModuleDefinition for TestModule {
         const NAME: &'static str = "TestModule";
-        const ROUTER: fn() -> Router = TestModule::routes;
+        const ROUTER: fn() -> Router<Arc<AppState>> = TestModule::routes;
         const STATES: fn(&mut RwAppState) = TestModule::states;
     }
 
