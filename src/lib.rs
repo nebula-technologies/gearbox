@@ -311,6 +311,8 @@
 //!
 
 pub extern crate alloc;
+#[cfg(feature = "framework-axum")]
+pub extern crate axum;
 #[cfg(feature = "net-signature")]
 pub extern crate base64;
 #[cfg(feature = "net-signature")]
@@ -401,6 +403,7 @@ pub mod net;
 pub mod path;
 pub mod rails;
 pub mod serde;
+pub mod service;
 pub mod storage;
 pub mod sync;
 #[cfg(not(target_arch = "wasm32"))]
