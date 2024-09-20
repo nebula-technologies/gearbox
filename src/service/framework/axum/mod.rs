@@ -21,34 +21,6 @@ use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 
 #[derive(Clone)]
-pub struct AppStateBuilder {
-    // A map for storing application state keyed by TypeId
-    state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
-}
-
-impl AppStateBuilder {
-    pub fn add<T: 'static + Default + Send + Sync>(&mut self) -> &mut Self {
-        let state = T::default();
-        self.state.insert(state.type_id(), Arc::new(T::default()));
-        self
-    }
-
-    pub fn build(self) -> Arc<AppState> {
-        Arc::new(AppState {
-            state: self.clone().state,
-        })
-    }
-}
-
-impl Default for AppStateBuilder {
-    fn default() -> Self {
-        AppStateBuilder {
-            state: HashMap::new(),
-        }
-    }
-}
-
-#[derive(Clone)]
 pub struct AppState {
     // A map for storing application state keyed by TypeId
     state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
@@ -68,16 +40,37 @@ impl AppState {
     }
 }
 
-pub struct ModuleBuilder<'a> {
-    router: &'a mut Option<Router>,
+pub struct ModuleBuilder {
+    router: Router,
+    app_states: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
 }
 
-impl<'a> ModuleBuilder<'a> {
-    pub fn new(router: &'a mut Option<Router>) -> Self {
-        Self { router }
+impl ModuleBuilder {
+    pub fn new() -> Self {
+        Self {
+            router: Router::new(),
+            app_states: HashMap::new(),
+        }
     }
-    pub fn router<O: FnOnce(&mut Option<Router>)>(mut self, o: O) -> Self {
-        o(&mut self.router);
+    pub fn add_router(mut self, base: &str, router: Router) -> Self {
+        self.router = self.router.nest(base, router);
+        self
+    }
+
+    pub fn add_state<T>(mut self) -> Self
+    where
+        T: Default + Send + Sync + 'static,
+    {
+        self.app_states
+            .insert(TypeId::of::<T>(), Arc::new(T::default()));
+        self
+    }
+
+    pub fn add_state_object<T>(mut self, o: T) -> Self
+    where
+        T: Default + Send + Sync + 'static,
+    {
+        self.app_states.insert(TypeId::of::<T>(), Arc::new(o));
         self
     }
 }
@@ -135,12 +128,12 @@ pub struct ServerBuilder {
     logger_discovery: bool,
     logger_discovery_builder: Option<DiscoveryBuilder>,
     trace_layer: bool,
-    app_state: Option<AppStateBuilder>,
+    app_state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
 }
 
 impl ServerBuilder {
     pub fn new() -> Self {
-        let router = Router::new().with_state(Arc::new(AppState::new(HashMap::new())));
+        let router = Router::new();
 
         Self {
             address: IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
@@ -151,7 +144,7 @@ impl ServerBuilder {
             logger_discovery: false,
             logger_discovery_builder: None,
             trace_layer: false,
-            app_state: None,
+            app_state: HashMap::new(),
         }
     }
 
@@ -192,8 +185,25 @@ impl ServerBuilder {
         self
     }
 
-    pub fn add_router(mut self, r: Router) -> Self {
-        self.router = self.router.nest("", r);
+    pub fn add_router(mut self, base: &str, r: Router) -> Self {
+        self.router = self.router.nest(base, r);
+        self
+    }
+
+    pub fn add_state<T>(mut self) -> Self
+    where
+        T: Default + Send + Sync + 'static,
+    {
+        self.app_state
+            .insert(TypeId::of::<T>(), Arc::new(T::default()));
+        self
+    }
+
+    pub fn add_state_object<T>(mut self, o: T) -> Self
+    where
+        T: Default + Send + Sync + 'static,
+    {
+        self.app_state.insert(TypeId::of::<T>(), Arc::new(o));
         self
     }
 
