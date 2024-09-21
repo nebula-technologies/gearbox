@@ -60,7 +60,7 @@ impl AppState {
     }
 
     // Get a reference to a value in the state by type
-    pub async fn get<T: Any + Send + Sync>(&self) -> Option<&T> {
+    pub fn get<T: Any + Send + Sync>(&self) -> Option<&T> {
         self.state
             .get(&TypeId::of::<T>())
             .and_then(|boxed| boxed.downcast_ref::<T>())
