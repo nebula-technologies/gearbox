@@ -1,6 +1,6 @@
 [package]
 name = "gearbox"
-version = "4.0.0-rc7"
+version = "4.0.0-rc8"
 edition = "2021"
 authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 description = "Excessive tooling for Rust, boosting productivity and operations"
@@ -80,7 +80,7 @@ serde-toml = ["dep:toml"]
 
 #
 # Axum
-framework-axum = ["dep:axum", "dep:tower-http", "dep:tower-service"]
+framework-axum = ["std", "dep:axum", "dep:tower-http", "dep:tower-service", "dep:hyper", "dep:hyper-util"]
 
 # This is for activating all features for the current Arch
 full = ["net-signature", "web", "http-request", "http"]
@@ -171,6 +171,9 @@ if-addrs = { version = "0.13", optional = true }
 axum = { version = "0.7.5", optional = true }
 tower-http = { version = "0.5", features = ["timeout", "trace"], optional = true }
 tower-service = { version = "0.3.3", optional = true }
+hyper = { version = "1.4.1", features = ["full"], optional = true }
+hyper-util = { version = "0.1.8", features = ["full"], optional = true }
+num_cpus = "1.16.0"
 
 ## These are mainly used for "Wasm32" implementations
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tokio]

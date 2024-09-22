@@ -755,11 +755,16 @@ impl RequestProcessor {
             // the variables and then update the headers with the rendered values
             request.headers_mut().iter_mut().for_each(|(k, v)| {
                 v.iter_mut().for_each(|t| {
-                    String::from_utf8(t.0.clone()).map(|s| {
-                        TemplateEngine::new().render(&s, &context).map(|r| {
-                            t.0 = r.into_bytes();
-                        });
-                    });
+                    String::from_utf8(t.0.clone())
+                        .map(|s| {
+                            TemplateEngine::new()
+                                .render(&s, &context)
+                                .map(|r| {
+                                    t.0 = r.into_bytes();
+                                })
+                                .ok();
+                        })
+                        .ok();
                 });
             });
 
@@ -777,7 +782,8 @@ impl RequestProcessor {
                     .render(&t.to_string(), &context)
                     .map(|r| {
                         *t = Url::from(&r);
-                    });
+                    })
+                    .ok();
             });
 
             let response = request
@@ -900,7 +906,6 @@ mod tests {
     use crate::net::http::request::Method;
     use crate::net::http::test::test_server::start_test_server;
     use crate::rails::ext::future::*;
-    use tokio::sync::oneshot;
 
     #[tokio::test]
     async fn test_complete_request_chain_functionality() {

@@ -49,7 +49,7 @@
 //! ```
 
 use super::{Body, Client};
-use crate::net::http::request::body::{BodyOwned, BodyTrait};
+use crate::net::http::request::body::BodyOwned;
 #[cfg(feature = "net-signature")]
 use crate::net::http::request::client::GLOBAL_SIGNING;
 use crate::net::http::request::{Error, Header, HeaderMap, Response, Url};
@@ -57,7 +57,7 @@ use crate::net::http::request::{Error, Header, HeaderMap, Response, Url};
 #[cfg(feature = "net-signature")]
 use crate::net::signature::Signature;
 
-use crate::error::{DynTracerError, TracerError};
+use crate::error::DynTracerError;
 use crate::net::http::request::header::values::Values;
 use crate::net::http::request::header::Name;
 use crate::rails::ext::syn::{RailsMapErrInto, RailsMapInto};

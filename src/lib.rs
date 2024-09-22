@@ -336,8 +336,10 @@ pub extern crate hashbrown;
 pub extern crate hex;
 #[cfg(feature = "net-signature")]
 pub extern crate hmac; // ## For Testing!
-#[cfg(test)]
+#[cfg(any(test, feature = "framework-axum"))]
 pub extern crate hyper;
+#[cfg(feature = "framework-axum")]
+extern crate hyper_util;
 #[cfg(feature = "std")]
 extern crate if_addrs;
 #[cfg(all(feature = "serde-json5", feature = "serde-dynamic"))]
@@ -388,6 +390,7 @@ pub extern crate uniffi_macros;
 pub extern crate wasm_bindgen_test;
 #[cfg(all(target_arch = "wasm32", feature = "web"))]
 pub extern crate web_sys;
+
 #[cfg(all(feature = "syslog-macro", feature = "log-macro"))]
 compile_error!("`syslog-macro` and `log-macro` cannot be enabled at the same time.");
 

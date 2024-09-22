@@ -4,7 +4,7 @@ use alloc::{
     string::{String, ToString},
 };
 use core::fmt;
-use core::fmt::{Display, Pointer};
+use core::fmt::Display;
 use core::ops;
 
 pub trait Index: private::Sealed {

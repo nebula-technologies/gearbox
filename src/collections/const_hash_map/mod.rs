@@ -54,7 +54,7 @@ impl<K, V> HashMap<K, V> {
 
     fn as_inner_mut(&mut self) -> &mut GBHashMap<K, V> {
         self.ensure_initialized();
-        let inner = unsafe { self.data.get_mut().as_mut().unwrap() };
+        let inner = self.data.get_mut().as_mut().unwrap();
         inner
     }
 
