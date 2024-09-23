@@ -6,6 +6,7 @@
 # See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 variables:
   RUST_IS_LIBRARY: true
+  RUST_FEATURE_FLAGS: ("web" "http-request" "common-dirs" "syslog-macro" "http-request-chaining" "serde-dynamic-defaults" "net-signature" "std" "type-registry" "discover_log" "framework-axum")
 
 include:
   - project: ci-cd/rust

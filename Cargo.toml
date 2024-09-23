@@ -24,25 +24,28 @@ path = "src/lib.rs"
 maintenance = { status = "actively-developed" }
 
 [features]
-default = ["web", "http-request", "common-dirs", "syslog-macro", "http-request-chaining", "serde-dynamic-defaults", "net-signature", "std", "type-registry", "discover_log", "framework-axum"]
+default = []
+full = ["web", "http-request", "common-dirs", "syslog-macro", "http-request-chaining", "serde-dynamic-defaults", "net-signature", "std", "type-registry", "discover_log", "framework-axum"]
+
 web = ["web-sys", "web-storage", "js-sys"]
 web-storage = ["web-sys/Storage", "web-sys/Window"]
 http-request = ["http"]
 http-request-chaining = ["http-request"]
-http = ["reqwest"]
+http = ["dep:reqwest"]
 common-dirs = ["dirs"]
 std = ["std-log-ext"]
 did = ["didkit"]
 
 ## Tracing Loggers
 bunyan = []
-discover_log = ["reqwest"]
+discover_log = ["dep:reqwest"]
+
 ### Tracing logging Macros extensions
 syslog-macro = []
 log-macro = []
+
 ### Tracing ext for std
 std-log-ext = ["dep:pnet", "sys-info", "if-addrs"]
-
 
 ## TypeRegistry
 type-registry = []
@@ -81,10 +84,6 @@ serde-toml = ["dep:toml"]
 #
 # Axum
 framework-axum = ["std", "dep:axum", "dep:tower-http", "dep:tower-service", "dep:hyper", "dep:hyper-util"]
-
-# This is for activating all features for the current Arch
-full = ["net-signature", "web", "http-request", "http"]
-
 
 
 [dependencies]
