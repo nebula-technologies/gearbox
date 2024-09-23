@@ -14,9 +14,10 @@ use core::fmt::{Debug, Formatter};
 use core::hash::Hash;
 use crate_serde::de::{MapAccess, Visitor};
 use crate_serde::ser::{Error, SerializeStruct};
-use crate_serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use crate_serde::{Deserialize, Deserializer, Serialize, Serializer};
 use erased_serde::serialize_trait_object;
-use std::marker::PhantomData;
+// Exported Uses
+pub use extended_info::ErrorTracerExtInfo;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::{
     convert::{FromWasmAbi, IntoWasmAbi},
@@ -24,8 +25,6 @@ use wasm_bindgen::{
     prelude::*,
     JsValue,
 };
-// Exported Uses
-pub use extended_info::ErrorTracerExtInfo;
 
 pub trait ErrorDebug: fmt::Debug + Any {
     fn to_error_parts(&self) -> (String, Option<String>) {
@@ -166,6 +165,7 @@ where
     }
 }
 
+#[cfg(feature = "tracer-error-serde")]
 // Custom Serialize for TracerError
 impl<T> Serialize for TracerError<T>
 where
@@ -185,6 +185,7 @@ where
     }
 }
 
+#[cfg(feature = "tracer-error-serde")]
 // Custom Deserialize for TracerError
 impl<'de, T> Deserialize<'de> for TracerError<T>
 where
@@ -472,6 +473,7 @@ impl DynTracerError {
 //     }
 // }
 
+#[cfg(feature = "tracer-error-serde")]
 impl Serialize for DynTracerError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -489,6 +491,7 @@ impl Serialize for DynTracerError {
 }
 
 // Custom Deserialize for DynTracerError
+#[cfg(feature = "tracer-error-serde")]
 impl<'de> Deserialize<'de> for DynTracerError {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

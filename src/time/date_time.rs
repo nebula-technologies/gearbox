@@ -1798,6 +1798,7 @@ impl From<(i32, u8, u8, u8, u8, u8, u64, (i8, u8))> for DateTime {
     }
 }
 
+#[cfg(feature = "time-serde")]
 impl Serialize for DateTime {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1808,6 +1809,7 @@ impl Serialize for DateTime {
     }
 }
 
+#[cfg(feature = "time-serde")]
 impl<'de> Deserialize<'de> for DateTime {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
