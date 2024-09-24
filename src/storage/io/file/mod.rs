@@ -1,7 +1,7 @@
 use crate::rails::ext::syn::if_then::RailsIfExt;
 use crate::rails::ext::syn::map_into::RailsMapErrInto;
 use crate::rails::tracing::common::RailsLog;
-use alloc::string::String;
+use alloc::{string::String, vec::Vec};
 use libc::FILE;
 use spin::{Mutex, MutexGuard};
 use std::fs::{create_dir_all, File as StdFile, OpenOptions};

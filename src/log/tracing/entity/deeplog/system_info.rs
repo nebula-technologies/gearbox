@@ -1,7 +1,5 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use core::{net::IpAddr, option::Option};
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 use std::fs::read_to_string;
 #[cfg(feature = "std")]
 use std::process::Command;

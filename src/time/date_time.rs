@@ -7,6 +7,7 @@ use crate::time::duration::Duration;
 use crate::time::error::Error;
 use crate::time::utils::{days_in_month, is_leap_year};
 
+#[cfg(feature = "template")]
 use crate::template::PipelineValue;
 use crate::time::constants_utils::{Mdf, YearFlags};
 use crate::time::{utils, SecondsFormat, TimeNow};
@@ -19,8 +20,8 @@ use core::cmp::Ordering;
 use core::fmt::{Display, Formatter};
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, Sub};
-use serde::de::Error as SerdeError;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+#[cfg(feature = "dep_serde")]
+use serde::{de::Error as SerdeError, Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -43,6 +44,16 @@ pub struct DateTime {
     time: Duration,
     zone: Duration,
     cache: CacheWrapper,
+}
+
+impl Default for DateTime {
+    fn default() -> Self {
+        Self {
+            time: Duration::zero(),
+            zone: Duration::zero(),
+            cache: CacheWrapper::default(),
+        }
+    }
 }
 
 impl DateTime {
@@ -1659,6 +1670,7 @@ impl DateTime {
     }
 }
 
+#[cfg(feature = "template")]
 impl PipelineValue for DateTime {
     fn as_any(&self) -> &dyn Any {
         self
@@ -1798,7 +1810,7 @@ impl From<(i32, u8, u8, u8, u8, u8, u64, (i8, u8))> for DateTime {
     }
 }
 
-#[cfg(feature = "time-serde")]
+#[cfg(feature = "dep_serde")]
 impl Serialize for DateTime {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1809,7 +1821,7 @@ impl Serialize for DateTime {
     }
 }
 
-#[cfg(feature = "time-serde")]
+#[cfg(feature = "dep_serde")]
 impl<'de> Deserialize<'de> for DateTime {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

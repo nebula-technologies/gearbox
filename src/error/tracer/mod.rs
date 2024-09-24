@@ -2,20 +2,26 @@
 pub mod error_macro;
 pub mod extended_info;
 // Local uses
+#[cfg(feature = "with_serde")]
+use crate::externs::serde::{
+    de::{self, MapAccess, Visitor},
+    derive,
+    ser::{self, Error, SerializeStruct},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 #[cfg(target_arch = "wasm32")]
 use crate::serde::wasm_bindgen::{from_value, to_value};
+use alloc::string::String;
 use alloc::vec::Vec;
-use alloc::{boxed::Box, format, string::ToString};
+use alloc::{borrow::ToOwned, boxed::Box, format, string::ToString};
 use core::any::type_name;
 use core::any::Any;
 use core::fmt;
 use core::fmt::Display;
 use core::fmt::{Debug, Formatter};
 use core::hash::Hash;
-use crate_serde::de::{MapAccess, Visitor};
-use crate_serde::ser::{Error, SerializeStruct};
-use crate_serde::{Deserialize, Deserializer, Serialize, Serializer};
 use erased_serde::serialize_trait_object;
+use std::marker::PhantomData;
 // Exported Uses
 pub use extended_info::ErrorTracerExtInfo;
 #[cfg(target_arch = "wasm32")]
@@ -33,11 +39,15 @@ pub trait ErrorDebug: fmt::Debug + Any {
 }
 
 impl<T: fmt::Debug + Any> ErrorDebug for T {}
+
+#[cfg(feature = "with_serde")]
 // Define a marker trait for types that implement Serialize
 trait Serializable: erased_serde::Serialize {}
 
+#[cfg(feature = "with_serde")]
 impl<T> Serializable for T where T: Serialize {}
 
+#[cfg(feature = "with_serde")]
 serialize_trait_object!(Serializable);
 
 pub trait AnyBoxError: Any {
@@ -165,7 +175,7 @@ where
     }
 }
 
-#[cfg(feature = "tracer-error-serde")]
+#[cfg(feature = "with_serde")]
 // Custom Serialize for TracerError
 impl<T> Serialize for TracerError<T>
 where
@@ -185,7 +195,7 @@ where
     }
 }
 
-#[cfg(feature = "tracer-error-serde")]
+#[cfg(feature = "with_serde")]
 // Custom Deserialize for TracerError
 impl<'de, T> Deserialize<'de> for TracerError<T>
 where
@@ -195,7 +205,7 @@ where
     where
         D: Deserializer<'de>,
     {
-        #[derive(Deserialize)]
+        #[derive(derive::Deserialize)]
         struct TracerErrorData<T>
         where
             T: ErrorDebug,
@@ -473,7 +483,7 @@ impl DynTracerError {
 //     }
 // }
 
-#[cfg(feature = "tracer-error-serde")]
+#[cfg(feature = "with_serde")]
 impl Serialize for DynTracerError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -491,13 +501,13 @@ impl Serialize for DynTracerError {
 }
 
 // Custom Deserialize for DynTracerError
-#[cfg(feature = "tracer-error-serde")]
+#[cfg(feature = "with_serde")]
 impl<'de> Deserialize<'de> for DynTracerError {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        #[derive(Deserialize)]
+        #[derive(derive::Deserialize)]
         struct DynTracerErrorData {
             error: String,
             type_name: Option<String>,

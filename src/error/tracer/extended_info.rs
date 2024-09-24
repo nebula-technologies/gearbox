@@ -6,13 +6,15 @@ use alloc::{
 };
 use core::any::Any;
 use core::fmt::Display;
+#[cfg(feature = "dep_serde")]
 use serde_derive::{Deserialize, Serialize};
 use spin::rwlock::RwLock;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "dep_serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Clone)]
 pub struct ErrorTracerExtInfo {
     line: Option<u32>,
     file: Option<String>,

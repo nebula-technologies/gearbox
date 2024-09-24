@@ -1,30 +1,17 @@
+#[cfg(feature = "common-boxed-future")]
 pub mod boxed_future;
+#[cfg(feature = "common-ips")]
+pub mod ips;
+#[cfg(feature = "common-process")]
 pub mod process;
+#[cfg(feature = "common-try-default")]
 pub mod try_default;
 
+#[cfg(feature = "common-boxed-future")]
 pub use boxed_future::BoxedFuture;
-use core::net::IpAddr;
-use if_addrs::get_if_addrs;
+#[cfg(feature = "common-ips")]
+pub use ips::get_ips;
+#[cfg(feature = "common-process")]
+pub use process::id as process_id;
+#[cfg(feature = "common-try-default")]
 pub use try_default::TryDefault;
-
-pub fn get_ips() -> Vec<IpAddr> {
-    #[cfg(not(feature = "std"))]
-    {
-        Vec::new()
-    }
-
-    #[cfg(feature = "std")]
-    {
-        let mut ip_addresses = Vec::new();
-
-        if let Ok(interfaces) = get_if_addrs() {
-            for iface in interfaces {
-                if !iface.is_loopback() {
-                    ip_addresses.push(iface.ip());
-                }
-            }
-        }
-
-        ip_addresses
-    }
-}

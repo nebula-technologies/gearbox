@@ -1,3 +1,6 @@
+use alloc::string::String;
+use alloc::vec::Vec;
+
 pub trait IntoOptional {
     fn into_opt(self) -> Option<Self>
     where

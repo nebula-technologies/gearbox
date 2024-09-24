@@ -1,2 +1,2 @@
-#[cfg(feature = "common-dirs")]
+#[cfg(feature = "path-dirs")]
 pub use dirs::*;

@@ -65,7 +65,8 @@ use alloc::{string::String, sync::Arc};
 use core::fmt;
 use core::future::Future;
 use crate_serde::ser::{self, SerializeStruct};
-use crate_serde::{Deserialize, Deserializer, Serialize, Serializer};
+use crate_serde::{Deserializer, Serializer};
+use serde_derive::{Deserialize, Serialize};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -87,13 +88,13 @@ pub struct Builder {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone)]
 /// A builder for constructing HTTP requests.
-pub struct RequestBuilder {
+pub struct Builder {
     client: Option<Arc<Client>>,
     method: Method,
-    uri: Option<Url>,
-    headers: HeaderMap,
-    body: None,
-    content_type: String,
+    url: Option<Url>,
+    headers: Option<HeaderMap>,
+    body: Option<BodyOwned>,
+    content_type: Option<String>,
 }
 
 impl Builder {
@@ -879,7 +880,7 @@ impl ser::Serialize for Builder {
 }
 
 // Manually implement Deserialize
-impl<'de> Deserialize<'de> for Builder {
+impl<'de> crate_serde::Deserialize<'de> for Builder {
     /// Deserializes the `Builder` from a stored or transmitted format.
     ///
     /// This method manually implements the `Deserialize` trait for the `Builder` struct.

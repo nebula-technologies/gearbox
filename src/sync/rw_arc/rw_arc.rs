@@ -1,9 +1,10 @@
 //! A lock that provides data access to either one writer or many readers.
-
 use super::{
     compare_exchange, DetachedArc, HyperReadArc, HyperWriteArc, ReadArc, RelaxStrategy, Spin,
     UpgradableArc, WriteArc, READER, UPGRADED, WRITER,
 };
+#[cfg(feature = "with_serde")]
+use crate::externs::serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(target_arch = "wasm32")]
 use crate::externs::wasm_bindgen::{convert::*, describe::*, prelude::*};
 use crate::externs::{
@@ -14,7 +15,6 @@ use crate::externs::{
     mem::ManuallyDrop,
     ops::{Deref, DerefMut},
     ptr,
-    serde::{Deserialize, Deserializer, Serialize, Serializer},
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
@@ -209,6 +209,7 @@ impl<T: ?Sized, R> RwArc<T, R> {
     }
 }
 
+#[cfg(feature = "with_serde")]
 impl<T: ?Sized + Serialize, R: RelaxStrategy> Serialize for RwArc<T, R> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -219,6 +220,7 @@ impl<T: ?Sized + Serialize, R: RelaxStrategy> Serialize for RwArc<T, R> {
     }
 }
 
+#[cfg(feature = "with_serde")]
 impl<'de, T: ?Sized + Deserialize<'de>, R: RelaxStrategy> Deserialize<'de> for RwArc<T, R> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

@@ -14,6 +14,7 @@ pub use constants::{
     SECS_PER_MONTH, SECS_PER_YEAR,
 };
 
+#[cfg(feature = "error-tracer")]
 use crate::error_info;
 pub use date_time::DateTime;
 pub use duration::Duration;
@@ -34,7 +35,7 @@ pub trait TimeNow {
     fn time_now() -> Result<Duration, Self::Error>;
 }
 
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", feature = "error-tracer"))]
 impl TimeNow for SystemTime {
     type Error = crate::error::tracer::DynTracerError;
     fn time_now() -> Result<Duration, Self::Error> {

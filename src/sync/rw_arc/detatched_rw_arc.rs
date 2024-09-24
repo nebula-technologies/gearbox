@@ -1,9 +1,10 @@
 use super::{ReadArc, RelaxStrategy, RwArc, RwArcInner, Spin, WriteArc};
+#[cfg(feature = "with_serde")]
+use crate::externs::serde::{Deserialize, Serialize};
 use crate::externs::{
     cell::UnsafeCell,
     marker::PhantomData,
     ops::{Deref, DerefMut},
-    serde::{Deserialize, Serialize},
     sync::{atomic::AtomicUsize, Arc},
 };
 #[cfg(target_arch = "wasm32")]
@@ -56,6 +57,7 @@ impl<T, R> DerefMut for DetachedArc<T, R> {
     }
 }
 
+#[cfg(feature = "with_serde")]
 impl<T: ?Sized + Serialize, R: RelaxStrategy> Serialize for DetachedArc<T, R> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -66,6 +68,7 @@ impl<T: ?Sized + Serialize, R: RelaxStrategy> Serialize for DetachedArc<T, R> {
     }
 }
 
+#[cfg(feature = "with_serde")]
 impl<'de, T: Deserialize<'de>, R: RelaxStrategy> Deserialize<'de> for DetachedArc<T, R> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

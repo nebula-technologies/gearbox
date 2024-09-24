@@ -1,7 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "with_serde")]
+use crate::externs::serde::derive::{Deserialize, Serialize};
 use core::option::Option;
-use serde::{Deserialize, Serialize};
 #[cfg(feature = "std")]
 use std::process::Command;
 
@@ -20,42 +21,75 @@ static mut CACHE_CPU_VENDOR: Option<String> = None;
 static mut CACHE_CPU_MODEL: Option<String> = None;
 static mut CACHE_CPU_CORES: Option<u32> = None;
 static mut CACHE_CPU_SPEED: Option<u64> = None;
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "with_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
 pub struct Device {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub location: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub name: Option<String>,
 
     pub mac: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub model: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub manufacturer: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub serial_number: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub bios_version: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub gpu_info: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub storage_devices: Option<Vec<String>>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub usb_devices: Option<Vec<String>>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub network_interfaces: Option<Vec<String>>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "with_serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub battery_status: Option<String>,
     pub cpu_cores: Option<u32>,
     pub cpu_speed: Option<u64>,

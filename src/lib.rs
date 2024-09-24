@@ -310,123 +310,166 @@
 //!
 //!
 
-pub extern crate alloc;
-#[cfg(feature = "framework-axum")]
-pub extern crate axum;
-#[cfg(feature = "net-signature")]
-pub extern crate base64;
-#[cfg(feature = "net-signature")]
-pub extern crate bs58;
-#[cfg(all(feature = "serde-bson", feature = "serde-dynamic"))]
-pub extern crate bson;
-pub extern crate bytes;
-pub extern crate core;
+//
+// Core System
+//
+extern crate core;
+
+//
+// Standard system
+//
+#[cfg(feature = "std")]
+extern crate std;
+
+//
+// Dependencies already in CORE
+//
+extern crate alloc;
+
+//
+// Optional Dependencies
+//
+#[cfg(feature = "axum")]
+extern crate axum;
+#[cfg(feature = "base64")]
+extern crate base64;
+#[cfg(feature = "bs58")]
+extern crate bs58;
+#[cfg(feature = "bson")]
+extern crate bson;
+#[cfg(feature = "bytes")]
+extern crate bytes;
+#[cfg(feature = "derive_more")]
 #[macro_use]
-pub extern crate derive_more;
-#[cfg(feature = "did")]
-pub extern crate didkit;
-pub extern crate erased_serde;
-#[cfg(all(feature = "serde-flexbuffers", feature = "serde-dynamic"))]
-pub extern crate flexbuffers;
-pub extern crate futures;
+extern crate derive_more;
+#[cfg(feature = "didkit")]
+extern crate didkit;
+#[cfg(feature = "erased_serde")]
+extern crate erased_serde;
+#[cfg(feature = "flexbuffers")]
+extern crate flexbuffers;
+#[cfg(feature = "futures")]
+extern crate futures;
+#[cfg(feature = "gearbox_macros")]
 #[macro_use]
-pub extern crate gearbox_macros;
-pub extern crate hashbrown;
-#[cfg(feature = "net-signature")]
-pub extern crate hex;
-#[cfg(feature = "net-signature")]
-pub extern crate hmac; // ## For Testing!
-#[cfg(any(test, feature = "framework-axum"))]
-pub extern crate hyper;
-#[cfg(feature = "framework-axum")]
+extern crate gearbox_macros;
+#[cfg(feature = "hashbrown")]
+extern crate hashbrown;
+#[cfg(feature = "hex")]
+extern crate hex;
+#[cfg(feature = "hmac")]
+extern crate hmac; // ## For Testing!
+#[cfg(feature = "hyper")]
+extern crate hyper;
+#[cfg(feature = "hyper_util")]
 extern crate hyper_util;
-#[cfg(feature = "std")]
+#[cfg(feature = "if_addrs")]
 extern crate if_addrs;
-#[cfg(all(feature = "serde-json5", feature = "serde-dynamic"))]
-pub extern crate json5;
-#[cfg(feature = "std")]
+#[cfg(feature = "json5")]
+extern crate json5;
+#[cfg(feature = "pnet")]
 extern crate pnet;
-#[cfg(all(feature = "serde-postcard", feature = "serde-dynamic"))]
-pub extern crate postcard;
-#[cfg(feature = "http")]
-pub extern crate reqwest;
-#[cfg(all(feature = "serde-messagepack", feature = "serde-dynamic"))]
-pub extern crate rmp_serde;
-#[cfg(all(feature = "serde-ron", feature = "serde-dynamic"))]
-pub extern crate ron;
-pub extern crate semver;
-#[cfg(feature = "http")]
-pub extern crate serde as crate_serde;
-#[cfg(all(feature = "serde-cbor", feature = "serde-dynamic"))]
-pub extern crate serde_cbor;
-pub extern crate serde_derive;
-#[cfg(all(feature = "serde-json", feature = "serde-dynamic"))]
-pub extern crate serde_json;
-#[cfg(all(feature = "serde-lexpr", feature = "serde-dynamic"))]
-pub extern crate serde_lexpr;
-#[cfg(all(feature = "serde-pickle", feature = "serde-dynamic"))]
-pub extern crate serde_pickle as pickle;
-#[cfg(all(feature = "serde-query-string", feature = "serde-dynamic"))]
-pub extern crate serde_qs;
-#[cfg(all(
-    feature = "serde-accept-limited-xml-serialize",
-    feature = "serde-dynamic"
-))]
-pub extern crate serde_xml_rs;
-#[cfg(all(feature = "serde-yaml", feature = "serde-dynamic"))]
-pub extern crate serde_yaml;
-#[cfg(feature = "net-signature")]
-pub extern crate sha2;
-pub extern crate spin;
-#[cfg(feature = "std")]
-pub extern crate std;
-#[cfg(not(target_arch = "wasm32"))]
-pub extern crate tokio;
-pub extern crate tracing;
-pub extern crate uniffi;
-pub extern crate uniffi_macros;
+#[cfg(feature = "postcard")]
+extern crate postcard;
+#[cfg(feature = "reqwest")]
+extern crate reqwest;
+#[cfg(feature = "rmp_serde")]
+extern crate rmp_serde;
+#[cfg(feature = "ron")]
+extern crate ron;
+#[cfg(feature = "semver")]
+extern crate semver;
+#[cfg(feature = "dep_serde")]
+extern crate serde as crate_serde;
+#[cfg(feature = "serde_cbor")]
+extern crate serde_cbor;
+#[cfg(feature = "serde_derive")]
+extern crate serde_derive;
+#[cfg(feature = "serde_json")]
+extern crate serde_json;
+#[cfg(feature = "serde_lexpr")]
+extern crate serde_lexpr;
+#[cfg(feature = "serde_pickle")]
+extern crate serde_pickle as pickle;
+#[cfg(feature = "serde_qs")]
+extern crate serde_qs;
+#[cfg(feature = "serde_xml_rs")]
+extern crate serde_xml_rs;
+#[cfg(feature = "serde_yaml")]
+extern crate serde_yaml;
+#[cfg(feature = "sha2")]
+extern crate sha2;
+#[cfg(feature = "spin")]
+extern crate spin;
+#[cfg(feature = "tokio")]
+extern crate tokio;
+#[cfg(feature = "tracing")]
+extern crate tracing;
+#[cfg(feature = "tracing_subscriber")]
+extern crate tracing_subscriber;
+#[cfg(feature = "uniffi")]
+extern crate uniffi;
+#[cfg(feature = "uniffi_macros")]
+extern crate uniffi_macros;
 #[cfg(test)]
 #[macro_use]
-pub extern crate wasm_bindgen_test;
+extern crate wasm_bindgen_test;
 #[cfg(all(target_arch = "wasm32", feature = "web"))]
-pub extern crate web_sys;
+extern crate web_sys;
 
 #[cfg(all(feature = "syslog-macro", feature = "log-macro"))]
 compile_error!("`syslog-macro` and `log-macro` cannot be enabled at the same time.");
 
-#[cfg(feature = "std")]
 // uniffi::setup_scaffolding!();
+#[cfg(feature = "collections")]
 pub mod collections;
+#[cfg(feature = "common")]
 pub mod common;
 #[cfg(feature = "did")]
 pub mod did;
+#[cfg(feature = "error")]
 pub mod error;
+#[cfg(feature = "log")]
 pub mod log;
+#[cfg(feature = "net")]
 pub mod net;
+#[cfg(feature = "path")]
 pub mod path;
+#[cfg(feature = "rails")]
 pub mod rails;
+#[cfg(feature = "serde")]
 pub mod serde;
+#[cfg(feature = "service")]
 pub mod service;
+#[cfg(feature = "storage")]
 pub mod storage;
+#[cfg(feature = "sync")]
 pub mod sync;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "task")]
 pub mod task;
+#[cfg(feature = "template")]
 pub mod template;
+#[cfg(feature = "time")]
 pub mod time;
 
 #[allow(unused_imports)]
-#[cfg(feature = "log-macro")]
+#[cfg(all(
+    feature = "log-tracing-macros",
+    not(feature = "log-tracing-macros-syslog")
+))]
 pub use crate::log::tracing::macros::common::*;
 
 #[allow(unused_imports)]
-#[cfg(feature = "syslog-macro")]
+#[cfg(feature = "log-tracing-macros-syslog")]
 pub use crate::log::tracing::macros::syslog::*;
 
+#[cfg(feature = "error-tracer-macros")]
 #[allow(unused_imports)]
 pub use crate::error::tracer::error_macro::*;
 
 pub mod macros {
     pub mod loaders {
+        #[cfg(feature = "gearbox_macros")]
         pub use gearbox_macros::load_consts;
     }
 }
@@ -434,7 +477,9 @@ pub mod macros {
 pub mod externs {
 
     pub mod collections {
+        #[cfg(feature = "hashbrown")]
         pub use hashbrown::HashMap;
+        #[cfg(feature = "hashbrown")]
         pub use hashbrown::HashSet;
     }
 
@@ -445,14 +490,20 @@ pub mod externs {
         pub use wasm_bindgen::describe;
         pub use wasm_bindgen::prelude;
     }
+    #[cfg(feature = "dep_serde")]
     pub mod serde {
-        pub use crate_serde::{Deserialize, Deserializer, Serialize, Serializer};
+        pub use crate_serde::*;
+        pub mod derive {
+            pub use serde_derive::*;
+        }
     }
     pub use core::{cell, fmt, marker, mem, ops, ptr};
+
     pub mod sync {
         pub use alloc::sync::Arc;
         pub use core::sync::atomic;
     }
+
     pub mod rc {
         pub use alloc::rc::Rc;
     }

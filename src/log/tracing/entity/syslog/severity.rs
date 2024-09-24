@@ -7,7 +7,12 @@ use tracing::Level as TracingLevel;
 pub enum SeverityError {
     ConversionError(ConversionError),
 }
-#[derive(Debug, PartialEq, Clone, serde_derive::Deserialize, serde_derive::Serialize)]
+
+#[cfg_attr(
+    feature = "dep_serde",
+    derive(serde_derive::Deserialize, serde_derive::Serialize)
+)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Severity {
     Trace = 8,
     Debug = 7,

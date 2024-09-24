@@ -3,7 +3,9 @@ use core::fmt;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::ops::Index;
+#[cfg(feature = "with_serde")]
 use crate_serde::ser::SerializeMap;
+#[cfg(feature = "with_serde")]
 use crate_serde::{Deserialize, Deserializer, Serialize, Serializer};
 use hashbrown::hash_map;
 use hashbrown::HashMap as HBHashMap;
@@ -258,6 +260,7 @@ where
 }
 
 // Implement Serialize
+#[cfg(feature = "with_serde")]
 impl<K, V> Serialize for HashMap<K, V>
 where
     K: Serialize + Eq + Hash,
@@ -276,6 +279,7 @@ where
 }
 
 // Implement Deserialize
+#[cfg(feature = "with_serde")]
 impl<'de, K, V> Deserialize<'de> for HashMap<K, V>
 where
     K: Deserialize<'de> + Eq + Hash,

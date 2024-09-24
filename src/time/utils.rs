@@ -659,70 +659,70 @@ pub(crate) fn nanos_to_timestamp(nanos: i64) -> (i32, u8, u8, u8, u8, u8, u64) {
 
     (year, month, day, hour, minute, second, nano_remainder)
 }
-
-trait ResultCompare
-where
-    Self: Sized,
-{
-    type Error: crate::error::tracer::ErrorDebug;
-    fn if_gt(self, other: &Self) -> Result<Self, Self::Error>;
-    fn if_lt(self, other: &Self) -> Result<Self, Self::Error>;
-}
-
-impl ResultCompare for u64 {
-    type Error = CompareError;
-    fn if_gt(self, other: &u64) -> Result<u64, Self::Error> {
-        if &self > other {
-            Ok(self)
-        } else {
-            Err(Self::Error::IsNotGreaterThan)
-        }
-    }
-
-    fn if_lt(self, other: &u64) -> Result<u64, Self::Error> {
-        if &self < other {
-            Ok(self)
-        } else {
-            Err(Self::Error::IsNotGreaterThan)
-        }
-    }
-}
-impl ResultCompare for i64 {
-    type Error = CompareError;
-    fn if_gt(self, other: &i64) -> Result<i64, Self::Error> {
-        if &self > other {
-            Ok(self)
-        } else {
-            Err(Self::Error::IsNotGreaterThan)
-        }
-    }
-
-    fn if_lt(self, other: &i64) -> Result<i64, Self::Error> {
-        if &self < other {
-            Ok(self)
-        } else {
-            Err(Self::Error::IsNotGreaterThan)
-        }
-    }
-}
-impl ResultCompare for u32 {
-    type Error = CompareError;
-    fn if_gt(self, other: &u32) -> Result<u32, Self::Error> {
-        if &self > other {
-            Ok(self)
-        } else {
-            Err(Self::Error::IsNotGreaterThan)
-        }
-    }
-
-    fn if_lt(self, other: &u32) -> Result<u32, Self::Error> {
-        if &self < other {
-            Ok(self)
-        } else {
-            Err(Self::Error::IsNotGreaterThan)
-        }
-    }
-}
+//
+// trait ResultCompare
+// where
+//     Self: Sized,
+// {
+//     type Error: crate::error::tracer::ErrorDebug;
+//     fn if_gt(self, other: &Self) -> Result<Self, Self::Error>;
+//     fn if_lt(self, other: &Self) -> Result<Self, Self::Error>;
+// }
+//
+// impl ResultCompare for u64 {
+//     type Error = CompareError;
+//     fn if_gt(self, other: &u64) -> Result<u64, Self::Error> {
+//         if &self > other {
+//             Ok(self)
+//         } else {
+//             Err(Self::Error::IsNotGreaterThan)
+//         }
+//     }
+//
+//     fn if_lt(self, other: &u64) -> Result<u64, Self::Error> {
+//         if &self < other {
+//             Ok(self)
+//         } else {
+//             Err(Self::Error::IsNotGreaterThan)
+//         }
+//     }
+// }
+// impl ResultCompare for i64 {
+//     type Error = CompareError;
+//     fn if_gt(self, other: &i64) -> Result<i64, Self::Error> {
+//         if &self > other {
+//             Ok(self)
+//         } else {
+//             Err(Self::Error::IsNotGreaterThan)
+//         }
+//     }
+//
+//     fn if_lt(self, other: &i64) -> Result<i64, Self::Error> {
+//         if &self < other {
+//             Ok(self)
+//         } else {
+//             Err(Self::Error::IsNotGreaterThan)
+//         }
+//     }
+// }
+// impl ResultCompare for u32 {
+//     type Error = CompareError;
+//     fn if_gt(self, other: &u32) -> Result<u32, Self::Error> {
+//         if &self > other {
+//             Ok(self)
+//         } else {
+//             Err(Self::Error::IsNotGreaterThan)
+//         }
+//     }
+//
+//     fn if_lt(self, other: &u32) -> Result<u32, Self::Error> {
+//         if &self < other {
+//             Ok(self)
+//         } else {
+//             Err(Self::Error::IsNotGreaterThan)
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone)]
 

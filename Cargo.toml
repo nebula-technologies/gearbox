@@ -24,98 +24,167 @@ path = "src/lib.rs"
 maintenance = { status = "actively-developed" }
 
 [features]
+## Default - None
 default = []
-full = ["web", "http-request", "common-dirs", "syslog-macro", "http-request-chaining", "serde-dynamic-defaults", "net-signature", "std", "type-registry", "discover_log", "framework-axum"]
+
+## Full - all features available
+full = []
+
+##
+## Global Cross deps
+##
+std = []
+axum = ["dep:axum"]
+base64 = ["dep:base64"]
+bs58 = ["dep:bs58"]
+bson = ["dep:bson"]
+bytes = ["dep:bytes"]
+derive_more = ["dep:derive_more"]
+didkit = ["dep:didkit"]
+erased_serde = ["dep:erased-serde"]
+flexbuffers = ["dep:flexbuffers"]
+futures = ["dep:futures"]
+gearbox_macros = ["dep:gearbox-macros"]
+hashbrown = ["dep:hashbrown"]
+hex = ["dep:hex"]
+hmac = ["dep:hmac"]
+hyper = ["dep:hyper"]
+hyper_util = ["dep:hyper-util"]
+if_addrs = ["dep:if-addrs"]
+json5 = ["dep:json5"]
+pnet = ["dep:pnet"]
+postcard = ["dep:postcard"]
+reqwest = ["dep:reqwest"]
+rmp_serde = ["dep:rmp-serde"]
+ron = ["dep:ron"]
+semver = ["dep:semver"]
+dep_serde = ["dep:serde", "serde_derive"]
+serde_cbor = ["dep:serde_cbor"]
+serde_derive = ["dep:serde_derive"]
+serde_json = ["dep:serde_json"]
+serde_lexpr = ["dep:serde-lexpr"]
+serde_pickle = ["dep:serde-pickle"]
+serde_qs = ["dep:serde_qs"]
+serde_xml_rs = ["dep:serde-xml-rs"]
+serde_yaml = ["dep:serde_yaml"]
+sha2 = ["dep:sha2"]
+sys_info = ["dep:sys-info"]
+spin = ["dep:spin"]
+tokio = ["dep:tokio"]
+tracing = ["dep:tracing"]
+uniffi = ["dep:uniffi"]
+uniffi_macros = ["dep:uniffi_macros"]
+tracing_subscriber = ["dep:tracing-subscriber"]
+
+##
+## Feature Extensions
+##
+with_serde = ["dep_serde", "serde_derive"]
+with_json = ["serde_json"]
 
 ##
 ## Main Feature Flags
 ##
 
-# Web
-web = ["web-sys", "web-storage", "js-sys", "dep:serde_json", ]
+# Collections
+collections = ["std"]
+collections-all = ["collections-const-hash-map", "collections-hash-map", "collections-simple-linked-list", "collections-vec-deque"]
+collections-const-hash-map = ["collections", "hashbrown"]
+collections-hash-map = ["collections", "hashbrown"]
+collections-simple-linked-list = ["collections"]
+collections-vec-deque = ["collections"]
 
-# Tracer Error
-tracer-error = []
-tracer-error-serde = ["dep:serde"]
+# Common
+common = ["std"]
+common-all = ["common-try-default"]
+common-try-default = ["common"]
+common-boxed-future = ["common"]
+common-ips = ["common", "if_addrs"]
+common-process = ["common"]
+
+did = ["std"]
+did-all = ["did-sld"]
+did-sld = ["did", "dep_serde", "regex", "serde_json"]
+
+# Error Tracers
+error = ["std"]
+error-all = ["error", "error-tracer", "error-tracer-macros", "error-type-registry"]
+error-tracer = ["error", "erased_serde", "spin"]
+error-tracer-macros = ["error-tracer"]
+error-type-registry = ["error", "spin", "collections-hash-map"]
+
+# Log
+# > TODO: std and libc needs removal from the implementation
+log = ["tracing", "common-process", "net-hostname", "tracing_subscriber", "std", "libc"]
+# > TODO: log has a bad dep of log-tracing-syslog this needs to be moved out and or changed
+log-tracing = ["log", "collections-hash-map", "hashbrown", "time", "log-tracing-syslog", "tracing-subscriber/std", "tracing-subscriber/fmt", "dep_serde", "serde_json", "serde_derive"]
+log-tracing-bunyan = ["log-tracing", "with_serde"]
+log-tracing-deeplog = ["log-tracing", "pnet", "dep:tokio", "futures", "toml", "sync-rw-arc", "sys_info", "with_serde", "serde_json"]
+log-tracing-syslog = ["log-tracing"]
+log-tracing-macros = ["log", "log-tracing", "log-tracing-macros-common"]
+log-tracing-macros-syslog = ["log-tracing-macros"]
+log-tracing-macros-common = ["log-tracing-macros"]
+
+# Net
+net = ["std"]
+net-hostname = ["net", "libc"]
+net-http = ["net"]
+net-signature = ["net", "base64", "bs58", "hashbrown", "dep_serde", "hmac", "sha2", "time"]
+net-http-dyno-request = ["net-http"]
+net-http-request = ["net-http", "url", "serde_json", "reqwest", "dep_serde", "error-tracer", "rails-ext", "hashbrown", "serde_derive", "spin", "bytes", "common-boxed-future"]
+net-http-request-chaining = ["net-http", "dep_serde", "error-tracer", "spin", "template", "net-http-request", "regex", "time", "collections-hash-map"]
+
+
+
+
+# Path - common paths in systems
+path = ["std"]
+path-dirs = ["path", "dep:dirs"]
+
+# Rails - Railway oriented Programming extenstions
+rails = ["std"]
+rails-ext = ["rails", "error-tracer", "spin"]
+rails-tracing = ["rails"]
+
+# Storage
+storage = ["std", "common-try-default", "error-tracer", "dep_serde", "rails-ext"]
+storage-all = ["storage", "storage-web", "storage-io"]
+storage-web = ["storage", "dep_serde", "serde_json"]
+storage-io = ["storage", "dep_serde", "storage-yaml-ext", "storage-json-ext", "std", "path-dirs", "spin", "libc", "rails-ext", "rails-tracing", "tracing", "log-tracing-macros"]
+storage-yaml-ext = ["storage", "serde_yaml"]
+storage-json-ext = ["storage", "serde_json"]
+
+# Sync/Async support blocks
+sync = []
+sync-rw-arc = ["sync"]
+
+# Template Engine
+template = ["std", "hashbrown", "spin", "regex", "time", "error-tracer"]
 
 # Time
-time = []
-time-serde = ["dep:serde"]
+time = ["std", "spin", "rails-ext", "error-tracer"]
+time-serde = ["time", "dep_serde"]
+
+
 
 #####################
 
-web-storage = ["web-sys/Storage", "web-sys/Window"]
-http-request = ["http"]
-http-request-chaining = ["http-request"]
-http = ["dep:reqwest"]
-common-dirs = ["dirs"]
-std = ["std-log-ext"]
-did = ["didkit"]
-
-## Tracing Loggers
-bunyan = []
-discover_log = ["dep:reqwest"]
-
-### Tracing logging Macros extensions
-syslog-macro = []
-log-macro = []
-
-### Tracing ext for std
-std-log-ext = ["dep:pnet", "sys-info", "if-addrs"]
-
-## TypeRegistry
-type-registry = []
-
-## Net Signature
-net-signature = ["hex", "base64", "hmac", "sha2", "bs58", "sign-toml", "sign-yaml", "sign-json", "sign-query-string", "serde-dynamic"]
-sign-toml = ["serde-toml"]
-sign-yaml = ["serde-yaml"]
-sign-json = ["serde-json"]
-sign-query-string = ["serde-query-string"]
-
-## Serde Dynamic implementation
-serde-dynamic = []
-serde-dynamic-defaults = ["serde-dynamic", "serde-json", "serde-yaml", "serde-toml", "serde-query-string"]
-serde-dynamic-all = ["serde-dynamic", "serde-avro", "serde-bson", "serde-json5", "serde-flexbuffers", "serde-postcard", "serde-messagepack", "serde-ron", "serde-lexpr", "serde-pickle", "serde-cbor", "serde-json", "serde-query-string", "serde-yaml", "serde-toml"]
-serde-accept-limited-xml-serialize = ["serde-xml-rs"]
-serde-avro = ["apache-avro"]
-serde-bson = ["dep:bson"]
-serde-json5 = ["dep:json5"]
-serde-flexbuffers = ["dep:flexbuffers"]
-serde-postcard = ["dep:postcard"]
-serde-messagepack = ["rmp-serde"]
-serde-ron = ["dep:ron"]
-serde-lexpr = ["dep:serde-lexpr"]
-serde-pickle = ["dep:serde-pickle"]
-serde-cbor = ["serde_cbor"]
-serde-json = ["dep:serde_json"]
-serde-query-string = ["serde_qs"]
-serde-yaml = ["dep:serde_yaml"]
-serde-toml = ["dep:toml"]
-
-#
-# Frameworks
-#
-
-#
-# Axum
-framework-axum = ["std", "dep:axum", "dep:tower-http", "dep:tower-service", "dep:hyper", "dep:hyper-util"]
-
 
 [dependencies]
-derive_more = "0.99.17"
+derive_more = { version = "0.99.17", optional = true }
 serde_json = { version = "1", optional = true }
 serde_yaml = { version = "0.9.33", optional = true }
 serde = { version = "1", optional = true }
-tracing = { version = "0.1.40", features = ["log"] }
-libc = "0.2.155"
-tracing-subscriber = "0.3.18"
-num-traits = "0.2.19"
-spin = "0.9.8"
-hashbrown = { version = "0.14.5", features = ["serde"] }
+tracing = { version = "0.1.40", default-features = false, features = ["log", "attributes"], optional = true }
+libc = { version = "0.2.155", optional = true }
+tracing-subscriber = { version = "0.3.18", default-features = false, features = ["smallvec", "sharded-slab", "thread_local", "nu-ansi-term"], optional = true }
+tracing-log = { version = "0.2.0", default-features = false, features = ["log-tracer", "interest-cache"], optional = true }
+num-traits = { version = "0.2.19", optional = true }
+spin = { version = "0.9.8", optional = true }
+hashbrown = { version = "0.14.5", features = ["serde"], optional = true }
 
-url = "2.5.1"
-serde_derive = "1.0.203"
+url = { version = "2.5.1", optional = true }
+serde_derive = { version = "1.0.203", optional = true }
 
 ## These are mainly used for "dirs" feature
 ##
@@ -139,12 +208,12 @@ didkit = { version = "0.6.0", optional = true }
 ## These are mainly used for "web" feature
 web-sys = { version = "0.3.69", features = [], optional = true }
 js-sys = { version = "0.3.69", optional = true }
-uniffi_macros = { version = "0.28" }
-uniffi = { version = "0.28", features = ["build", "cli"] }
+uniffi_macros = { version = "0.28", optional = true }
+uniffi = { version = "0.28", features = ["build", "cli"], optional = true }
 
 ## TODO Might not be needed here
-bytes = "1.6.0"
-semver = "1.0.23"
+bytes = { version = "1.6.0", optional = true }
+semver = { version = "1.0.23", optional = true }
 
 ## Serde Dynamic implementation
 apache-avro = { version = "0.16.0", features = ["snappy"], optional = true }
@@ -160,15 +229,15 @@ serde-xml-rs = { version = "0.6.0", optional = true }
 serde_cbor = { version = "0.11.2", optional = true }
 serde_qs = { version = "0.13.0", optional = true }
 toml = { version = "0.8.12", optional = true }
-futures = "0.3.30"
-regex = "1.10.5"
-erased-serde = "0.4.5"
+futures = { version = "0.3.30", optional = true }
+regex = { version = "1.10.5", optional = true }
+erased-serde = { version = "0.4.5", optional = true }
 
 ## Exposing the common gearbox macros
-gearbox-macros = "0.0.1"
-clap = { version = "4.5.9", features = ["derive"] }
-chrono = "0.4.38"
-lazy_static = "1.5.0"
+gearbox-macros = { version = "0.0.1", optional = true }
+clap = { version = "4.5.9", features = ["derive"], optional = true }
+chrono = { version = "0.4.38", optional = true }
+lazy_static = { version = "1.5.0", optional = true }
 
 
 ## Used for:
@@ -177,6 +246,7 @@ pnet = { version = "0.35.0", optional = true }
 sys-info = { version = "0.9", optional = true }
 nix = { version = "0.29", features = [], optional = true }
 if-addrs = { version = "0.13", optional = true }
+
 
 
 ## Frameworks
@@ -188,18 +258,23 @@ tower-http = { version = "0.5", features = ["timeout", "trace"], optional = true
 tower-service = { version = "0.3.3", optional = true }
 hyper = { version = "1.4.1", features = ["full"], optional = true }
 hyper-util = { version = "0.1.8", features = ["full"], optional = true }
-num_cpus = "1.16.0"
+num_cpus = { version = "1.16.0", optional = true }
+
 
 ## These are mainly used for "Wasm32" implementations
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tokio]
+optional = true
 version = "1"
-features = ["rt-multi-thread", "rt", "macros", "signal"]
+features = ["full"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen]
+optional = true
 version = "0.2.92"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen-futures]
+optional = true
 version = "0.4.42"
+
 
 
 [dev-dependencies]

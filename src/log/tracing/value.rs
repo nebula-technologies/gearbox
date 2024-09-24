@@ -542,7 +542,7 @@ impl From<Option<&str>> for Value {
     }
 }
 
-#[cfg(any(feature = "bunyan", feature = "discover_log"))]
+#[cfg(feature = "with_serde")]
 impl From<&Value> for serde_json::Value {
     fn from(v: &Value) -> Self {
         match v {

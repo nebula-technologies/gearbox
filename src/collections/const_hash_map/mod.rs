@@ -8,7 +8,9 @@ use core::ops::Index;
 use core::sync::atomic::{AtomicBool, Ordering};
 use hashbrown::hash_map::HashMap as GBHashMap;
 use hashbrown::{hash_map, TryReserveError};
+#[cfg(feature = "with_serde")]
 use serde::ser::SerializeMap;
+#[cfg(feature = "with_serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 pub struct HashMap<K, V> {
@@ -307,7 +309,7 @@ where
     }
 }
 
-// Implement Serialize
+#[cfg(feature = "with_serde")]
 impl<K, V> Serialize for HashMap<K, V>
 where
     K: Serialize + Eq + Hash,
@@ -325,7 +327,7 @@ where
     }
 }
 
-// Implement Deserialize
+#[cfg(feature = "with_serde")]
 impl<'de, K, V> Deserialize<'de> for HashMap<K, V>
 where
     K: Deserialize<'de> + Eq + Hash,

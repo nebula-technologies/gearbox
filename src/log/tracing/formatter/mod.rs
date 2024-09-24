@@ -1,10 +1,15 @@
+use crate::log::tracing::layer::log_layer::LogEmitter;
 use crate::log::tracing::layer::{LogLayer, Storage, Type};
+use alloc::string::String;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::registry::SpanRef;
 
+#[cfg(feature = "log-tracing-bunyan")]
 pub mod bunyan;
+#[cfg(feature = "log-tracing-deeplog")]
 pub mod deeplog;
+#[cfg(feature = "log-tracing-syslog")]
 pub mod syslog;
 
 pub trait LogFormatter {

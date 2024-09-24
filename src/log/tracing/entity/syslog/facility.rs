@@ -1,8 +1,11 @@
 use crate::log::tracing::entity::syslog::ConversionError;
 use crate::log::tracing::Value;
 use alloc::string::{String, ToString};
-
-#[derive(Debug, PartialEq, Clone, serde_derive::Serialize, serde_derive::Deserialize)]
+#[cfg_attr(
+    feature = "dep_serde",
+    derive(serde_derive::Deserialize, serde_derive::Serialize)
+)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Facility {
     KernelMessages = 0,
     UserlevelMessages = 1,

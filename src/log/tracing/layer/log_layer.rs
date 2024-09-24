@@ -17,6 +17,11 @@ const TRACING_COMMON: &'static str = "tracing-log.";
 #[allow(unused)]
 const TRACING_OVERWRITES: &'static str = "tracing-log.overwrites.";
 
+pub trait LogEmitter {
+    fn emit(&self, buffer: &[u8]) -> Result<(), Error>;
+}
+
+// Enum for errors (currently empty)
 pub enum Error {}
 
 pub struct LogLayer<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> {
@@ -46,7 +51,7 @@ impl<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> LogLayer<W,
                 .into_owned(),
         );
 
-        #[cfg(all(not(any(unix, windows)), feature = "std"))]
+        #[cfg(not(feature = "std"))]
         let hostname = None;
 
         Self {
@@ -88,10 +93,7 @@ where
     F: LogFormatter + Default + 'static,
 {
     fn on_event(&self, event: &Event<'_>, ctx: Context<'_, S>) {
-        // Creating the SPAN from context.
         let current_span = ctx.lookup_current();
-
-        // Event Visitor and storage initialization.
         let mut event_visitor = Storage::default();
         event.record(&mut event_visitor);
 

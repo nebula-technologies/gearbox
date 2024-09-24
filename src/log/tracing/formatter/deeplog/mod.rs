@@ -1,6 +1,8 @@
 use crate::log::tracing::entity::deeplog::{
     Caller, DeepLog, Device, ProcessInfo, SystemInfo, Timestamps,
 };
+#[cfg(feature = "service-discovery")]
+use crate::service::discovery::entity::Config;
 use crate::{
     collections::HashMap,
     log::tracing::{
@@ -8,7 +10,6 @@ use crate::{
         layer::{LogLayer, Storage, Type},
         LogFormatter, Value,
     },
-    service::discovery::entity::Config,
     sync::rw_arc::RwArc,
     time::DateTime,
 };
@@ -38,6 +39,7 @@ pub struct DeepLogFormatter {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub log: Option<DeepLog>,
 
+    #[cfg(feature = "service-discovery")]
     #[serde(skip)]
     pub discovery_config: RwArc<Option<Config>>,
 }
@@ -51,6 +53,7 @@ impl DeepLogFormatter {
 
         Self {
             log: Some(DeepLog::default()),
+            #[cfg(feature = "service-discovery")]
             discovery_config: RwArc::new(None),
         }
     }
@@ -98,6 +101,7 @@ impl Default for DeepLogFormatter {
     fn default() -> Self {
         Self {
             log: Some(DeepLog::default()),
+            #[cfg(feature = "service-discovery")]
             discovery_config: RwArc::new(None),
         }
     }
@@ -118,6 +122,7 @@ impl LogFormatter for DeepLogFormatter {
     ) -> Self {
         Self {
             log: Some(DeepLog::default()),
+            #[cfg(feature = "service-discovery")]
             discovery_config: RwArc::new(None),
         }
     }

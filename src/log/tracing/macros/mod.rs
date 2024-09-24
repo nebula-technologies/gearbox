@@ -1,4 +1,7 @@
-#[cfg(feature = "log-macro")]
+#[cfg(all(
+    feature = "log-tracing-macros",
+    not(feature = "log-tracing-macros-syslog")
+))]
 pub mod common;
-#[cfg(feature = "syslog-macro")]
+#[cfg(feature = "log-tracing-macros-syslog")]
 pub mod syslog;
