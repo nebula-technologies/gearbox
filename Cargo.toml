@@ -1,6 +1,6 @@
 [package]
 name = "gearbox"
-version = "4.0.0-rc9"
+version = "4.0.0-rc10"
 edition = "2021"
 authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 description = "Excessive tooling for Rust, boosting productivity and operations"
@@ -147,7 +147,7 @@ rails-tracing = ["rails"]
 # Services - Builders and more
 service = ["std"]
 service-discovery = ["service", "serde_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all"]
-service-framework-axum = ["service", "service-discovery", "serde_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc"]
+service-framework-axum = ["service", "service-discovery", "serde_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http"]
 
 # Storage
 storage = ["std", "common-try-default", "error-tracer", "dep_serde", "rails-ext"]

@@ -1,2 +1,2 @@
-#[cfg(feature = "framework-axum")]
+#[cfg(feature = "service-framework-axum")]
 pub mod axum;

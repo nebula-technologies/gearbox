@@ -496,6 +496,10 @@ pub mod externs {
         pub mod derive {
             pub use serde_derive::*;
         }
+        #[cfg(feature = "with_json")]
+        pub mod json {
+            pub use serde_json::*;
+        }
     }
     pub use core::{cell, fmt, marker, mem, ops, ptr};
 
