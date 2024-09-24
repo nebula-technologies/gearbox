@@ -1,4 +1,4 @@
-#[cfg(feature = "std")]
+#[cfg(feature = "service-discovery")]
 pub mod discovery;
-#[cfg(all(feature = "std", feature = "framework-axum"))]
+#[cfg(feature = "service-framework-axum")]
 pub mod framework;

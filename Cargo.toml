@@ -118,6 +118,7 @@ error-type-registry = ["error", "spin", "collections-hash-map"]
 log = ["tracing", "common-process", "net-hostname", "tracing_subscriber", "std", "libc"]
 # > TODO: log has a bad dep of log-tracing-syslog this needs to be moved out and or changed
 log-tracing = ["log", "collections-hash-map", "hashbrown", "time", "log-tracing-syslog", "tracing-subscriber/std", "tracing-subscriber/fmt", "dep_serde", "serde_json", "serde_derive"]
+log-tracing-all = ["log-tracing", "log-tracing-deeplog", "log-tracing-bunyan", "log-tracing-syslog", "log-tracing-macros"]
 log-tracing-bunyan = ["log-tracing", "with_serde"]
 log-tracing-deeplog = ["log-tracing", "pnet", "dep:tokio", "futures", "toml", "sync-rw-arc", "sys_info", "with_serde", "serde_json"]
 log-tracing-syslog = ["log-tracing"]
@@ -134,9 +135,6 @@ net-http-dyno-request = ["net-http"]
 net-http-request = ["net-http", "url", "serde_json", "reqwest", "dep_serde", "error-tracer", "rails-ext", "hashbrown", "serde_derive", "spin", "bytes", "common-boxed-future"]
 net-http-request-chaining = ["net-http", "dep_serde", "error-tracer", "spin", "template", "net-http-request", "regex", "time", "collections-hash-map"]
 
-
-
-
 # Path - common paths in systems
 path = ["std"]
 path-dirs = ["path", "dep:dirs"]
@@ -145,6 +143,11 @@ path-dirs = ["path", "dep:dirs"]
 rails = ["std"]
 rails-ext = ["rails", "error-tracer", "spin"]
 rails-tracing = ["rails"]
+
+# Services - Builders and more
+service = ["std"]
+service-discovery = ["service", "serde_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all"]
+service-framework-axum = ["service", "service-discovery", "serde_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc"]
 
 # Storage
 storage = ["std", "common-try-default", "error-tracer", "dep_serde", "rails-ext"]
