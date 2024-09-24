@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export RUST_FEATURE_FLAGS="storage-all log-tracing time time-serde"
-export RUST_FEATURE_FLAGS="with_serde collections collections-const-hash-map collections-hash-map collections-simple-linked-list collections-vec-deque common common-all common-try-default common-boxed-future common-ips common-process error error-all error-tracer error-tracer-macros error-type-registry log log-tracing log-tracing-bunyan log-tracing-deeplog log-tracing-syslog log-tracing-macros log-tracing-macros-syslog log-tracing-macros-common net net-hostname path path-dirs rails rails-ext rails-tracing storage storage-all storage-web storage-io storage-yaml-ext storage-json-ext template time time-serde"
+export RUST_FEATURE_FLAGS="with_serde with_json collections collections-const-hash-map collections-hash-map collections-simple-linked-list collections-vec-deque common common-all common-try-default common-boxed-future common-ips common-process error error-all error-tracer error-tracer-macros error-type-registry log log-tracing log-tracing-bunyan log-tracing-deeplog log-tracing-syslog log-tracing-macros log-tracing-macros-syslog log-tracing-macros-common net net-hostname path path-dirs rails rails-ext rails-tracing storage storage-all storage-web storage-io storage-yaml-ext storage-json-ext template time time-serde service-framework-axum service-discovery"
 export RUST_TARGETS="x86_64-unknown-linux-gnu"
 
 # Function to compile with specified features
