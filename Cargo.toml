@@ -25,7 +25,7 @@ maintenance = { status = "actively-developed" }
 
 [features]
 ## Default - None
-default = []
+default = ["std"]
 
 ## Full - all features available
 full = []
