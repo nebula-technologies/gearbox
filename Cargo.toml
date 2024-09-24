@@ -1,6 +1,6 @@
 [package]
 name = "gearbox"
-version = "4.0.0-rc8"
+version = "4.0.0-rc9"
 edition = "2021"
 authors = ["Anders Blenstrup-Pedersen <abp-git@ryuu.technology>"]
 description = "Excessive tooling for Rust, boosting productivity and operations"
@@ -158,7 +158,7 @@ storage-yaml-ext = ["storage", "serde_yaml"]
 storage-json-ext = ["storage", "serde_json"]
 
 # Sync/Async support blocks
-sync = []
+sync = ["std"]
 sync-rw-arc = ["sync"]
 
 # Template Engine
