@@ -25,7 +25,8 @@ projects:
           args:
             - clean
           dependency:
-            - test-cov
+            - project: gearbox
+              task: test-cov
       test-cov:
         - name: custom_command
           command: cargo
