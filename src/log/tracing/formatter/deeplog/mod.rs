@@ -151,8 +151,23 @@ impl LogFormatter for DeepLogFormatter {
             self.log = Some(DeepLog::default())
         }
         let deeplog = if let Some(mut deeplog) = self.log.clone() {
-            deeplog.message =
-                Option::from(self.format_event_message(&current_span, event, &event_visitor));
+            deeplog.message = Option::from(
+                event_visitor
+                    .values()
+                    .get("message")
+                    .and_then(|v| match v {
+                        Value::String(s) => {
+                            Some(format!("{} {}", event.metadata().name(), s.as_str()))
+                        }
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| {
+                        format!("{} {}", event.metadata().name(), event.metadata().target())
+                    }),
+            );
+            if let Some(span) = &current_span {
+                deeplog.span_id = Option::from(span.metadata().name().to_string());
+            }
             deeplog.local_id = current_span.as_ref().map(|t| {
                 vec![
                     t.id().into_non_zero_u64().to_string(),
@@ -229,7 +244,32 @@ impl LogFormatter for DeepLogFormatter {
         span: &SpanRef<S>,
         ty: Type,
     ) -> String {
-        "".to_string()
+        let deeplog = if let Some(l) = self.log.clone() {
+            l
+        } else {
+            DeepLog::default()
+        };
+
+        let mut map = serde_json::value::Map::new();
+        map.insert(
+            "timestamps".to_string(),
+            serde_json::Value::String(deeplog.timestamps.timestamp.unwrap().to_rfc3339()),
+        );
+        map.insert(
+            "severity".to_string(),
+            serde_json::Value::String(deeplog.severity.unwrap_or(Severity::Error).to_string()),
+        );
+        map.insert(
+            "msg".to_string(),
+            serde_json::Value::String(deeplog.message.unwrap_or("Enter Span".to_string())),
+        );
+        map.insert(
+            "span_id".to_string(),
+            serde_json::Value::String(span.metadata().name().to_string()),
+        );
+
+        serde_json::to_string(&serde_json::Value::Object(map))
+            .unwrap_or_else(|e| format!(r#"{{"message":"{}"}}"#, e.to_string()))
     }
 }
 
