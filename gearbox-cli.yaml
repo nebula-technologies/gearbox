@@ -7,6 +7,12 @@ projects:
       destination: ~
       language: ~
     tasks:
+      open:
+        - name: custom_command
+          command: rustrover
+          run_in_background: true
+          args:
+            - "."
       init:
         - name: git
           type: Git
@@ -25,7 +31,8 @@ projects:
           args:
             - clean
           dependency:
-            - test-cov
+            - project: gearbox
+              task: test-cov
       test-cov:
         - name: custom_command
           command: cargo
