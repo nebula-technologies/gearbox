@@ -511,6 +511,13 @@ pub mod externs {
     pub mod rc {
         pub use alloc::rc::Rc;
     }
+
+    pub mod service {
+        #[cfg(feature = "service-framework-axum")]
+        pub mod axum {
+            pub use axum::*;
+        }
+    }
 }
 
 #[cfg(test)]
