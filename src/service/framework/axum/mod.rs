@@ -1,8 +1,10 @@
 use crate::collections::HashMap;
+use crate::log::tracing::formatter::deeplog;
 use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
 use crate::log::tracing::layer::LogLayer;
 use crate::service::discovery::services::common::CommonServiceDiscovery;
 use crate::service::discovery::DiscoveryService;
+use crate::service::framework::axum::LogStyle::DeepLog;
 use crate::{error, info};
 use axum::Router;
 use core::fmt::{Display, Formatter};
@@ -247,6 +249,25 @@ pub enum LogStyle {
     Syslog,
 }
 
+pub enum LogStyleOutput {
+    Full,
+    Minimal,
+    Default,
+}
+
+impl LogStyleOutput {
+    pub fn minimal(mut self) -> Self {
+        Self::Minimal
+    }
+    pub fn full(mut self) -> Self {
+        Self::Full
+    }
+
+    pub fn default(mut self) -> Self {
+        Self::Default
+    }
+}
+
 #[derive(Default)]
 pub struct HyperConfig {}
 
@@ -256,6 +277,7 @@ pub struct ServerBuilder {
     worker_pool: Option<usize>,
     router: Router<Arc<AppState>>,
     logger: LogStyle,
+    logger_output: LogStyleOutput,
     logger_discovery: bool,
     logger_discovery_builder: Option<DiscoveryBuilder>,
     trace_layer: bool,
@@ -284,6 +306,7 @@ impl ServerBuilder {
             worker_pool: None,
             router,
             logger: LogStyle::DeepLog,
+            logger_output: LogStyleOutput::Full,
             logger_discovery: false,
             logger_discovery_builder: None,
             trace_layer: false,
@@ -295,6 +318,11 @@ impl ServerBuilder {
             hyper_config: HyperConfig::default(),
             include_subtasks_in_worker_pool: false,
         }
+    }
+
+    pub fn set_log_output<O: Fn(LogStyleOutput) -> LogStyleOutput>(mut self, o: O) -> Self {
+        self.logger_output = o(LogStyleOutput::Full);
+        self
     }
 
     pub fn include_subtasks_in_worker_pool(mut self, b: bool) -> Self {
@@ -437,6 +465,7 @@ impl ServerBuilder {
                 self.logger,
                 self.logger_discovery,
                 self.logger_discovery_builder,
+                self.logger_output,
             );
 
             for i in self.sub_tasks {
@@ -626,12 +655,26 @@ async fn shutdown_signal_capture() {
     }
 }
 
-fn setup_logger(logger: LogStyle, discovery: bool, builder: Option<DiscoveryBuilder>) {
+fn setup_logger(
+    logger: LogStyle,
+    discovery: bool,
+    builder: Option<DiscoveryBuilder>,
+    output: LogStyleOutput,
+) {
     let mut formatter = match logger {
         LogStyle::Bunyan => {
             panic!("Bunyan not currently supported")
         }
-        LogStyle::DeepLog => DeepLogFormatter::default(),
+        LogStyle::DeepLog => {
+            let formatter = DeepLogFormatter::default();
+            match output {
+                LogStyleOutput::Minimal => {
+                    formatter.set_output_style(deeplog::LogStyleOutput::Minimal)
+                }
+                LogStyleOutput::Full => formatter.set_output_style(deeplog::LogStyleOutput::Full),
+                LogStyleOutput::Default => formatter,
+            }
+        }
         LogStyle::Syslog => {
             panic!("Syslog not currently supported")
         }

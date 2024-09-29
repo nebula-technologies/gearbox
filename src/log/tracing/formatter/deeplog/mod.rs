@@ -35,6 +35,11 @@ use tracing_subscriber::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum LogStyleOutput {
+    Full,
+    Minimal,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DeepLogFormatter {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub log: Option<DeepLog>,
@@ -42,6 +47,8 @@ pub struct DeepLogFormatter {
     #[cfg(feature = "service-discovery")]
     #[serde(skip)]
     pub discovery_config: RwArc<Option<Config>>,
+    #[serde(skip)]
+    pub output_style: Option<LogStyleOutput>,
 }
 
 impl DeepLogFormatter {
@@ -55,7 +62,13 @@ impl DeepLogFormatter {
             log: Some(DeepLog::default()),
             #[cfg(feature = "service-discovery")]
             discovery_config: RwArc::new(None),
+            output_style: None,
         }
+    }
+
+    pub fn set_output_style(mut self, output_style: LogStyleOutput) -> Self {
+        self.output_style = Some(output_style);
+        self
     }
 
     fn format_event_message<
@@ -103,6 +116,7 @@ impl Default for DeepLogFormatter {
             log: Some(DeepLog::default()),
             #[cfg(feature = "service-discovery")]
             discovery_config: RwArc::new(None),
+            output_style: None,
         }
     }
 }
@@ -124,6 +138,7 @@ impl LogFormatter for DeepLogFormatter {
             log: Some(DeepLog::default()),
             #[cfg(feature = "service-discovery")]
             discovery_config: RwArc::new(None),
+            output_style: self.output_style.clone(),
         }
     }
     fn format_event<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>>(
@@ -184,8 +199,29 @@ impl LogFormatter for DeepLogFormatter {
             deeplog
         };
 
-        serde_json::to_string(&deeplog)
-            .unwrap_or_else(|e| format!(r#"{{"message":"{}"}}"#, e.to_string()))
+        match self.output_style.clone().unwrap_or(LogStyleOutput::Full) {
+            LogStyleOutput::Full => serde_json::to_string(&deeplog)
+                .unwrap_or_else(|e| format!(r#"{{"message":"{}"}}"#, e.to_string())),
+            LogStyleOutput::Minimal => {
+                let mut map = serde_json::value::Map::new();
+                map.insert(
+                    "timestamps".to_string(),
+                    serde_json::Value::String(deeplog.timestamps.timestamp.unwrap().to_rfc3339()),
+                );
+                map.insert(
+                    "severity".to_string(),
+                    serde_json::Value::String(
+                        deeplog.severity.unwrap_or(Severity::Error).to_string(),
+                    ),
+                );
+                map.insert(
+                    "msg".to_string(),
+                    serde_json::Value::String(deeplog.message.unwrap_or("No message".to_string())),
+                );
+                serde_json::to_string(&serde_json::Value::Object(map))
+                    .unwrap_or_else(|e| format!(r#"{{"message":"{}"}}"#, e.to_string()))
+            }
+        }
     }
 
     fn format_span<S: Subscriber + for<'a> LookupSpan<'a>>(
