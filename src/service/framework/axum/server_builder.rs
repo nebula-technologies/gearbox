@@ -203,7 +203,8 @@ impl ServerBuilder {
             let app = self
                 .router
                 .merge(router)
-                .with_state(self.module_manager.setup_module_states(self.app_state));
+                .with_state(self.module_manager.setup_module_states(self.app_state))
+                .fallback();
 
             let mut app_with_state = router_with_state.merge(app);
 
