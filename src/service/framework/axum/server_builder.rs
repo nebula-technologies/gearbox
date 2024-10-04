@@ -5,12 +5,13 @@ use crate::log::tracing::layer::LogLayer;
 use crate::service::discovery::services::common::CommonServiceDiscovery;
 use crate::service::discovery::DiscoveryService;
 use crate::service::framework::axum::{
-    AppState, BoxFn, ConnectionBuilder, DiscoveryBuilder, HyperConfig, LogFormatter, LogOutput,
-    ModuleDefinition, ModuleManager, RwAppState, ServerRuntimeError, ServerRuntimeStatus,
-    TokioExecutor,
+    BoxFn, BroadcastBuilder, ConnectionBuilder, FrameworkState, HyperConfig, LogFormatter,
+    LogOutput, ModuleDefinition, ModuleManager, RwFrameworkState, ServerRuntimeError,
+    ServerRuntimeStatus, TokioExecutor,
 };
 use crate::{error, info};
 use axum::extract::State;
+use axum::handler::Handler;
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
@@ -38,20 +39,21 @@ pub struct ServerBuilder {
     address: IpAddr,
     port: u16,
     worker_pool: Option<usize>,
-    router: Router<Arc<AppState>>,
+    router: Router<Arc<FrameworkState>>,
     logger: LogFormatter,
     logger_output: LogOutput,
     logger_discovery: bool,
-    logger_discovery_builder: Option<DiscoveryBuilder>,
+    logger_discovery_builder: Option<BroadcastBuilder>,
     trace_layer: bool,
-    app_state: RwAppState,
+    app_state: RwFrameworkState,
     sub_tasks: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
-    service_broadcast: Vec<Option<DiscoveryBuilder>>,
+    service_broadcast: Vec<Option<BroadcastBuilder>>,
     use_http2: bool,
     certificates: Option<(String, String)>,
     hyper_config: HyperConfig,
     include_subtasks_in_worker_pool: bool,
     module_manager: ModuleManager,
+    fallback_response: Option<Router<Arc<FrameworkState>>>,
 }
 
 impl Default for ServerBuilder {
@@ -74,7 +76,7 @@ impl ServerBuilder {
             logger_discovery: false,
             logger_discovery_builder: None,
             trace_layer: false,
-            app_state: RwAppState::default(),
+            app_state: RwFrameworkState::default(),
             sub_tasks: Vec::new(),
             service_broadcast: Vec::new(),
             use_http2: false,
@@ -82,6 +84,7 @@ impl ServerBuilder {
             hyper_config: HyperConfig::default(),
             include_subtasks_in_worker_pool: false,
             module_manager: ModuleManager::default(),
+            fallback_response: None,
         }
     }
 
@@ -143,20 +146,20 @@ impl ServerBuilder {
         self
     }
 
-    pub fn add_service_broadcast<O: FnOnce(DiscoveryBuilder) -> Option<DiscoveryBuilder>>(
+    pub fn add_service_broadcast<O: FnOnce(BroadcastBuilder) -> Option<BroadcastBuilder>>(
         mut self,
         o: O,
     ) -> Self {
-        self.service_broadcast.push(o(DiscoveryBuilder::default()));
+        self.service_broadcast.push(o(BroadcastBuilder::default()));
         self
     }
 
-    pub fn with_log_service_discovery<O: FnOnce(DiscoveryBuilder) -> Option<DiscoveryBuilder>>(
+    pub fn with_log_service_discovery<O: FnOnce(BroadcastBuilder) -> Option<BroadcastBuilder>>(
         mut self,
         o: O,
     ) -> Self {
         self.trace_layer = true;
-        self.logger_discovery_builder = o(DiscoveryBuilder::default());
+        self.logger_discovery_builder = o(BroadcastBuilder::default());
         self
     }
 
@@ -186,6 +189,16 @@ impl ServerBuilder {
         self
     }
 
+    pub fn fallback<H, T>(mut self, handler: H) -> Self
+    where
+        H: Handler<T, Arc<FrameworkState>>,
+        T: 'static,
+    {
+        let router = Router::new();
+        self.fallback_response = Some(router.fallback(handler));
+        self
+    }
+
     fn build_inner(mut self, start_server: bool) {
         println!("Building body closure");
         let num_subtasks = self.sub_tasks.len();
@@ -200,11 +213,14 @@ impl ServerBuilder {
                 .merge(self.module_manager.setup_readiness_router())
                 .merge(self.module_manager.setup_module_routers());
 
+            if let Some(fallback) = self.fallback_response {
+                router = router.merge(fallback);
+            }
+
             let app = self
                 .router
                 .merge(router)
-                .with_state(self.module_manager.setup_module_states(self.app_state))
-                .fallback();
+                .with_state(self.module_manager.setup_module_states(self.app_state));
 
             let mut app_with_state = router_with_state.merge(app);
 
@@ -220,17 +236,19 @@ impl ServerBuilder {
             for i in self.service_broadcast {
                 let mut current_discovery_builder = i.clone();
                 let discovery_builder =
-                    current_discovery_builder.get_or_insert(DiscoveryBuilder::default());
+                    current_discovery_builder.get_or_insert(BroadcastBuilder::default());
 
                 let common_broadcaster = CommonServiceDiscovery::default();
-                common_broadcaster.set_service_config(|mut t| {
-                    t.broadcast.ip = discovery_builder.ip;
-                    t.broadcast.bcast_port = discovery_builder.port;
-                    t.message.service_name = discovery_builder.service_name.clone();
-                    t.broadcast.bcast_interval = discovery_builder.interval.map(|t| t as u16);
+                common_broadcaster
+                    .set_service_config(|mut t| {
+                        t.advertiser.ip = discovery_builder.ip;
+                        t.advertiser.bcast_port = discovery_builder.port;
+                        t.message.service_name = discovery_builder.service_name.clone();
+                        t.advertiser.bcast_interval = discovery_builder.interval.map(|t| t as u16);
 
-                    t
-                });
+                        t
+                    })
+                    .start_broadcast();
             }
 
             setup_logger(
@@ -356,9 +374,7 @@ async fn spin_server<H: Into<ConnectionBuilder>>(
 
     // Spawn a task to capture shutdown signals (SIGINT or SIGTERM)
     tokio::spawn(async move {
-        shutdown_signal_capture().await;
-        shutdown_triggered_clone.store(true, Ordering::SeqCst); // Set the shutdown flag
-        shutdown_notify_clone.notify_one();
+        shutdown_signal_capture(shutdown_triggered_clone, shutdown_notify_clone).await;
     });
 
     let shutdown_triggered_clone = shutdown_triggered.clone();
@@ -409,11 +425,42 @@ async fn spin_server<H: Into<ConnectionBuilder>>(
     Ok(ServerRuntimeStatus::GracefulShutdown)
 }
 
-async fn shutdown_signal_capture() {
-    let ctrl_c = async {
-        signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
+async fn shutdown_signal_capture(
+    shutdown_triggered_clone: Arc<AtomicBool>,
+    shutdown_notify_clone: Arc<Notify>,
+) {
+    let ctrl_c_count = Arc::new(AtomicUsize::new(0));
+
+    let ctrl_c = {
+        let ctrl_c_count = Arc::clone(&ctrl_c_count);
+        let shutdown_triggered_clone = Arc::clone(&shutdown_triggered_clone);
+        let shutdown_notify_clone = Arc::clone(&shutdown_notify_clone);
+
+        async move {
+            loop {
+                signal::ctrl_c()
+                    .await
+                    .expect("failed to install Ctrl+C handler");
+
+                // Increment the Ctrl+C count
+                let count = ctrl_c_count.fetch_add(1, Ordering::SeqCst) + 1;
+                if count == 1 {
+                    // First Ctrl+C, initiate graceful shutdown
+                    println!("Received Ctrl+C signal. Initiating graceful shutdown...");
+                    shutdown_triggered_clone.store(true, Ordering::SeqCst); // Set the shutdown flag
+                    shutdown_notify_clone.notify_one();
+                } else if count >= 3 {
+                    // On third Ctrl+C, force shutdown
+                    println!("Received 3 Ctrl+C signals, forcing shutdown.");
+                    std::process::exit(0);
+                } else {
+                    println!(
+                        "Received Ctrl+C signal again. Press {} more time(s) to force quit.",
+                        3 - count
+                    );
+                }
+            }
+        }
     };
 
     #[cfg(unix)]
@@ -436,7 +483,7 @@ async fn shutdown_signal_capture() {
 fn setup_logger(
     logger: LogFormatter,
     discovery: bool,
-    builder: Option<DiscoveryBuilder>,
+    builder: Option<BroadcastBuilder>,
     output: LogOutput,
 ) {
     let mut formatter = match logger {
@@ -461,12 +508,15 @@ fn setup_logger(
             .set_service_config(|mut t| {
                 let mut current_discovery_builder = builder.clone();
                 let discovery_builder =
-                    current_discovery_builder.get_or_insert(DiscoveryBuilder::default());
+                    current_discovery_builder.get_or_insert(BroadcastBuilder::default());
 
-                t.broadcast.ip = discovery_builder.ip;
-                t.broadcast.bcast_port = discovery_builder.port;
+                if let Some(a) = &mut t.advertiser {
+                    a.ip = discovery_builder.ip;
+                }
+                t.advertiser.ip = discovery_builder.ip;
+                t.advertiser.bcast_port = discovery_builder.port;
                 t.message.service_name = discovery_builder.service_name.clone();
-                t.broadcast.bcast_interval = discovery_builder.interval.map(|t| t as u16);
+                t.advertiser.bcast_interval = discovery_builder.interval.map(|t| t as u16);
 
                 t
             })

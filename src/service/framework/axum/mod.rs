@@ -1,8 +1,8 @@
-pub mod app_state;
 pub mod connection;
 pub mod connection_builder;
 pub mod discovery_builder;
 pub mod executor;
+pub mod framework_state;
 pub mod hyper_config;
 pub mod log_formatter;
 pub mod log_output_style;
@@ -11,7 +11,7 @@ pub mod server_builder;
 pub mod status;
 
 pub use self::{
-    app_state::*, connection::*, connection_builder::*, discovery_builder::*, executor::*,
+    connection::*, connection_builder::*, discovery_builder::*, executor::*, framework_state::*,
     hyper_config::*, log_formatter::*, log_output_style::*, module_manager::*, server_builder::*,
     status::*,
 };
@@ -22,7 +22,7 @@ pub type BoxFn<T> = Arc<dyn Fn() -> T + Send + Sync>;
 
 #[cfg(test)]
 mod test {
-    use super::{AppState, ModuleDefinition, RwAppState};
+    use super::{FrameworkState, ModuleDefinition, RwFrameworkState};
     use axum::Router;
     use std::sync::Arc;
 
@@ -30,18 +30,18 @@ mod test {
     pub struct TestModule {}
 
     impl TestModule {
-        pub fn routes() -> Router<Arc<AppState>> {
+        pub fn routes() -> Router<Arc<FrameworkState>> {
             Router::new()
         }
-        pub fn states(state: &mut RwAppState) {
+        pub fn states(state: &mut RwFrameworkState) {
             state.add(TestState {});
         }
     }
 
     impl ModuleDefinition for TestModule {
         const NAME: &'static str = "TestModule";
-        const ROUTER: fn() -> Router<Arc<AppState>> = TestModule::routes;
-        const STATES: fn(&mut RwAppState) = TestModule::states;
+        const ROUTER: fn() -> Router<Arc<FrameworkState>> = TestModule::routes;
+        const STATES: fn(&mut RwFrameworkState) = TestModule::states;
     }
 
     #[test]

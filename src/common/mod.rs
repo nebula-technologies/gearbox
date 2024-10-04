@@ -4,6 +4,7 @@ pub mod boxed_future;
 pub mod ips;
 #[cfg(feature = "common-process")]
 pub mod process;
+pub mod serde_checks;
 #[cfg(feature = "common-try-default")]
 pub mod try_default;
 

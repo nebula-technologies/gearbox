@@ -221,7 +221,12 @@ impl LogFormatter for DeepLogFormatter {
                 let mut map = serde_json::value::Map::new();
                 map.insert(
                     "timestamps".to_string(),
-                    serde_json::Value::String(deeplog.timestamps.timestamp.unwrap().to_rfc3339()),
+                    deeplog
+                        .timestamps
+                        .and_then(|t| t.timestamp)
+                        .map(|t| t.to_rfc3339())
+                        .map(|t| serde_json::Value::String(t))
+                        .unwrap_or(serde_json::Value::Null),
                 );
                 map.insert(
                     "severity".to_string(),
@@ -253,7 +258,12 @@ impl LogFormatter for DeepLogFormatter {
         let mut map = serde_json::value::Map::new();
         map.insert(
             "timestamps".to_string(),
-            serde_json::Value::String(deeplog.timestamps.timestamp.unwrap().to_rfc3339()),
+            deeplog
+                .timestamps
+                .and_then(|t| t.timestamp)
+                .map(|t| t.to_rfc3339())
+                .map(|t| serde_json::Value::String(t))
+                .unwrap_or(serde_json::Value::Null),
         );
         map.insert(
             "severity".to_string(),

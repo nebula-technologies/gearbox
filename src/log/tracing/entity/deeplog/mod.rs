@@ -25,7 +25,8 @@ pub struct DeepLog {
     pub caller: Option<Caller>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub correlation_id: Option<String>,
-    pub device: Device,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub device: Option<Device>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub duration: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -48,13 +49,16 @@ pub struct DeepLog {
     pub span_id: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub stacktrace: Vec<String>,
-    pub timestamps: Timestamps,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timestamps: Option<Timestamps>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub trace_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub facility: Option<Facility>,
-    pub process: ProcessInfo,
-    pub system_info: SystemInfo,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub process: Option<ProcessInfo>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub system_info: Option<SystemInfo>,
 }
 impl Default for DeepLog {
     fn default() -> Self {
@@ -62,7 +66,7 @@ impl Default for DeepLog {
             version: None,
             caller: None,
             correlation_id: None,
-            device: Device::default(),
+            device: None,
             duration: None,
             environment: None,
             id: None,
@@ -77,8 +81,8 @@ impl Default for DeepLog {
             timestamps: Default::default(),
             trace_id: None,
             facility: None,
-            process: ProcessInfo::default(),
-            system_info: SystemInfo::default(),
+            process: None,
+            system_info: None,
         }
     }
 }

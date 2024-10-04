@@ -1,9 +1,12 @@
 use crate::common::get_ips;
 use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
-use crate::service::discovery::entity::discovery::DiscoveryMessage;
-use crate::service::discovery::entity::{Broadcast, Config};
+use crate::service::discovery::entity::discovery::Advertisement;
+use crate::service::discovery::entity::{AdvertiserConfig, Config, DiscovererConfig};
+use crate::service::discovery::services::common::CommonServiceDiscovery;
 use crate::service::discovery::DiscoveryService;
 use crate::time::DateTime;
+use crate::{debug, error, info};
+use bytes::Bytes;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 use tokio::net::UdpSocket;
@@ -21,26 +24,29 @@ impl DiscoveryService for DeepLogFormatter {
 
     fn start_broadcast(self) -> (Self, JoinHandle<()>) {
         let broadcast_config = self.discovery_config.clone();
+        info!("Starting broadcast service");
         (
             self,
             task::spawn(async move {
                 loop {
-                    let (ip, port, bcast_port, bcast_interval) = {
+                    let (ip, port, interval, advertisement) = {
                         let bcast = if let Some(c) =
-                            broadcast_config.read().as_ref().map(|t| &t.broadcast)
+                            broadcast_config.read().as_ref().map(|t| &t.advertiser)
                         {
                             c.clone()
                         } else {
-                            Broadcast::default()
+                            Some(AdvertiserConfig::default())
                         };
+                        let bcast_ref = bcast.as_ref();
                         (
-                            bcast
-                                .clone()
-                                .ip
+                            bcast_ref
+                                .map(|t| t.ip)
                                 .unwrap_or(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
-                            bcast.clone().port.unwrap_or(0),
-                            bcast.clone().bcast_port.unwrap_or(9999),
-                            bcast.clone().bcast_interval.unwrap_or(5),
+                            bcast_ref.map(|t| t.port).unwrap_or(9999),
+                            bcast_ref.map(|t| t.interval).unwrap_or(5),
+                            bcast_ref
+                                .map(|t| t.advertisement.clone())
+                                .unwrap_or(Bytes::new()),
                         )
                     };
 
@@ -48,7 +54,7 @@ impl DiscoveryService for DeepLogFormatter {
                     let socket = match UdpSocket::bind(SocketAddr::new(ip, port)).await {
                         Ok(socket) => {
                             if let Err(e) = socket.set_broadcast(true) {
-                                println!(
+                                error!(
                                     "Failed to switch broadcast socket into broadcast mode: {}",
                                     e
                                 );
@@ -57,63 +63,19 @@ impl DiscoveryService for DeepLogFormatter {
                             socket
                         }
                         Err(e) => {
-                            println!("Failed to bind the broadcast socket: {}", e);
+                            error!("Failed to bind the broadcast socket: {}", e);
                             continue;
                         }
                     };
 
                     loop {
-                        let (ip, port, service_name, version) = {
-                            let message = if let Some(c) =
-                                broadcast_config.read().as_ref().map(|t| &t.message)
-                            {
-                                c.clone()
-                            } else {
-                                DiscoveryMessage::default()
-                            };
-                            (
-                                message.ip.unwrap_or(get_ips()),
-                                message.port.unwrap_or(5000),
-                                message.service_name.unwrap_or("<Unknown>".to_string()),
-                                message.version.unwrap_or("v1.0.0".to_string()),
-                            )
-                        };
-
-                        let discovery_message = DiscoveryMessage {
-                            additional_info: None,
-                            ip: Some(ip),
-                            mac: None,
-                            port: Some(port),
-                            service_name: Some(service_name),
-                            timestamp: Some(DateTime::now()),
-                            version: Some(version),
-                            http: false,
-                            http_api_schema_endpoint: None,
-                        };
-
-                        let discovery_payload = if let Ok(t) =
-                            serde_json::to_string(&discovery_message)
-                        {
-                            t
-                        } else {
-                            println!("Failed to convert payload into a sendable buffer/string");
-                            tokio::time::sleep(Duration::from_secs(bcast_interval as u64)).await;
-                            continue;
-                        };
-
                         socket
-                            .send_to(
-                                discovery_payload.as_bytes(),
-                                format!("255.255.255.255:{}", bcast_port),
-                            )
+                            .send_to(&*advertisement, format!("255.255.255.255:{}", port))
                             .await
                             .ok();
-                        println!(
-                            "Broadcasting discovery message: {:<40}",
-                            discovery_message.to_string()
-                        );
+                        debug!("Broadcasting discovery message",);
 
-                        tokio::time::sleep(Duration::from_secs(bcast_interval as u64)).await;
+                        tokio::time::sleep(Duration::from_secs(interval as u64)).await;
                     }
                 }
             }),
@@ -135,29 +97,28 @@ impl DiscoveryService for DeepLogFormatter {
             task::spawn(async move {
                 // Retrieve the discovery config from the cloned logging config
                 loop {
-                    let (ip, port, bcast_port, bcast_interval) = {
-                        let bcast = if let Some(c) = config.read().as_ref().map(|t| &t.broadcast) {
+                    let (ip, port, retry_interval) = {
+                        let bcast = if let Some(c) = config.read().as_ref().map(|t| &t.discoverer) {
                             c.clone()
                         } else {
-                            Broadcast::default()
+                            Some(DiscovererConfig::default())
                         };
+                        let bcast_ref = bcast.as_ref();
                         (
-                            bcast
-                                .clone()
-                                .ip
+                            bcast_ref
+                                .map(|t| t.ip)
                                 .unwrap_or(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
-                            bcast.clone().port.unwrap_or(0),
-                            bcast.clone().bcast_port.unwrap_or(9999),
-                            bcast.clone().bcast_interval.unwrap_or(5),
+                            bcast_ref.map(|t| t.port).unwrap_or(9999),
+                            bcast_ref.map(|t| t.capture_interval).unwrap_or(9999),
                         )
                     };
 
-                    let mut interval = interval(Duration::from_secs(bcast_interval as u64));
+                    let mut interval = interval(Duration::from_secs(retry_interval as u64));
 
                     // Attempt to bind the socket
-                    let socket = match UdpSocket::bind(SocketAddr::new(ip, bcast_port)).await {
+                    let socket = match UdpSocket::bind(SocketAddr::new(ip, port)).await {
                         Ok(sock) => {
-                            println!("Listening for discovery messages on {}:{}", ip, bcast_port);
+                            println!("Listening for discovery messages on {}:{}", ip, port);
                             sock
                         }
                         Err(e) => {
@@ -172,46 +133,17 @@ impl DiscoveryService for DeepLogFormatter {
                     loop {
                         interval.tick().await;
 
-                        // Receive a message from the socket
                         match socket.recv_from(&mut buf).await {
                             Ok((len, src)) => {
-                                let received_msg = String::from_utf8_lossy(&buf[..len]);
-
-                                println!(
-                                    "Received discovery message from: {:<20} for {}",
-                                    src,
-                                    serde_json::from_str::<DiscoveryMessage>(&received_msg)
-                                        .map(|t| t.to_string())
-                                        .unwrap_or("<failed>".to_string())
-                                );
-
-                                let svc_name = config
-                                    .read()
-                                    .as_ref()
-                                    .and_then(|t| t.message.service_name.clone());
-
-                                let discovery_message = if let Ok(t) =
-                                    serde_json::from_str::<DiscoveryMessage>(received_msg.as_ref())
-                                {
-                                    t
-                                } else {
-                                    continue;
-                                };
-
-                                if let (Some(r), Some(s)) =
-                                    (discovery_message.service_name.as_ref(), svc_name)
-                                {
-                                    if r != &s {
-                                        continue;
-                                    }
-                                } else {
-                                    continue;
-                                }
+                                info!("Received discovery message from: {:<20}", src);
+                                let bytes_ref = (&buf[..len]).to_vec();
+                                let bytes = Bytes::from(bytes_ref);
 
                                 // Lock the config for write access to update the discovery info
                                 if let Some(config_rw) = config.write().as_mut() {
-                                    config_rw.message = discovery_message.clone();
-
+                                    if let Some(d) = &mut config_rw.discoverer {
+                                        d.advert_extract = bytes;
+                                    }
                                     println!("Updated config with discovery message from {}", src);
                                 } else {
                                     println!("No discovery config found in logging config.");

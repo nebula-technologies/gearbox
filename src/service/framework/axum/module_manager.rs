@@ -1,5 +1,5 @@
 use crate::collections::HashMap;
-use crate::service::framework::axum::{AppState, BoxFn, RwAppState};
+use crate::service::framework::axum::{BoxFn, BroadcastBuilder, FrameworkState, RwFrameworkState};
 use axum::extract::State;
 use axum::routing::get;
 use axum::{Json, Router};
@@ -7,12 +7,20 @@ use serde_derive::{Deserialize, Serialize};
 use spin::RwLock;
 use std::sync::Arc;
 
+use crate::service::discovery::services::common::CommonServiceDiscovery;
+use crate::service::discovery::DiscoveryService;
 use axum::http::StatusCode;
+use bytes::Bytes;
+use tokio::task;
 
 pub trait ModuleDefinition {
     const NAME: &'static str;
-    const ROUTER: fn() -> Router<Arc<AppState>>;
-    const STATES: fn(&mut RwAppState);
+    const ROUTER: fn() -> Router<Arc<FrameworkState>>;
+    const NESTED: Option<&'static str> = None;
+    const BROADCAST: fn() -> Vec<BroadcastBuilder> = Vec::new;
+    const DISCOVERY: fn() -> Vec<BroadcastBuilder> = Vec::new;
+    const DISCOVERY_CAPTURE: Option<fn(FrameworkState, Bytes)> = None;
+    const STATES: fn(&mut RwFrameworkState);
     const READINESS: fn() -> Vec<BoxFn<(String, ProbeResult)>> = Vec::new;
     const LIVENESS: fn() -> Vec<BoxFn<(String, ProbeResult)>> = Vec::new;
     const PRE_RUN: fn() -> Vec<BoxFn<()>> = Vec::new;
@@ -38,9 +46,13 @@ pub enum ProbeResult {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    name: String,
-    router: fn() -> Router<Arc<AppState>>,
-    state: fn(&mut RwAppState),
+    name: &'static str,
+    router: fn() -> Router<Arc<FrameworkState>>,
+    state: fn(&mut RwFrameworkState),
+    nested: Option<&'static str>,
+    broadcast: fn() -> Vec<BroadcastBuilder>,
+    discovery: fn() -> Vec<BroadcastBuilder>,
+    discovery_capture: Option<fn(FrameworkState, Bytes)>,
     readiness: fn() -> Vec<BoxFn<(String, ProbeResult)>>,
     liveness: fn() -> Vec<BoxFn<(String, ProbeResult)>>,
     pre_run: fn() -> Vec<BoxFn<()>>,
@@ -52,8 +64,12 @@ impl<T: ModuleDefinition> From<T> for Module {
         Module {
             pre_run: T::PRE_RUN,
             post_run: T::POST_RUN,
-            name: T::NAME.to_string(),
+            name: T::NAME,
             state: T::STATES,
+            nested: T::NESTED,
+            broadcast: T::BROADCAST,
+            discovery: T::DISCOVERY,
+            discovery_capture: T::DISCOVERY_CAPTURE,
             router: T::ROUTER,
             readiness: T::READINESS,
             liveness: T::LIVENESS,
@@ -86,14 +102,29 @@ impl ModuleManager {
             Module {
                 pre_run: T::PRE_RUN,
                 post_run: T::POST_RUN,
-                name: T::NAME.to_string(),
+                name: T::NAME,
                 state: T::STATES,
+                nested: T::NESTED,
+                broadcast: T::BROADCAST,
+                discovery: T::DISCOVERY,
+                discovery_capture: T::DISCOVERY_CAPTURE,
                 router: T::ROUTER,
                 readiness: T::READINESS,
                 liveness: T::LIVENESS,
             },
         );
         self
+    }
+
+    pub(crate) fn setup_discovery(&mut self) {
+        for module in self.active_modules.clone() {
+            self.modules.get(&module).map(|t| {
+                let func = t.discovery;
+                func().into_iter().for_each(|t| {
+                    task::spawn({ CommonServiceDiscovery::default().set_service_config(|t| t) })
+                })
+            });
+        }
     }
 
     pub(crate) fn has_pre_run(&mut self) -> bool {
@@ -138,7 +169,7 @@ impl ModuleManager {
         self
     }
 
-    pub(crate) fn setup_liveness_router(&self) -> Router<Arc<AppState>> {
+    pub(crate) fn setup_liveness_router(&self) -> Router<Arc<FrameworkState>> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -150,7 +181,7 @@ impl ModuleManager {
         self.router_config("/health/liveness", probes)
     }
 
-    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<AppState>> {
+    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<FrameworkState>> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -162,35 +193,43 @@ impl ModuleManager {
         self.router_config("/health/readiness", probes)
     }
 
-    pub(crate) fn setup_module_routers(&self) -> Router<Arc<AppState>> {
+    pub(crate) fn setup_module_routers(&self) -> Router<Arc<FrameworkState>> {
         let mut router = Router::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
-                router = router.merge((module.router)());
+                if let Some(nested) = module.nested {
+                    router = router.nest(nested, (module.router)());
+                } else {
+                    router = router.merge((module.router)());
+                }
             }
         }
+
         router
     }
 
-    pub(crate) fn setup_module_states(&self, mut app_state: RwAppState) -> Arc<AppState> {
+    pub(crate) fn setup_module_states(
+        &self,
+        mut app_state: RwFrameworkState,
+    ) -> Arc<FrameworkState> {
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
                 (module.state)(&mut app_state);
             }
         }
 
-        Arc::new(AppState::new(app_state.state))
+        Arc::new(FrameworkState::new(app_state.state))
     }
 
     fn router_config(
         &self,
         path: &str,
         probes: Vec<(String, Vec<BoxFn<(String, ProbeResult)>>)>,
-    ) -> Router<Arc<AppState>> {
+    ) -> Router<Arc<FrameworkState>> {
         let mut router = Router::new();
         router.route(
             path,
-            get(|State(state): State<Arc<AppState>>| async move {
+            get(|State(state): State<Arc<FrameworkState>>| async move {
                 let mut module_status_map = HashMap::new();
                 for (module_name, vec_func) in probes {
                     let mut module_status = Vec::new();

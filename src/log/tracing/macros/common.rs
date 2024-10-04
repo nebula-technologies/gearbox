@@ -34,7 +34,7 @@ macro_rules! error {
         $crate::log_func_generator!($i(()), error, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::error!($($arg)*);
+        $crate::externs::tracing::error!($($arg)*);
     };
 }
 
@@ -53,7 +53,7 @@ macro_rules! warning {
         $crate::log_func_generator!($i(()), warn, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::warn!($($arg)*);
+        $crate::externs::tracing::warn!($($arg)*);
     };
 }
 
@@ -72,7 +72,7 @@ macro_rules! warn {
         $crate::log_func_generator!($i(()), warn, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::warn!($($arg)*);
+        $crate::externs::tracing::warn!($($arg)*);
     };
 }
 
@@ -91,7 +91,7 @@ macro_rules! info {
         $crate::log_func_generator!($i(()), Info, info, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::debug!($($arg)*);
+        $crate::externs::tracing::debug!($($arg)*);
     };
 }
 
@@ -110,7 +110,7 @@ macro_rules! debug {
         $crate::log_func_generator!($i(()), Debug, debug, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::trace!($($arg)*);
+        $crate::externs::tracing::trace!($($arg)*);
     };
 }
 
@@ -129,6 +129,6 @@ macro_rules! trace {
         $crate::log_func_generator!($i(()), Debug, trace, $f, $s)
     };
     ($($arg:tt)*) => {
-        tracing::trace!($($arg)*);
+        $crate::externs::tracing::trace!($($arg)*);
     };
 }

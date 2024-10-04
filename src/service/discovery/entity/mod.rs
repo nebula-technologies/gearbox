@@ -1,34 +1,30 @@
+pub mod advertiser_config;
+pub mod config;
+pub mod discoverer_config;
 pub mod discovery;
 
-pub use crate::service::discovery::entity::discovery::DiscoveryMessage;
-use serde_derive::{Deserialize, Serialize};
-use std::net::{IpAddr, Ipv4Addr};
+pub use advertiser_config::AdvertiserConfig;
+use bytes::Bytes;
+pub use config::Config;
+use core::fmt::Debug;
+pub use discoverer_config::DiscovererConfig;
+pub use discovery::Advertisement;
+use std::net::IpAddr;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct Config {
-    pub broadcast: Broadcast,
-    pub message: DiscoveryMessage,
+pub trait Advertiser {
+    fn ip(&self) -> IpAddr;
+    fn port(&self) -> u16;
+    fn service_name(&self) -> Option<String>;
+    fn version(&self) -> Option<String>;
+    fn capture_interval(&self) -> u64;
+    fn advertisement(&self) -> Bytes;
 }
 
-/// Broadcasting
-///
-/// Common for broadcasting is that its 255.255.255.255 as this is the common broadcast address.
-///
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Broadcast {
-    pub ip: Option<IpAddr>,
-    pub port: Option<u16>,
-    pub bcast_port: Option<u16>,
-    pub bcast_interval: Option<u16>,
-}
-
-impl Default for Broadcast {
-    fn default() -> Self {
-        Self {
-            ip: Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
-            port: Some(0),
-            bcast_port: Some(9999),
-            bcast_interval: Some(5),
-        }
-    }
+pub trait Discoverer {
+    fn ip(&self) -> IpAddr;
+    fn port(&self) -> u16;
+    fn service_name(&self) -> Option<String>;
+    fn version(&self) -> Option<String>;
+    fn capture_interval(&self) -> u64;
+    fn advert_extract(&self) -> Bytes;
 }

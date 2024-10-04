@@ -11,7 +11,6 @@ impl LogOutput {
     pub fn full(mut self) -> Self {
         Self::Full
     }
-
     pub fn default(mut self) -> Self {
         Self::Default
     }

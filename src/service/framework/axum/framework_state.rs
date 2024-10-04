@@ -2,11 +2,11 @@ use crate::collections::HashMap;
 use std::any::{Any, TypeId};
 use std::sync::Arc;
 
-pub struct RwAppState {
+pub struct RwFrameworkState {
     pub(crate) state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
 }
 
-impl RwAppState {
+impl RwFrameworkState {
     pub fn add_default<T: Any + Default + Send + Sync>(&mut self) -> &mut Self {
         self.state.insert(TypeId::of::<T>(), Arc::new(T::default()));
         self
@@ -16,12 +16,12 @@ impl RwAppState {
         self
     }
 
-    pub(crate) fn into_app_state(self) -> AppState {
-        AppState { state: self.state }
+    pub(crate) fn into_app_state(self) -> FrameworkState {
+        FrameworkState { state: self.state }
     }
 }
 
-impl Default for RwAppState {
+impl Default for RwFrameworkState {
     fn default() -> Self {
         Self {
             state: HashMap::new(),
@@ -30,12 +30,12 @@ impl Default for RwAppState {
 }
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct FrameworkState {
     // A map for storing application state keyed by TypeId
     state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
 }
 
-impl AppState {
+impl FrameworkState {
     // Create a new AppState
     pub fn new(state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>) -> Self {
         Self { state }
