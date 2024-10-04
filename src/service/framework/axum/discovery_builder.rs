@@ -1,5 +1,6 @@
 use crate::service::discovery::entity::{Advertisement, AdvertiserConfig, DiscovererConfig};
 use crate::time::DateTime;
+use bytes::Bytes;
 use serde_derive::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -9,6 +10,7 @@ pub struct BroadcastBuilder {
     pub(crate) port: Option<u16>,
     pub(crate) interval: Option<usize>,
     pub(crate) service_name: Option<String>,
+    pub(crate) advertisement: Advertisement,
 }
 
 impl Default for BroadcastBuilder {
@@ -18,6 +20,7 @@ impl Default for BroadcastBuilder {
             ip: Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
             port: Some(9999),
             service_name: Some("Log-service".to_string()),
+            advertisement: Advertisement::default(),
         }
     }
 }
@@ -43,6 +46,11 @@ impl BroadcastBuilder {
         self
     }
 
+    pub fn set_advertisement(mut self, advert: Advertisement) -> Self {
+        self.advertisement = advert;
+        self
+    }
+
     pub fn merge(mut self, other: BroadcastBuilder) -> Self {
         self.ip = other.ip.or(self.ip);
         self.port = other.port.or(self.port);
@@ -62,14 +70,16 @@ impl BroadcastBuilder {
         }
     }
 
-    pub fn into_advertiser(self, message: Advertisement) -> AdvertiserConfig {
+    pub fn into_advertiser<A: Into<Bytes>>(self, message: Option<A>) -> AdvertiserConfig {
         AdvertiserConfig {
             ip: self.ip.unwrap_or(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
             port: self.port.unwrap_or(9999),
             interval: self.interval.map(|t| t as u64).unwrap_or(30),
             version: None,
             service_name: self.service_name,
-            advertisement: Default::default(),
+            advertisement: message
+                .map(|t| t.into())
+                .unwrap_or(self.advertisement.into()),
         }
     }
 }

@@ -15,6 +15,7 @@ use axum::handler::Handler;
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
+use bytes::Bytes;
 use hyper::server::conn::{http1, http2};
 use hyper_util::rt::TokioIo;
 use hyper_util::service::TowerToHyperService;
@@ -234,17 +235,15 @@ impl ServerBuilder {
             }
 
             for i in self.service_broadcast {
-                let mut current_discovery_builder = i.clone();
-                let discovery_builder =
-                    current_discovery_builder.get_or_insert(BroadcastBuilder::default());
+                let current_discovery_builder = i.clone();
+                let discovery_builder = current_discovery_builder.unwrap_or_default();
 
                 let common_broadcaster = CommonServiceDiscovery::default();
                 common_broadcaster
                     .set_service_config(|mut t| {
-                        t.advertiser.ip = discovery_builder.ip;
-                        t.advertiser.bcast_port = discovery_builder.port;
-                        t.message.service_name = discovery_builder.service_name.clone();
-                        t.advertiser.bcast_interval = discovery_builder.interval.map(|t| t as u16);
+                        if let Some(a) = &mut t.advertiser {
+                            *a = discovery_builder.into_advertiser::<Bytes>(None);
+                        }
 
                         t
                     })
@@ -507,16 +506,11 @@ fn setup_logger(
         let (fmt, handle) = formatter
             .set_service_config(|mut t| {
                 let mut current_discovery_builder = builder.clone();
-                let discovery_builder =
-                    current_discovery_builder.get_or_insert(BroadcastBuilder::default());
+                let discovery_builder = current_discovery_builder.unwrap_or_default();
 
                 if let Some(a) = &mut t.advertiser {
-                    a.ip = discovery_builder.ip;
+                    *a = discovery_builder.into_advertiser::<Bytes>(None);
                 }
-                t.advertiser.ip = discovery_builder.ip;
-                t.advertiser.bcast_port = discovery_builder.port;
-                t.message.service_name = discovery_builder.service_name.clone();
-                t.advertiser.bcast_interval = discovery_builder.interval.map(|t| t as u16);
 
                 t
             })

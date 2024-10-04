@@ -1,4 +1,5 @@
 use crate::time::DateTime;
+use bytes::Bytes;
 use core::fmt::{Display, Formatter};
 use core::net::IpAddr;
 use serde_derive::{Deserialize, Serialize};
@@ -24,6 +25,15 @@ pub struct Advertisement {
     pub http: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub http_api_schema_endpoint: Option<String>,
+}
+
+#[cfg(feature = "with_json")]
+impl From<Advertisement> for Bytes {
+    fn from(value: Advertisement) -> Self {
+        serde_json::to_string(&value)
+            .map(Bytes::from)
+            .unwrap_or_default()
+    }
 }
 
 impl Display for Advertisement {
