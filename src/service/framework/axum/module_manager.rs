@@ -116,16 +116,16 @@ impl ModuleManager {
         self
     }
 
-    pub(crate) fn setup_discovery(&mut self) {
-        for module in self.active_modules.clone() {
-            self.modules.get(&module).map(|t| {
-                let func = t.discovery;
-                func().into_iter().for_each(|t| {
-                    task::spawn({ CommonServiceDiscovery::default().set_service_config(|t| t) })
-                })
-            });
-        }
-    }
+    // pub(crate) fn setup_discovery(&mut self) {
+    //     for module in self.active_modules.clone() {
+    //         self.modules.get(&module).map(|t| {
+    //             let func = t.discovery;
+    //             func().into_iter().for_each(|t| {
+    //                 task::spawn({ CommonServiceDiscovery::default().set_service_config(|t| t) })
+    //             })
+    //         });
+    //     }
+    // }
 
     pub(crate) fn has_pre_run(&mut self) -> bool {
         let mut avail_func = Vec::new();
