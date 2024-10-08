@@ -1,3 +1,4 @@
+use crate::common::merge::DataMerge;
 use bytes::Bytes;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -43,5 +44,18 @@ impl Default for DiscovererConfig {
             capture_interval: 5,
             advert_extract: Bytes::new(),
         }
+    }
+}
+
+impl DataMerge<DiscovererConfig> for DiscovererConfig {
+    fn data_merge(&mut self, other: DiscovererConfig) -> &mut Self {
+        self.ip = other.ip;
+        self.port = other.port;
+        self.service_name = other.service_name.or(self.service_name.clone());
+        self.version = other.version.or(self.version.clone());
+        self.capture_interval = other.capture_interval;
+        self.advert_extract = other.advert_extract.clone();
+
+        self
     }
 }

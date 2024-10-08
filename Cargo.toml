@@ -101,6 +101,7 @@ common-try-default = ["common"]
 common-boxed-future = ["common"]
 common-ips = ["common", "if_addrs"]
 common-process = ["common"]
+common-merge = ["common"]
 
 did = ["std"]
 did-all = ["did-sld"]
@@ -146,16 +147,16 @@ rails-tracing = ["rails"]
 
 # Services - Builders and more
 service = ["std"]
-service-discovery = ["service", "serde_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all"]
-service-framework-axum = ["service", "service-discovery", "serde_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http"]
+service-discovery = ["service", "with_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all", "bytes"]
+service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge"]
 
 # Storage
 storage = ["std", "common-try-default", "error-tracer", "dep_serde", "rails-ext"]
 storage-all = ["storage", "storage-web", "storage-io"]
-storage-web = ["storage", "dep_serde", "serde_json"]
+storage-web = ["storage", "dep_serde", "with_json"]
 storage-io = ["storage", "dep_serde", "storage-yaml-ext", "storage-json-ext", "std", "path-dirs", "spin", "libc", "rails-ext", "rails-tracing", "tracing", "log-tracing-macros"]
 storage-yaml-ext = ["storage", "serde_yaml"]
-storage-json-ext = ["storage", "serde_json"]
+storage-json-ext = ["storage", "with_json"]
 
 # Sync/Async support blocks
 sync = ["std"]

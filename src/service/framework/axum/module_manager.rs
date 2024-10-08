@@ -1,5 +1,5 @@
 use crate::collections::HashMap;
-use crate::service::framework::axum::{BoxFn, BroadcastBuilder, FrameworkState, RwFrameworkState};
+use crate::service::framework::axum::{BoxFn, DiscovererBuilder, FrameworkState, RwFrameworkState};
 use axum::extract::State;
 use axum::routing::get;
 use axum::{Json, Router};
@@ -9,6 +9,8 @@ use std::sync::Arc;
 
 use crate::service::discovery::services::common::CommonServiceDiscovery;
 use crate::service::discovery::DiscoveryService;
+use crate::service::framework::axum::advertiser_builder::AdvertiserBuilder;
+use crate::{debug, info};
 use axum::http::StatusCode;
 use bytes::Bytes;
 use tokio::task;
@@ -17,9 +19,9 @@ pub trait ModuleDefinition {
     const NAME: &'static str;
     const ROUTER: fn() -> Router<Arc<FrameworkState>>;
     const NESTED: Option<&'static str> = None;
-    const BROADCAST: fn() -> Vec<BroadcastBuilder> = Vec::new;
-    const DISCOVERY: fn() -> Vec<BroadcastBuilder> = Vec::new;
-    const DISCOVERY_CAPTURE: Option<fn(FrameworkState, Bytes)> = None;
+    const BROADCAST: fn() -> Vec<AdvertiserBuilder> = Vec::new;
+    const DISCOVERY: fn() -> Vec<DiscovererBuilder> = Vec::new;
+    const DISCOVERY_CAPTURE: Option<fn(Arc<FrameworkState>, &Bytes)> = None;
     const STATES: fn(&mut RwFrameworkState);
     const READINESS: fn() -> Vec<BoxFn<(String, ProbeResult)>> = Vec::new;
     const LIVENESS: fn() -> Vec<BoxFn<(String, ProbeResult)>> = Vec::new;
@@ -50,9 +52,9 @@ pub struct Module {
     router: fn() -> Router<Arc<FrameworkState>>,
     state: fn(&mut RwFrameworkState),
     nested: Option<&'static str>,
-    broadcast: fn() -> Vec<BroadcastBuilder>,
-    discovery: fn() -> Vec<BroadcastBuilder>,
-    discovery_capture: Option<fn(FrameworkState, Bytes)>,
+    broadcast: fn() -> Vec<AdvertiserBuilder>,
+    discovery: fn() -> Vec<DiscovererBuilder>,
+    discovery_capture: Option<fn(Arc<FrameworkState>, &Bytes)>,
     readiness: fn() -> Vec<BoxFn<(String, ProbeResult)>>,
     liveness: fn() -> Vec<BoxFn<(String, ProbeResult)>>,
     pre_run: fn() -> Vec<BoxFn<()>>,
@@ -116,16 +118,51 @@ impl ModuleManager {
         self
     }
 
-    // pub(crate) fn setup_discovery(&mut self) {
-    //     for module in self.active_modules.clone() {
-    //         self.modules.get(&module).map(|t| {
-    //             let func = t.discovery;
-    //             func().into_iter().for_each(|t| {
-    //                 task::spawn({ CommonServiceDiscovery::default().set_service_config(|t| t) })
-    //             })
-    //         });
-    //     }
-    // }
+    pub(crate) fn setup_advertiser(&mut self) -> &mut Self {
+        println!("Setting up advertiser");
+        for module in self.active_modules.clone() {
+            if let Some(module) = self.modules.get(&module) {
+                let func = module.broadcast;
+                for t in func() {
+                    CommonServiceDiscovery::default()
+                        .set_service_config(|mut c| {
+                            c.advertiser = Some(t.clone().into_advertiser::<Bytes>(None));
+
+                            c
+                        })
+                        .start_broadcast();
+                }
+            };
+        }
+        self
+    }
+
+    pub(crate) fn setup_discoverer(&mut self, state: Arc<FrameworkState>) -> &mut Self {
+        println!("Setting up discoverer");
+        for module in self.active_modules.clone() {
+            if let Some(module) = self.modules.get(&module) {
+                let func = module.discovery;
+                for t in func() {
+                    let csd = CommonServiceDiscovery::default().set_service_config(|mut c| {
+                        c.discoverer = Some(t.clone().into_discoverer());
+
+                        c
+                    });
+
+                    if let Some(func) = module.discovery_capture {
+                        let fn_clone = func.clone();
+                        let state_clone = state.clone();
+                        csd.start_discovery_with_fn(move |c| {
+                            fn_clone(state_clone.clone(), &c);
+                        });
+                    } else {
+                        csd.start_discovery();
+                    }
+                }
+            };
+        }
+        self
+    }
 
     pub(crate) fn has_pre_run(&mut self) -> bool {
         let mut avail_func = Vec::new();

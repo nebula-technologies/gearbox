@@ -1,11 +1,10 @@
 use crate::service::discovery::entity::{Advertisement, AdvertiserConfig, DiscovererConfig};
 use crate::time::DateTime;
 use bytes::Bytes;
-use serde_derive::{Deserialize, Serialize};
 use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Debug, Clone)]
-pub struct BroadcastBuilder {
+pub struct DiscovererBuilder {
     pub(crate) ip: Option<IpAddr>,
     pub(crate) port: Option<u16>,
     pub(crate) interval: Option<usize>,
@@ -13,9 +12,9 @@ pub struct BroadcastBuilder {
     pub(crate) advertisement: Advertisement,
 }
 
-impl Default for BroadcastBuilder {
+impl Default for DiscovererBuilder {
     fn default() -> Self {
-        BroadcastBuilder {
+        DiscovererBuilder {
             interval: Some(5),
             ip: Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
             port: Some(9999),
@@ -25,7 +24,7 @@ impl Default for BroadcastBuilder {
     }
 }
 
-impl BroadcastBuilder {
+impl DiscovererBuilder {
     pub fn set_ip(mut self, ip: IpAddr) -> Self {
         self.ip = Some(ip);
         self
@@ -51,7 +50,7 @@ impl BroadcastBuilder {
         self
     }
 
-    pub fn merge(mut self, other: BroadcastBuilder) -> Self {
+    pub fn merge(mut self, other: DiscovererBuilder) -> Self {
         self.ip = other.ip.or(self.ip);
         self.port = other.port.or(self.port);
         self.interval = other.interval.or(self.interval);
@@ -67,19 +66,6 @@ impl BroadcastBuilder {
             service_name: self.service_name,
             capture_interval: self.interval.map(|t| t as u64).unwrap_or(30),
             advert_extract: Default::default(),
-        }
-    }
-
-    pub fn into_advertiser<A: Into<Bytes>>(self, message: Option<A>) -> AdvertiserConfig {
-        AdvertiserConfig {
-            ip: self.ip.unwrap_or(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
-            port: self.port.unwrap_or(9999),
-            interval: self.interval.map(|t| t as u64).unwrap_or(30),
-            version: None,
-            service_name: self.service_name,
-            advertisement: message
-                .map(|t| t.into())
-                .unwrap_or(self.advertisement.into()),
         }
     }
 }

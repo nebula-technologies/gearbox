@@ -4,8 +4,9 @@ use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
 use crate::log::tracing::layer::LogLayer;
 use crate::service::discovery::services::common::CommonServiceDiscovery;
 use crate::service::discovery::DiscoveryService;
+use crate::service::framework::axum::advertiser_builder::AdvertiserBuilder;
 use crate::service::framework::axum::{
-    BoxFn, BroadcastBuilder, ConnectionBuilder, FrameworkState, HyperConfig, LogFormatter,
+    BoxFn, ConnectionBuilder, DiscovererBuilder, FrameworkState, HyperConfig, LogFormatter,
     LogOutput, ModuleDefinition, ModuleManager, RwFrameworkState, ServerRuntimeError,
     ServerRuntimeStatus, TokioExecutor,
 };
@@ -44,11 +45,11 @@ pub struct ServerBuilder {
     logger: LogFormatter,
     logger_output: LogOutput,
     logger_discovery: bool,
-    logger_discovery_builder: Option<BroadcastBuilder>,
+    logger_discovery_builder: Option<DiscovererBuilder>,
     trace_layer: bool,
     app_state: RwFrameworkState,
     sub_tasks: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
-    service_broadcast: Vec<Option<BroadcastBuilder>>,
+    service_broadcast: Vec<AdvertiserBuilder>,
     use_http2: bool,
     certificates: Option<(String, String)>,
     hyper_config: HyperConfig,
@@ -147,20 +148,27 @@ impl ServerBuilder {
         self
     }
 
-    pub fn add_service_broadcast<O: FnOnce(BroadcastBuilder) -> Option<BroadcastBuilder>>(
+    pub fn add_service_broadcast<O: FnOnce(AdvertiserBuilder) -> Option<AdvertiserBuilder>>(
         mut self,
         o: O,
     ) -> Self {
-        self.service_broadcast.push(o(BroadcastBuilder::default()));
+        if let Some(t) = o(AdvertiserBuilder::default()) {
+            self.service_broadcast.push(t);
+        }
         self
     }
 
-    pub fn with_log_service_discovery<O: FnOnce(BroadcastBuilder) -> Option<BroadcastBuilder>>(
+    pub fn with_log_service_discovery<O: FnOnce(DiscovererBuilder) -> Option<DiscovererBuilder>>(
         mut self,
         o: O,
     ) -> Self {
         self.trace_layer = true;
-        self.logger_discovery_builder = o(BroadcastBuilder::default());
+        self.logger_discovery_builder = o(DiscovererBuilder::default());
+        self
+    }
+
+    pub fn enable_log_service_discovery(mut self) -> Self {
+        self.logger_discovery = true;
         self
     }
 
@@ -218,10 +226,16 @@ impl ServerBuilder {
                 router = router.merge(fallback);
             }
 
+            let framework_state = self.module_manager.setup_module_states(self.app_state);
             let app = self
                 .router
                 .merge(router)
-                .with_state(self.module_manager.setup_module_states(self.app_state));
+                .with_state(framework_state.clone());
+
+            println!("Setting up advertiser and discoverer from modules");
+            self.module_manager
+                .setup_advertiser()
+                .setup_discoverer(framework_state);
 
             let mut app_with_state = router_with_state.merge(app);
 
@@ -235,16 +249,17 @@ impl ServerBuilder {
             }
 
             for i in self.service_broadcast {
-                let current_discovery_builder = i.clone();
-                let discovery_builder = current_discovery_builder.unwrap_or_default();
+                let discovery_builder = i.into_advertiser::<Bytes>(None);
 
                 let common_broadcaster = CommonServiceDiscovery::default();
                 common_broadcaster
                     .set_service_config(|mut t| {
                         if let Some(a) = &mut t.advertiser {
-                            *a = discovery_builder.into_advertiser::<Bytes>(None);
+                            *a = discovery_builder.clone();
+                        } else {
+                            t.advertiser = Some(discovery_builder.clone());
                         }
-
+                        println!("Advertiser config: {:?}", t);
                         t
                     })
                     .start_broadcast();
@@ -482,7 +497,7 @@ async fn shutdown_signal_capture(
 fn setup_logger(
     logger: LogFormatter,
     discovery: bool,
-    builder: Option<BroadcastBuilder>,
+    builder: Option<DiscovererBuilder>,
     output: LogOutput,
 ) {
     let mut formatter = match logger {
@@ -505,12 +520,9 @@ fn setup_logger(
     if discovery {
         let (fmt, handle) = formatter
             .set_service_config(|mut t| {
-                let mut current_discovery_builder = builder.clone();
+                let current_discovery_builder = builder.clone();
                 let discovery_builder = current_discovery_builder.unwrap_or_default();
-
-                if let Some(a) = &mut t.advertiser {
-                    *a = discovery_builder.into_advertiser::<Bytes>(None);
-                }
+                t.discoverer = Some(discovery_builder.into_discoverer());
 
                 t
             })

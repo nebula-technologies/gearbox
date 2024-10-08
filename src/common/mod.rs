@@ -8,6 +8,9 @@ pub mod serde_checks;
 #[cfg(feature = "common-try-default")]
 pub mod try_default;
 
+#[cfg(feature = "common-merge")]
+pub mod merge;
+
 #[cfg(feature = "common-boxed-future")]
 pub use boxed_future::BoxedFuture;
 #[cfg(feature = "common-ips")]

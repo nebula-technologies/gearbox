@@ -1,4 +1,5 @@
 use super::discovery::Advertisement;
+use crate::common::merge::DataMerge;
 use crate::service::discovery::entity::advertiser_config::AdvertiserConfig;
 use crate::service::discovery::entity::{Advertiser, Discoverer, DiscovererConfig};
 use core::net::IpAddr;
@@ -24,6 +25,23 @@ impl Config {
                 ip,
             })
         }
+    }
+}
+
+impl DataMerge<Config> for Config {
+    fn data_merge(&mut self, other: Config) -> &mut Self {
+        self.found_endpoint = other.found_endpoint;
+        self.discoverer = other.discoverer.or(self.discoverer.clone());
+        self.advertiser = other.advertiser.or(self.advertiser.clone());
+
+        self
+    }
+}
+impl DataMerge<AdvertiserConfig> for Config {
+    fn data_merge(&mut self, other: AdvertiserConfig) -> &mut Self {
+        self.advertiser.data_merge(other);
+
+        self
     }
 }
 
@@ -56,8 +74,8 @@ impl Config {
     // Create a new configuration with optional discovery config
     pub fn new(
         found_endpoint: Endpoint,
-        discovery: Option<Box<dyn Advertiser>>,
-        broadcast: Option<Box<dyn Discoverer>>,
+        discovery: Option<DiscovererConfig>,
+        broadcast: Option<AdvertiserConfig>,
     ) -> Self {
         Self {
             found_endpoint,
