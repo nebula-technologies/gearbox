@@ -1,20 +1,10 @@
-use crate::service::discovery::entity::Config;
-use bytes::Bytes;
-use tokio::task::JoinHandle;
+extern crate bytes;
+extern crate core;
+extern crate serde_derive;
+extern crate serde_json;
 
 pub mod entity;
-pub mod services;
-
-pub trait DiscoveryService {
-    fn set_service_config<O: Fn(Config) -> Config>(self, o: O) -> Self;
-    fn start_discovery(self) -> (Self, JoinHandle<()>)
-    where
-        Self: Sized;
-    fn start_discovery_with_fn<O>(self, o: O) -> (Self, JoinHandle<()>)
-    where
-        O: Fn(Bytes) + Send + 'static,
-        Self: Sized;
-    fn start_broadcast(self) -> (Self, JoinHandle<()>)
-    where
-        Self: Sized;
-}
+#[cfg(feature = "service-discovery-loggers-impl")]
+pub mod loggers;
+pub mod service_binding;
+pub mod service_discovery;

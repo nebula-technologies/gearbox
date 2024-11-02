@@ -17,7 +17,6 @@ pub struct HashMap<K, V> {
     locked: AtomicBool,
     data: UnsafeCell<Option<GBHashMap<K, V>>>,
 }
-
 impl<K, V> HashMap<K, V> {
     pub const fn new() -> HashMap<K, V> {
         Self {
@@ -205,6 +204,20 @@ where
         self.as_inner_mut().get_mut(k)
     }
 
+    pub fn get_or_insert_with<F>(&mut self, k: K, default: F) -> &mut V
+    where
+        F: FnOnce() -> V,
+    {
+        self.as_inner_mut().entry(k).or_insert_with(default)
+    }
+
+    pub fn get_or_default(&mut self, k: K) -> &mut V
+    where
+        V: Default,
+    {
+        self.as_inner_mut().entry(k).or_insert_with(V::default)
+    }
+
     pub fn insert(&mut self, k: K, v: V) -> Option<V> {
         self.as_inner_mut().insert(k, v)
     }
@@ -244,6 +257,13 @@ impl<K, V> HashMap<K, V> {
     pub fn raw_entry(&self) -> hash_map::RawEntryBuilder<'_, K, V, hash_map::DefaultHashBuilder> {
         self.as_inner().raw_entry()
     }
+}
+
+unsafe impl<K, V> Sync for HashMap<K, V>
+where
+    K: Sync,
+    V: Sync,
+{
 }
 
 impl<K, V> Clone for HashMap<K, V>

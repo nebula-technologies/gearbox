@@ -2,8 +2,6 @@ use crate::collections::HashMap;
 use crate::log::tracing::formatter::deeplog;
 use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
 use crate::log::tracing::layer::LogLayer;
-use crate::service::discovery::services::common::CommonServiceDiscovery;
-use crate::service::discovery::DiscoveryService;
 use crate::service::framework::axum::advertiser_builder::AdvertiserBuilder;
 use crate::service::framework::axum::{
     BoxFn, ConnectionBuilder, DiscovererBuilder, FrameworkState, HyperConfig, LogFormatter,
@@ -249,20 +247,20 @@ impl ServerBuilder {
             }
 
             for i in self.service_broadcast {
-                let discovery_builder = i.into_advertiser::<Bytes>(None);
+                let discovery_builder = i.into_broadcaster::<Bytes>(None);
 
-                let common_broadcaster = CommonServiceDiscovery::default();
-                common_broadcaster
-                    .set_service_config(|mut t| {
-                        if let Some(a) = &mut t.advertiser {
-                            *a = discovery_builder.clone();
-                        } else {
-                            t.advertiser = Some(discovery_builder.clone());
-                        }
-                        println!("Advertiser config: {:?}", t);
-                        t
-                    })
-                    .start_broadcast();
+                // let common_broadcaster = CommonServiceDiscovery::default();
+                // common_broadcaster
+                //     .set_service_config(|mut t| {
+                //         if let Some(a) = &mut t.advertiser {
+                //             *a = discovery_builder.clone();
+                //         } else {
+                //             t.advertiser = Some(discovery_builder.clone());
+                //         }
+                //         println!("Advertiser config: {:?}", t);
+                //         t
+                //     })
+                //     .start_broadcast();
             }
 
             setup_logger(
@@ -518,16 +516,16 @@ fn setup_logger(
     };
 
     if discovery {
-        let (fmt, handle) = formatter
-            .set_service_config(|mut t| {
-                let current_discovery_builder = builder.clone();
-                let discovery_builder = current_discovery_builder.unwrap_or_default();
-                t.discoverer = Some(discovery_builder.into_discoverer());
-
-                t
-            })
-            .start_discovery();
-        formatter = fmt;
+        // let (fmt, handle) = formatter
+        //     .set_service_config(|mut t| {
+        //         let current_discovery_builder = builder.clone();
+        //         let discovery_builder = current_discovery_builder.unwrap_or_default();
+        //         t.discoverer = Some(discovery_builder.into_discoverer());
+        //
+        //         t
+        //     })
+        //     .start_discovery();
+        // formatter = fmt;
     }
 
     let formatter = LogLayer::new(None, std::io::stdout, formatter);

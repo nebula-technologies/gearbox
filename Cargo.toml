@@ -102,6 +102,9 @@ common-boxed-future = ["common"]
 common-ips = ["common", "if_addrs"]
 common-process = ["common"]
 common-merge = ["common"]
+common-socket-bind-addr = ["common", "std"]
+common-ip-range = ["common"]
+common-vec-ext = ["common"]
 
 did = ["std"]
 did-all = ["did-sld"]
@@ -147,7 +150,8 @@ rails-tracing = ["rails"]
 
 # Services - Builders and more
 service = ["std"]
-service-discovery = ["service", "with_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all", "bytes"]
+service-discovery = ["service", "with_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all", "bytes", "common-ip-range", "common-socket-bind-addr", "semver", "collections-const-hash-map"]
+service-discovery-loggers-impl = ["service-discovery"]
 service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge"]
 
 # Storage

@@ -483,6 +483,11 @@ pub mod externs {
         pub use hashbrown::HashSet;
     }
 
+    #[cfg(feature = "spin")]
+    pub mod spin {
+        pub use spin::*;
+    }
+
     #[cfg(target_arch = "wasm32")]
     pub mod wasm_bindgen {
         pub use wasm_bindgen::__rt;

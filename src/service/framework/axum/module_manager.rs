@@ -7,8 +7,6 @@ use serde_derive::{Deserialize, Serialize};
 use spin::RwLock;
 use std::sync::Arc;
 
-use crate::service::discovery::services::common::CommonServiceDiscovery;
-use crate::service::discovery::DiscoveryService;
 use crate::service::framework::axum::advertiser_builder::AdvertiserBuilder;
 use crate::{debug, info};
 use axum::http::StatusCode;
@@ -126,7 +124,7 @@ impl ModuleManager {
                 for t in func() {
                     CommonServiceDiscovery::default()
                         .set_service_config(|mut c| {
-                            c.advertiser = Some(t.clone().into_advertiser::<Bytes>(None));
+                            c.advertiser = Some(t.clone().into_broadcaster::<Bytes>(None));
 
                             c
                         })

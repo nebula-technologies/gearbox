@@ -1,4 +1,5 @@
-use crate::service::discovery::entity::{Advertisement, AdvertiserConfig, DiscovererConfig};
+use crate::service::discovery::entity::Advertisement;
+use crate::service::discovery::service_discovery::Discoverer;
 use crate::time::DateTime;
 use bytes::Bytes;
 use std::net::{IpAddr, Ipv4Addr};
@@ -58,15 +59,11 @@ impl DiscovererBuilder {
         self
     }
 
-    pub fn into_discoverer(self) -> DiscovererConfig {
-        DiscovererConfig {
-            ip: self.ip.unwrap_or(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
-            port: self.port.unwrap_or(9999),
-            version: None,
-            service_name: self.service_name,
-            capture_interval: self.interval.map(|t| t as u64).unwrap_or(30),
-            advert_extract: Default::default(),
-        }
+    pub fn into_discoverer(self) -> Discoverer<Advertisement> {
+        Discoverer::new()
+            .with_interval(self.interval.map(|t| t as u64))
+            .with_service_name(self.service_name)
+            .with_ip(self.ip.map(|t| t.into()))
     }
 }
 
