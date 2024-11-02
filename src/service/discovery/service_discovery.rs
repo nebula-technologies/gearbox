@@ -662,38 +662,48 @@ pub trait ServiceDiscoveryTrait<S, A> {
 }
 
 pub trait ServiceDiscoveryStateTrait {
-    fn set_state<T: Sync + Send + Any>(&mut self, key: &str, state: T);
-    fn state<T: Sync + Send + Any>(&self, key: &str) -> Option<&T>;
-    fn list<T: Sync + Send + Any>(&self) -> Vec<&T>;
+    fn set_state<T: Sync + Send + Any + Copy>(&mut self, key: &str, state: T);
+    fn state<T: Sync + Send + Any + Copy>(&self, key: &str) -> Option<T>;
+    fn list<T: Sync + Send + Any + Copy>(&self) -> Vec<T>;
 }
 
+#[derive(Clone, Debug)]
 pub struct ServiceDiscoveryState {
-    state: HashMap<std::any::TypeId, HashMap<String, Box<dyn Any + Send + Sync>>>,
+    state: Arc<RwLock<HashMap<std::any::TypeId, HashMap<String, Box<dyn Any + Send + Sync>>>>>,
 }
 
 impl ServiceDiscoveryStateTrait for ServiceDiscoveryState {
-    fn set_state<T: Sync + Send + Any>(&mut self, key: &str, state: T) {
+    fn set_state<T: Sync + Send + Any + Copy>(&mut self, key: &str, state: T) {
         let type_id = TypeId::of::<T>();
         let state = Box::new(state);
-        self.state
+        let mut state_rw = self.state.write();
+        state_rw
             .entry(type_id)
             .or_insert(HashMap::new())
             .insert(key.to_string(), state);
     }
 
-    fn state<T: Sync + Send + Any>(&self, key: &str) -> Option<&T> {
+    fn state<T: Sync + Send + Any + Copy>(&self, key: &str) -> Option<T> {
         let type_id = TypeId::of::<T>();
-        self.state
+        let state_r = self.state.read();
+        state_r
             .get(&type_id)
             .and_then(|t| t.get(key))
             .and_then(|t| t.downcast_ref::<T>())
+            .map(|t| t.to_owned())
     }
 
-    fn list<T: Sync + Send + Any>(&self) -> Vec<&T> {
+    fn list<T: Sync + Send + Any + Copy>(&self) -> Vec<T> {
         let type_id = TypeId::of::<T>();
-        self.state
+        let state_r = self.state.read();
+        state_r
             .get(&type_id)
-            .map(|t| t.values().filter_map(|t| t.downcast_ref::<T>()).collect())
+            .map(|t| {
+                t.values()
+                    .filter_map(|t| t.downcast_ref::<T>())
+                    .map(|t| t.to_owned())
+                    .collect()
+            })
             .unwrap_or_default()
     }
 }
@@ -770,7 +780,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_service_add_discoverer() {
-        let mut discovery = ServiceDiscovery::unmanaged();
+        let mut discovery: ServiceDiscovery<(), ()> = ServiceDiscovery::unmanaged();
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         let port = 8080u16;
         let discoverer = Discoverer::new();
@@ -806,7 +816,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_discoverer_constructors() {
-        let discoverer = Discoverer::<Bytes>::new();
+        let discoverer = Discoverer::<ServiceDiscoveryState, Bytes>::new();
         assert_eq!(discoverer.service_name, None);
         assert_eq!(discoverer.version, None);
         assert_eq!(discoverer.interval, None);
@@ -815,7 +825,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_discoverer_set_validator() {
-        let mut discoverer = Discoverer::<Bytes>::new();
+        let mut discoverer = Discoverer::<ServiceDiscoveryState, Bytes>::new();
         let validator = |advert: &Arc<Bytes>| -> Result<(), DiscovererError> {
             if advert.is_empty() {
                 Err(DiscovererError::NoDataAvailable)
@@ -830,9 +840,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_discoverer_add_processor() {
-        let mut discoverer = Discoverer::<Bytes>::new();
+        let mut discoverer = Discoverer::<ServiceDiscoveryState, Bytes>::new();
 
-        discoverer.add_processor(|advert| async move {
+        discoverer.add_processor(|advert, state| async move {
             println!("Processing advert: {:?}", advert);
         });
         assert_eq!(discoverer.processor.len(), 1);
@@ -853,21 +863,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_discoverer_advert_capture() {
-        let mut discoverer = Discoverer::<Bytes>::new();
+        let mut discoverer = Discoverer::<ServiceDiscoveryState, Bytes>::new();
         let advert = Advertisement {
             service_id: Some("Test Service".into()),
             version: Some("1.0.0".into()),
             ..Default::default()
         };
-        discoverer.advert = Some(Bytes::from(advert.clone()));
+        let b_advert = Bytes::from(advert.clone());
 
-        let captured_advert = discoverer.advert_capture().unwrap();
+        let captured_advert = discoverer.advert_capture(b_advert).unwrap();
         assert_eq!(captured_advert, advert);
     }
 
     #[tokio::test]
     async fn test_advert_conversion() {
-        let mut discoverer = Discoverer::<Bytes>::new();
+        let mut discoverer = Discoverer::<ServiceDiscoveryState, Bytes>::new();
         let advert = Advertisement {
             service_id: Some("Test Service".into()),
             version: Some("1.0.0".into()),
@@ -895,7 +905,7 @@ mod tests {
         println!("Broadcasting: {:?}", broadcaster);
 
         // Setup a discoverer with a simple validator and processor
-        let mut discoverer = Discoverer::<Bytes>::new();
+        let mut discoverer = Discoverer::<ServiceDiscoveryState, Bytes>::new();
         discoverer.set_validator(move |advert| {
             if advert.deref() == &Bytes::from(advertisement.clone()) {
                 Ok(())
@@ -906,8 +916,9 @@ mod tests {
         let (tx, mut rx) = tokio::sync::mpsc::channel(1);
         let arc_tx = Arc::new(tx);
 
-        discoverer.add_processor(move |advert| {
+        discoverer.add_processor(move |advert, state| {
             let arc_tx = Arc::clone(&arc_tx);
+            let state_clone = state.map(|t| t.to_owned()).clone();
             async move {
                 println!("Call processing function: {:?}", advert);
                 if !arc_tx.is_closed() {
