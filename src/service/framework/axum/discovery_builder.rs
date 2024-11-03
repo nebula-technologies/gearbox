@@ -1,12 +1,14 @@
+use crate::common::ip_range::IpRanges;
 use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::Discoverer;
+use crate::service::framework::axum::FrameworkState;
 use crate::time::DateTime;
 use bytes::Bytes;
 use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Debug, Clone)]
 pub struct DiscovererBuilder {
-    pub(crate) ip: Option<IpAddr>,
+    pub(crate) ip: Option<IpRanges>,
     pub(crate) port: Option<u16>,
     pub(crate) interval: Option<usize>,
     pub(crate) service_name: Option<String>,
@@ -17,7 +19,7 @@ impl Default for DiscovererBuilder {
     fn default() -> Self {
         DiscovererBuilder {
             interval: Some(5),
-            ip: Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
+            ip: Some(IpRanges::default()),
             port: Some(9999),
             service_name: Some("Log-service".to_string()),
             advertisement: Advertisement::default(),
@@ -26,8 +28,8 @@ impl Default for DiscovererBuilder {
 }
 
 impl DiscovererBuilder {
-    pub fn set_ip(mut self, ip: IpAddr) -> Self {
-        self.ip = Some(ip);
+    pub fn set_ip<T: Into<IpRanges>>(mut self, ip: T) -> Self {
+        self.ip = Some(ip.into());
         self
     }
 
@@ -59,11 +61,11 @@ impl DiscovererBuilder {
         self
     }
 
-    pub fn into_discoverer(self) -> Discoverer<Advertisement> {
+    pub fn into_discoverer(self) -> Discoverer<FrameworkState, Bytes> {
         Discoverer::new()
             .with_interval(self.interval.map(|t| t as u64))
             .with_service_name(self.service_name)
-            .with_ip(self.ip.map(|t| t.into()))
+            .with_ip(self.ip)
     }
 }
 

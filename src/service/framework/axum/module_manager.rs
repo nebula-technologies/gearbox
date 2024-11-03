@@ -122,13 +122,13 @@ impl ModuleManager {
             if let Some(module) = self.modules.get(&module) {
                 let func = module.broadcast;
                 for t in func() {
-                    CommonServiceDiscovery::default()
-                        .set_service_config(|mut c| {
-                            c.advertiser = Some(t.clone().into_broadcaster::<Bytes>(None));
-
-                            c
-                        })
-                        .start_broadcast();
+                    // CommonServiceDiscovery::default()
+                    //     .set_service_config(|mut c| {
+                    //         c.advertiser = Some(t.clone().into_broadcaster::<Bytes>(None));
+                    //
+                    //         c
+                    //     })
+                    //     .start_broadcast();
                 }
             };
         }
@@ -141,21 +141,21 @@ impl ModuleManager {
             if let Some(module) = self.modules.get(&module) {
                 let func = module.discovery;
                 for t in func() {
-                    let csd = CommonServiceDiscovery::default().set_service_config(|mut c| {
-                        c.discoverer = Some(t.clone().into_discoverer());
-
-                        c
-                    });
-
-                    if let Some(func) = module.discovery_capture {
-                        let fn_clone = func.clone();
-                        let state_clone = state.clone();
-                        csd.start_discovery_with_fn(move |c| {
-                            fn_clone(state_clone.clone(), &c);
-                        });
-                    } else {
-                        csd.start_discovery();
-                    }
+                    // let csd = CommonServiceDiscovery::default().set_service_config(|mut c| {
+                    //     c.discoverer = Some(t.clone().into_discoverer());
+                    //
+                    //     c
+                    // });
+                    //
+                    // if let Some(func) = module.discovery_capture {
+                    //     let fn_clone = func.clone();
+                    //     let state_clone = state.clone();
+                    //     csd.start_discovery_with_fn(move |c| {
+                    //         fn_clone(state_clone.clone(), &c);
+                    //     });
+                    // } else {
+                    //     csd.start_discovery();
+                    // }
                 }
             };
         }

@@ -16,7 +16,7 @@ impl From<ParseIntError> for RangeParseError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Range {
     Exact(u16),
     Range(u16, u16),
@@ -71,7 +71,7 @@ impl FromStr for Range {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Ipv4Range {
     part_1: Range,
     part_2: Range,
@@ -89,7 +89,7 @@ impl Ipv4Range {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Ipv6Range {
     part_1: Range,
     part_2: Range,
@@ -115,6 +115,7 @@ impl Ipv6Range {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IpRanges(Vec<Ipv4Range>, Vec<Ipv6Range>);
 
 impl IpRanges {

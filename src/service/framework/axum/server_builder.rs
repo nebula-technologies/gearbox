@@ -1,7 +1,10 @@
+use crate::collections::const_hash_map::HashMap as ConstHashMap;
 use crate::collections::HashMap;
 use crate::log::tracing::formatter::deeplog;
 use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
 use crate::log::tracing::layer::LogLayer;
+use crate::service::discovery::service_binding::ServiceBinding;
+use crate::service::discovery::service_discovery::{Service, ServiceDiscovery};
 use crate::service::framework::axum::advertiser_builder::AdvertiserBuilder;
 use crate::service::framework::axum::{
     BoxFn, ConnectionBuilder, DiscovererBuilder, FrameworkState, HyperConfig, LogFormatter,
@@ -18,6 +21,7 @@ use bytes::Bytes;
 use hyper::server::conn::{http1, http2};
 use hyper_util::rt::TokioIo;
 use hyper_util::service::TowerToHyperService;
+use spin::rwlock::RwLock;
 use std::any::{Any, TypeId};
 use std::future::Future;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
@@ -35,6 +39,10 @@ use tracing::{event, Level};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::Registry;
 
+static SERVICE_DISCOVERY: RwLock<
+    ConstHashMap<ServiceBinding, Service<Arc<FrameworkState>, Bytes>>,
+> = RwLock::new(ConstHashMap::new());
+
 pub struct ServerBuilder {
     address: IpAddr,
     port: u16,
@@ -43,17 +51,16 @@ pub struct ServerBuilder {
     logger: LogFormatter,
     logger_output: LogOutput,
     logger_discovery: bool,
-    logger_discovery_builder: Option<DiscovererBuilder>,
     trace_layer: bool,
     app_state: RwFrameworkState,
     sub_tasks: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
-    service_broadcast: Vec<AdvertiserBuilder>,
     use_http2: bool,
     certificates: Option<(String, String)>,
     hyper_config: HyperConfig,
     include_subtasks_in_worker_pool: bool,
     module_manager: ModuleManager,
     fallback_response: Option<Router<Arc<FrameworkState>>>,
+    service_discovery: ServiceDiscovery<Arc<FrameworkState>, Bytes>,
 }
 
 impl Default for ServerBuilder {
@@ -74,17 +81,16 @@ impl ServerBuilder {
             logger: LogFormatter::DeepLog,
             logger_output: LogOutput::Full,
             logger_discovery: false,
-            logger_discovery_builder: None,
             trace_layer: false,
             app_state: RwFrameworkState::default(),
             sub_tasks: Vec::new(),
-            service_broadcast: Vec::new(),
             use_http2: false,
             certificates: None,
             hyper_config: HyperConfig::default(),
             include_subtasks_in_worker_pool: false,
             module_manager: ModuleManager::default(),
             fallback_response: None,
+            service_discovery: ServiceDiscovery::managed(&SERVICE_DISCOVERY),
         }
     }
 

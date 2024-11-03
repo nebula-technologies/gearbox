@@ -1,5 +1,5 @@
 use crate::service::discovery::entity::Advertisement;
-use crate::service::discovery::service_discovery::{BroadcastSetAdvertisement, Broadcaster};
+use crate::service::discovery::service_discovery::{AdvertisementTransformer, Broadcaster};
 use crate::time::DateTime;
 use bytes::Bytes;
 use std::net::{IpAddr, Ipv4Addr};
@@ -66,7 +66,10 @@ impl AdvertiserBuilder {
         self
     }
 
-    pub fn into_broadcaster<A: Into<Bytes>>(self, message: Option<A>) -> Broadcaster {
+    pub fn into_broadcaster<A: Into<Bytes>>(self, message: Option<A>) -> Broadcaster<Bytes>
+    where
+        Broadcaster<Bytes>: AdvertisementTransformer<Bytes>,
+    {
         let mut broadcaster: Broadcaster<Bytes> = Broadcaster::new();
         *broadcaster.ip_mut() = self.ip;
         *broadcaster.port_mut() = self.port;
@@ -74,7 +77,7 @@ impl AdvertiserBuilder {
         *broadcaster.service_name_mut() = self.service_name;
 
         if let Some(t) = message {
-            broadcaster = broadcaster.advertisement(t.into());
+            broadcaster = broadcaster.with_advertisement(t.into());
         }
         if let Some(t) = self.bind_port {
             broadcaster = broadcaster.bcast_port(t);
