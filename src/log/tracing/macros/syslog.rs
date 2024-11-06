@@ -215,16 +215,16 @@ macro_rules! notice {
 #[macro_export]
 macro_rules! info {
     ($i:ident) => {
-        $crate::syslog_func_generator!($i(()), Informational, debug, UserlevelMessages, "{:?}")
+        $crate::syslog_func_generator!($i(()), Informational, info, UserlevelMessages, "{:?}")
     };
     ($i:ident, $s:literal) => {
-        $crate::syslog_func_generator!($i(()), Informational, debug, UserlevelMessages, $s)
+        $crate::syslog_func_generator!($i(()), Informational, info, UserlevelMessages, $s)
     };
     ($i:ident, $f:ident) => {
-        $crate::syslog_func_generator!($i(()), Informational, debug, $f, "{:?}")
+        $crate::syslog_func_generator!($i(()), Informational, info, $f, "{:?}")
     };
     ($i:ident, $f:ident, $s:literal) => {
-        $crate::syslog_func_generator!($i(()), Informational, debug, $f, $s)
+        $crate::syslog_func_generator!($i(()), Informational, info, $f, $s)
     };
     ($($arg:tt)*) => {
         $crate::externs::tracing::debug!(log_level=$crate::log::tracing::entity::syslog::Severity::Informational.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Informational.as_str(), $($arg)*);

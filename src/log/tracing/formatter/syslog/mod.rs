@@ -133,7 +133,7 @@ impl LogFormatter for Syslog {
         self.line = event.metadata().line();
         self.file = event.metadata().file().map(|t| t.to_string());
         self.severity = event_visitor
-            .get("severity")
+            .get("log_level")
             .and_then(|t| t.try_into().ok())
             .or_else(|| event_visitor.get("level").and_then(|t| t.try_into().ok()))
             .or_else(|| Option::from(Severity::from(event.metadata().level())));

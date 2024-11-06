@@ -16,6 +16,82 @@ pub struct Advertisement {
     pub version: Option<String>,
 }
 
+impl Advertisement {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_ip(mut self, ip: Option<Vec<IpAddr>>) -> Self {
+        self.ip = ip;
+        self
+    }
+
+    pub fn set_ip(&mut self, ip: Vec<IpAddr>) -> &mut Self {
+        self.ip = Some(ip);
+        self
+    }
+
+    pub fn with_mac(mut self, mac: Option<String>) -> Self {
+        self.mac = mac;
+        self
+    }
+
+    pub fn set_mac(&mut self, mac: String) -> &mut Self {
+        self.mac = Some(mac);
+        self
+    }
+
+    pub fn with_port(mut self, port: Option<u16>) -> Self {
+        self.port = port;
+        self
+    }
+
+    pub fn set_port(&mut self, port: u16) -> &mut Self {
+        self.port = Some(port);
+        self
+    }
+
+    pub fn with_service_id(mut self, service_id: Option<String>) -> Self {
+        self.service_id = service_id;
+        self
+    }
+
+    pub fn set_service_id(&mut self, service_id: String) -> &mut Self {
+        self.service_id = Some(service_id);
+        self
+    }
+
+    pub fn with_hostname(mut self, hostname: Option<String>) -> Self {
+        self.hostname = hostname;
+        self
+    }
+
+    pub fn set_hostname(&mut self, hostname: String) -> &mut Self {
+        self.hostname = Some(hostname);
+        self
+    }
+
+    pub fn with_timestamp(mut self, timestamp: Option<DateTime>) -> Self {
+        self.timestamp = timestamp;
+        self
+    }
+
+    pub fn set_timestamp(&mut self, timestamp: DateTime) -> &mut Self {
+        self.timestamp = Some(timestamp);
+        self
+    }
+
+    pub fn with_version(mut self, version: Option<String>) -> Self {
+        self.version = version;
+        self
+    }
+
+    pub fn set_version(&mut self, version: String) -> &mut Self {
+        self.version = Some(version);
+        self
+    }
+}
+
 impl From<Advertisement> for Bytes {
     fn from(value: Advertisement) -> Self {
         Bytes::from(String::from(value))

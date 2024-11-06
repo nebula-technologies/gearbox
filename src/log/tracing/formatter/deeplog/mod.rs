@@ -36,6 +36,7 @@ use tracing_subscriber::{
 pub enum LogStyleOutput {
     Full,
     Minimal,
+    Human,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DeepLogFormatter {
@@ -144,9 +145,7 @@ impl LogFormatter for DeepLogFormatter {
                     .values()
                     .get("message")
                     .and_then(|v| match v {
-                        Value::String(s) => {
-                            Some(format!("{} {}", event.metadata().name(), s.as_str()))
-                        }
+                        Value::String(s) => Some(s.to_string()),
                         _ => None,
                     })
                     .unwrap_or_else(|| {
@@ -170,7 +169,7 @@ impl LogFormatter for DeepLogFormatter {
             });
 
             deeplog.severity = event_visitor
-                .get("severity")
+                .get("log_level")
                 .and_then(|t| t.try_into().ok())
                 .or_else(|| event_visitor.get("level").and_then(|t| t.try_into().ok()))
                 .or_else(|| Option::from(Severity::from(event.metadata().level())));
@@ -193,6 +192,17 @@ impl LogFormatter for DeepLogFormatter {
                 deeplog.trace_id = event_visitor
                     .get("trace_id")
                     .and_then(|v| v.try_into().ok());
+            }
+            if let Some(timestamps) = &mut deeplog.timestamps {
+                timestamps.received_timestamp = None;
+                if timestamps.timestamp.is_none() {
+                    timestamps.timestamp = Some(DateTime::now());
+                }
+            } else {
+                deeplog.timestamps = Some(Timestamps {
+                    received_timestamp: None,
+                    timestamp: Some(DateTime::now()),
+                });
             }
 
             deeplog.clone()
@@ -228,6 +238,42 @@ impl LogFormatter for DeepLogFormatter {
                 );
                 serde_json::to_string(&serde_json::Value::Object(map))
                     .unwrap_or_else(|e| format!(r#"{{"message":"{}"}}"#, e.to_string()))
+            }
+            LogStyleOutput::Human => {
+                let severity = deeplog.severity.unwrap_or(Severity::Error);
+                let timestamp = deeplog
+                    .timestamps
+                    .and_then(|t| t.timestamp)
+                    .map(|t| t.to_rfc3339())
+                    .unwrap_or("No timestamp".to_string());
+                let msg = deeplog.message.unwrap_or("No message".to_string());
+
+                // Extract file and line information
+                let file = deeplog
+                    .caller
+                    .as_ref()
+                    .and_then(|caller| {
+                        caller.file.as_ref().map(|file_path| {
+                            // If the file path is longer than 30 characters, truncate and add "..."
+                            if file_path.len() > 40 {
+                                format!(" ...{}", &file_path[file_path.len() - 37..])
+                            } else {
+                                // Pad the file path to the front with spaces if it's less than 30 characters
+                                format!(" {:>40}", file_path)
+                            }
+                        })
+                    })
+                    .unwrap_or(format!("{:>30}", "No file"));
+
+                let line = deeplog
+                    .caller
+                    .as_ref()
+                    .and_then(|caller| caller.line)
+                    .map(|line| line.to_string())
+                    .unwrap_or("No line".to_string());
+
+                // Format the log message with aligned severity and fixed-length file path
+                format!("{} {:<15} {}:{} {}", timestamp, severity, file, line, msg)
             }
         }
     }

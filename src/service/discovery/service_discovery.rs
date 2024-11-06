@@ -3,8 +3,12 @@ use crate::collections::const_hash_map::HashMap;
 use crate::common::ip_range::IpRanges;
 use crate::common::socket_bind_addr::SocketBindAddr;
 use crate::externs::spin::RwLock;
+use crate::rails::ext::blocking::TapResult;
 use crate::service::discovery::service_binding::ServiceBinding;
+use crate::service::framework::axum::FrameworkStateContainer;
+use crate::{debug, error};
 use bytes::Bytes;
+use core::fmt::{Debug, Formatter};
 use semver::Version;
 use std::any::Any;
 use std::any::TypeId;
@@ -40,7 +44,7 @@ where
 impl<S, A> ServiceDiscovery<S, A>
 where
     A: Send + Sync,
-    S: Send + Sync,
+    S: Send + Sync + Clone,
 
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
@@ -179,16 +183,24 @@ where
         self
     }
 
-    // pub fn serve(&mut self) -> Result<(), String> {
-    //     let map = if self.managed {
-    //         let reader = SERVICE_DISCOVERY.read();
-    //         reader.clone()
-    //     } else {
-    //         self.discovery_type.clone()
-    //     };
-    //
-    //     let reader = SERVICE_DISCOVERY.read();
-    // }
+    pub fn serve(mut self, state: Option<S>) -> () {
+        debug!("Starting service discovery...");
+        let services = if let Some(managed_state) = self.managed_state {
+            debug!("Service discovery system is managed...");
+            let mut writer = managed_state.write();
+            std::mem::take(&mut *writer)
+        } else {
+            std::mem::take(&mut self.discovery_type)
+        };
+
+        for (t, service) in services.into_iter() {
+            debug!("Spinning Service Binding set: {}", t);
+            let state_cloned = state.clone();
+            tokio::spawn(async move {
+                service.serve(state_cloned).await.ok();
+            });
+        }
+    }
 }
 
 pub struct Service<S, A>
@@ -222,12 +234,14 @@ where
         }
     }
     pub fn add_broadcaster(&mut self, broadcaster: Broadcaster<A>) -> &mut Self {
+        debug!("Adding Broadcaster: {:?}", &broadcaster);
         self.service_types
             .push(ServiceDiscoveryType::Broadcaster(broadcaster));
         self
     }
 
     pub fn add_discoverer(&mut self, discoverer: Discoverer<S, A>) -> &mut Self {
+        debug!("Adding Discoverer: {:?}", &discoverer);
         self.service_types
             .push(ServiceDiscoveryType::Discoverer(discoverer));
         self
@@ -247,16 +261,17 @@ where
         self.bind.clone()
     }
 
-    pub async fn serve(mut self, state: Option<&S>) -> Result<(), String> {
+    pub async fn serve(mut self, state: Option<S>) -> Result<(), String> {
         let bind: SocketAddr = self.get_bind().into();
 
-        println!("Binding to: {:?}", bind);
+        debug!("Binding to: {:?}", bind);
         // Bind the socket to the IP and port
         let socket = UdpSocket::bind(bind)
             .await
             .and_then(|t| t.set_broadcast(true).map(|_| t))
             .map(Arc::new)
-            .map_err(|e| format!("Failed to bind socket: {}", e))?;
+            .map_err(|e| format!("Failed to bind socket ({:?}): {}", bind, e))
+            .tap_err(|e| error!("{}", e))?;
 
         // Clone the socket to use it for both sending and receiving
         let socket_send = socket.clone();
@@ -264,10 +279,12 @@ where
 
         // Start sending broadcasts in a separate task
         let send_task = tokio::spawn({
+            debug!("Starting broadcast task...");
             let thread_socket = socket_send.clone();
             let arc_self = Arc::clone(&arc_self);
             async move {
                 let mut tick = 0u64;
+                debug!("Broadcasting loop starting...");
                 loop {
                     for service_type in arc_self.service_types.iter() {
                         if let ServiceDiscoveryType::Broadcaster(broadcaster) = service_type {
@@ -275,18 +292,17 @@ where
                                 if let (data, Some(broadcast)) =
                                     (broadcaster.advert_into_bytes(), &broadcaster.broadcast)
                                 {
-                                    match thread_socket
+                                    thread_socket
                                         .send_to(&*data, SocketAddr::from(broadcast))
                                         .await
-                                    {
-                                        Ok(t) => {
-                                            println!(
+                                        .tap(|t| {
+                                            debug!(
                                                 "Broadcast sent {} bytes to {}: {:?}",
                                                 t, broadcast, data
-                                            )
-                                        }
-                                        Err(e) => eprintln!("Broadcast error: {}", e),
-                                    }
+                                            );
+                                        })
+                                        .tap_err(|e| error!("Broadcast error: {}", e))
+                                        .ok();
                                 }
                             }
                         }
@@ -305,13 +321,13 @@ where
         // Start receiving broadcasts
         let mut buf = [0; 1024];
         loop {
-            println!("Waiting for data...");
+            debug!("Waiting for data...");
             match socket.recv_from(&mut buf).await {
                 Ok((amt, src)) => {
                     let advert = Bytes::from(buf[..amt].to_vec());
                     let arc_advert = Arc::new(advert);
 
-                    println!("Received {} bytes from {}: {:?}", amt, src, &arc_advert);
+                    debug!("Received {} bytes from {}: {:?}", amt, src, &arc_advert);
 
                     // Trigger discovery functions
                     for func in arc_self.clone().discovery_functions.iter() {
@@ -324,7 +340,7 @@ where
                             if let Some(validator) = &discoverer.validator {
                                 if validator(&arc_advert).is_ok() {
                                     for processor in &discoverer.processor {
-                                        processor(arc_advert.clone(), state.clone()).await;
+                                        processor(arc_advert.clone(), state.as_ref()).await;
                                     }
                                 }
                             }
@@ -332,7 +348,7 @@ where
                     }
                 }
                 Err(e) => {
-                    eprintln!("Error receiving data: {}", e);
+                    error!("Error receiving data: {}", e);
                 }
             }
         }
@@ -341,7 +357,6 @@ where
         //send_task.abort();
     }
 }
-
 pub enum ServiceDiscoveryType<S, A = Bytes>
 where
     Broadcaster<A>: AdvertisementTransformer<A>,
@@ -376,7 +391,6 @@ where
     }
 }
 
-#[derive(Debug)]
 pub struct Broadcaster<A> {
     ip: Option<IpAddr>,
     port: Option<u16>,
@@ -385,12 +399,6 @@ pub struct Broadcaster<A> {
     version: Option<String>,
     interval: Option<u64>,
     advertisement: Option<A>,
-}
-
-impl<A: Into<Vec<u8>>> Default for Broadcaster<A> {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl<A> Broadcaster<A> {
@@ -405,15 +413,15 @@ impl<A> Broadcaster<A> {
             advertisement: Default::default(),
         }
     }
-    pub fn with_ip(mut self, ip: IpAddr) -> Self {
-        self.ip = Some(ip);
+    pub fn with_ip(mut self, ip: Option<IpAddr>) -> Self {
+        self.ip = ip;
         self
     }
     pub fn ip_mut(&mut self) -> &mut Option<IpAddr> {
         &mut self.ip
     }
-    pub fn with_port(mut self, port: u16) -> Self {
-        self.port = Some(port);
+    pub fn with_port(mut self, port: Option<u16>) -> Self {
+        self.port = port;
         self
     }
     pub fn port_mut(&mut self) -> &mut Option<u16> {
@@ -457,11 +465,9 @@ impl<A> Broadcaster<A> {
         self
     }
 
-    pub fn with_broadcast_mask(mut self, mask: IpAddr) -> Self {
+    pub fn with_broadcast_mask(mut self, mask: Option<IpAddr>) -> Self {
         if let (Some(ip), Some(port)) = (&self.ip, &self.port) {
-            self.broadcast = SocketBindAddr::new(*ip, *port)
-                .as_broadcast_addr(Some(mask))
-                .ok();
+            self.broadcast = SocketBindAddr::new(*ip, *port).as_broadcast_addr(mask).ok();
         }
         self
     }
@@ -477,22 +483,22 @@ impl<A> Broadcaster<A> {
     pub fn bcast_mut(&mut self) -> &mut Option<SocketBindAddr> {
         &mut self.broadcast
     }
-    pub fn with_service_name(mut self, service_name: &str) -> Self {
-        self.service_name = Some(service_name.to_string());
+    pub fn with_service_name(mut self, service_name: Option<String>) -> Self {
+        self.service_name = service_name;
         self
     }
     pub fn service_name_mut(&mut self) -> &mut Option<String> {
         &mut self.service_name
     }
-    pub fn with_version(mut self, version: String) -> Self {
-        self.version = Some(version);
+    pub fn with_version(mut self, version: Option<String>) -> Self {
+        self.version = version;
         self
     }
     pub fn version_mut(&mut self) -> &mut Option<String> {
         &mut self.version
     }
-    pub fn with_interval(mut self, interval: u64) -> Self {
-        self.interval = Some(interval);
+    pub fn with_interval(mut self, interval: Option<u64>) -> Self {
+        self.interval = interval;
         self
     }
     pub fn interval_mut(&mut self) -> &mut Option<u64> {
@@ -500,11 +506,34 @@ impl<A> Broadcaster<A> {
     }
 }
 
+impl<A> Debug for Broadcaster<A> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Broadcaster")
+            .field("ip", &self.ip)
+            .field("port", &self.port)
+            .field("broadcast", &self.broadcast)
+            .field("service_name", &self.service_name)
+            .field("version", &self.version)
+            .field("interval", &self.interval)
+            .field(
+                "advertisement",
+                &format!("has_data({})", self.advertisement.is_some()),
+            )
+            .finish()
+    }
+}
+
+impl<A: Into<Vec<u8>>> Default for Broadcaster<A> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub trait AdvertisementTransformer<A>
 where
     Self: Sized,
 {
-    fn with_advertisement(self, a: A) -> Self;
+    fn with_advertisement(self, a: Option<A>) -> Self;
     fn set_advertisement(&mut self, a: A) -> &mut Self;
     fn advertisement(&self) -> Option<&A>;
 
@@ -513,8 +542,8 @@ where
 }
 
 impl AdvertisementTransformer<Advertisement> for Broadcaster<Advertisement> {
-    fn with_advertisement(mut self, a: Advertisement) -> Self {
-        self.advertisement = Some(a.into());
+    fn with_advertisement(mut self, a: Option<Advertisement>) -> Self {
+        self.advertisement = a.map(|t| t.into());
         self
     }
     fn set_advertisement(&mut self, a: Advertisement) -> &mut Self {
@@ -536,8 +565,8 @@ impl AdvertisementTransformer<Advertisement> for Broadcaster<Advertisement> {
     }
 }
 impl AdvertisementTransformer<Bytes> for Broadcaster<Bytes> {
-    fn with_advertisement(mut self, a: Bytes) -> Self {
-        self.advertisement = Some(a.into());
+    fn with_advertisement(mut self, a: Option<Bytes>) -> Self {
+        self.advertisement = a.map(|t| t.into());
         self
     }
     fn set_advertisement(&mut self, a: Bytes) -> &mut Self {
@@ -656,6 +685,26 @@ where
     {
         self.processor.push(Box::new(f));
         self
+    }
+}
+
+impl<S, A> Default for Discoverer<S, A> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<S, A> Debug for Discoverer<S, A> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Discoverer")
+            .field("ip", &self.ip)
+            .field("service_name", &self.service_name)
+            .field("version", &self.version)
+            .field("interval", &self.interval)
+            .field("advert", &format!("has_data({})", self.advert.is_some()))
+            .field("validator", &"Available".to_string())
+            .field("processor", &format!("{} processors", self.processor.len()))
+            .finish()
     }
 }
 
@@ -866,7 +915,7 @@ mod tests {
             ServiceDiscovery::unmanaged();
         let ip = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         let port: u16 = 8080;
-        let broadcaster = Broadcaster::new().with_service_name("Test Service".into());
+        let broadcaster = Broadcaster::new().with_service_name(Some("Test Service".to_string()));
 
         discovery.add_broadcaster((ip, port), broadcaster);
         assert_eq!(discovery.discovery_type.len(), 1);
@@ -887,14 +936,14 @@ mod tests {
     #[tokio::test]
     async fn test_service_broadcaster_methods() {
         let broadcaster = Broadcaster::new()
-            .with_ip(IpAddr::V4(Ipv4Addr::new(192, 168, 100, 10)))
-            .with_port(9999)
+            .with_ip(Some(IpAddr::V4(Ipv4Addr::new(192, 168, 100, 10))))
+            .with_port(Some(9999))
             .bcast_ip(IpAddr::V4(Ipv4Addr::new(192, 168, 100, 255)))
             .bcast_port(9990)
-            .with_service_name("Test Service")
-            .with_version("1.0.0".to_string())
-            .with_interval(10)
-            .with_advertisement(Bytes::from("Test Broadcast"));
+            .with_service_name(Some("Test Service".to_string()))
+            .with_version(Some("1.0.0".to_string()))
+            .with_interval(Some(10))
+            .with_advertisement(Some(Bytes::from("Test Broadcast")));
 
         assert_eq!(
             broadcaster.ip,
@@ -939,7 +988,7 @@ mod tests {
 
         discoverer.add_processor(|advert, state| {
             Box::pin(async move {
-                println!("Processing advert: {:?}", advert);
+                debug!("Processing advert: {:?}", advert);
             })
         });
         assert_eq!(discoverer.processor.len(), 1);
@@ -949,7 +998,8 @@ mod tests {
     async fn test_service_discovery_full_cycle() {
         let mut service: Service<ServiceDiscoveryState, Bytes> =
             Service::new((IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 9999), true);
-        let broadcaster = Broadcaster::new().with_advertisement(Bytes::from("Test Broadcast"));
+        let broadcaster =
+            Broadcaster::new().with_advertisement(Some(Bytes::from("Test Broadcast")));
         let mut discoverer = Discoverer::new();
         discoverer.set_validator(|_advert| Ok(()));
 
@@ -994,13 +1044,13 @@ mod tests {
             ..Default::default()
         };
         let broadcaster = Broadcaster::new()
-            .with_interval(1)
-            .with_ip(IpAddr::V4(Ipv4Addr::new(192, 168, 10, 100)))
-            .with_port(9999)
-            .with_broadcast_mask(IpAddr::V4(Ipv4Addr::new(255, 255, 254, 0)))
-            .with_advertisement(Bytes::from(advertisement.clone()));
+            .with_interval(Some(1))
+            .with_ip(Some(IpAddr::V4(Ipv4Addr::new(192, 168, 10, 100))))
+            .with_port(Some(9999))
+            .with_broadcast_mask(Some(IpAddr::V4(Ipv4Addr::new(255, 255, 254, 0))))
+            .with_advertisement(Some(Bytes::from(advertisement.clone())));
 
-        println!("Broadcasting: {:?}", broadcaster);
+        debug!("Broadcasting: {:?}", broadcaster);
 
         // Setup a discoverer with a simple validator and processor
         let mut discoverer = Discoverer::<ServiceDiscoveryState, Bytes>::new();
@@ -1018,9 +1068,9 @@ mod tests {
             let arc_tx = Arc::clone(&arc_tx);
             let state_clone = state.map(|t| t.to_owned()).clone();
             Box::pin(async move {
-                println!("Call processing function: {:?}", advert);
+                debug!("Call processing function: {:?}", advert);
                 if !arc_tx.is_closed() {
-                    println!("sending message");
+                    debug!("sending message");
                     let _ = arc_tx.send(()).await;
                 }
             })
@@ -1035,7 +1085,7 @@ mod tests {
         // Run the service in a separate task
         let service_handle = tokio::spawn(async move {
             service
-                .serve(Some(&discovery_state))
+                .serve(Some(discovery_state))
                 .await
                 .expect("Service failed");
         });
@@ -1046,7 +1096,7 @@ mod tests {
         // Check if the discoverer received the broadcast
         match result {
             Ok(_) => {
-                println!("Broadcast received successfully, shutting down...");
+                debug!("Broadcast received successfully, shutting down...");
             }
             Err(_) => {
                 panic!("Timeout: Did not receive broadcast in time");

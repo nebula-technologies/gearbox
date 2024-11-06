@@ -1,4 +1,5 @@
 use crate::common::socket_bind_addr::SocketBindAddr;
+use core::fmt::{Display, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Hash, Eq, PartialEq, Debug)]
@@ -18,6 +19,12 @@ impl ServiceBinding {
 
     pub fn ip(&self) -> IpAddr {
         self.ip
+    }
+}
+
+impl Display for ServiceBinding {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.ip, self.port)
     }
 }
 

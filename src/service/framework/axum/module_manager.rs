@@ -1,24 +1,26 @@
 use crate::collections::HashMap;
-use crate::service::framework::axum::{BoxFn, DiscovererBuilder, FrameworkState, RwFrameworkState};
+use crate::service::framework::axum::{
+    BoxFn, DiscovererBuilder, FrameworkState, RwFrameworkState, ServerBuilder,
+};
 use axum::extract::State;
 use axum::routing::get;
-use axum::{Json, Router};
+use axum::Router;
 use serde_derive::{Deserialize, Serialize};
-use spin::RwLock;
 use std::sync::Arc;
 
+use crate::service::discovery::service_discovery::ServiceDiscovery;
 use crate::service::framework::axum::advertiser_builder::AdvertiserBuilder;
+use crate::service::framework::axum::server_framework_config::ServerFrameworkConfig;
 use crate::{debug, info};
 use axum::http::StatusCode;
 use bytes::Bytes;
-use tokio::task;
 
 pub trait ModuleDefinition {
     const NAME: &'static str;
     const ROUTER: fn() -> Router<Arc<FrameworkState>>;
     const NESTED: Option<&'static str> = None;
-    const BROADCAST: fn() -> Vec<AdvertiserBuilder> = Vec::new;
-    const DISCOVERY: fn() -> Vec<DiscovererBuilder> = Vec::new;
+    const BROADCAST: fn(&ServerFrameworkConfig) -> Vec<AdvertiserBuilder> = |_| Vec::new();
+    const DISCOVERY: fn(&ServerFrameworkConfig) -> Vec<DiscovererBuilder> = |_| Vec::new();
     const DISCOVERY_CAPTURE: Option<fn(Arc<FrameworkState>, &Bytes)> = None;
     const STATES: fn(&mut RwFrameworkState);
     const READINESS: fn() -> Vec<BoxFn<(String, ProbeResult)>> = Vec::new;
@@ -50,8 +52,8 @@ pub struct Module {
     router: fn() -> Router<Arc<FrameworkState>>,
     state: fn(&mut RwFrameworkState),
     nested: Option<&'static str>,
-    broadcast: fn() -> Vec<AdvertiserBuilder>,
-    discovery: fn() -> Vec<DiscovererBuilder>,
+    broadcast: fn(&ServerFrameworkConfig) -> Vec<AdvertiserBuilder>,
+    discovery: fn(&ServerFrameworkConfig) -> Vec<DiscovererBuilder>,
     discovery_capture: Option<fn(Arc<FrameworkState>, &Bytes)>,
     readiness: fn() -> Vec<BoxFn<(String, ProbeResult)>>,
     liveness: fn() -> Vec<BoxFn<(String, ProbeResult)>>,
@@ -77,9 +79,9 @@ impl<T: ModuleDefinition> From<T> for Module {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ModuleManager {
-    modules: HashMap<String, Module>,
+    modules: HashMap<String, Arc<Module>>,
     active_modules: Vec<String>,
 }
 
@@ -99,7 +101,7 @@ impl ModuleManager {
     pub fn add_module<T: ModuleDefinition>(&mut self) -> &mut Self {
         self.modules.insert(
             T::NAME.to_string(),
-            Module {
+            Arc::new(Module {
                 pre_run: T::PRE_RUN,
                 post_run: T::POST_RUN,
                 name: T::NAME,
@@ -111,52 +113,51 @@ impl ModuleManager {
                 router: T::ROUTER,
                 readiness: T::READINESS,
                 liveness: T::LIVENESS,
-            },
+            }),
         );
         self
     }
 
-    pub(crate) fn setup_advertiser(&mut self) -> &mut Self {
-        println!("Setting up advertiser");
+    /// TODO: Currently as config we are using ServerBuilder, we should move all config out and use a proper configurator
+
+    pub(crate) fn setup_advertiser(
+        &mut self,
+        service: &mut ServiceDiscovery<Arc<FrameworkState>, Bytes>,
+        config: &ServerFrameworkConfig,
+    ) -> &mut Self {
         for module in self.active_modules.clone() {
             if let Some(module) = self.modules.get(&module) {
                 let func = module.broadcast;
-                for t in func() {
-                    // CommonServiceDiscovery::default()
-                    //     .set_service_config(|mut c| {
-                    //         c.advertiser = Some(t.clone().into_broadcaster::<Bytes>(None));
-                    //
-                    //         c
-                    //     })
-                    //     .start_broadcast();
+                let func_output = func(config);
+                let func_len = func_output.len();
+                for t in func_output {
+                    let (bind, broadcaster) = t.into_broadcaster::<Bytes>(None);
+                    service.add_broadcaster(bind, broadcaster);
                 }
+                debug!(
+                    "Added {} broadcasters for module: {}",
+                    func_len, module.name
+                );
             };
         }
         self
     }
 
-    pub(crate) fn setup_discoverer(&mut self, state: Arc<FrameworkState>) -> &mut Self {
-        println!("Setting up discoverer");
+    pub(crate) fn setup_discoverer(
+        &mut self,
+        service: &mut ServiceDiscovery<Arc<FrameworkState>, Bytes>,
+        config: &ServerFrameworkConfig,
+    ) -> &mut Self {
         for module in self.active_modules.clone() {
             if let Some(module) = self.modules.get(&module) {
                 let func = module.discovery;
-                for t in func() {
-                    // let csd = CommonServiceDiscovery::default().set_service_config(|mut c| {
-                    //     c.discoverer = Some(t.clone().into_discoverer());
-                    //
-                    //     c
-                    // });
-                    //
-                    // if let Some(func) = module.discovery_capture {
-                    //     let fn_clone = func.clone();
-                    //     let state_clone = state.clone();
-                    //     csd.start_discovery_with_fn(move |c| {
-                    //         fn_clone(state_clone.clone(), &c);
-                    //     });
-                    // } else {
-                    //     csd.start_discovery();
-                    // }
+                let func_output = func(config);
+                let func_len = func_output.len();
+                for t in func_output {
+                    let (bind, discover) = t.into_discoverer();
+                    service.add_discoverer(bind, discover);
                 }
+                debug!("Added {} discoverers for module: {}", func_len, module.name);
             };
         }
         self

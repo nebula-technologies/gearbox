@@ -1,4 +1,7 @@
 use crate::collections::HashMap;
+use crate::sync::rw_arc::RwArc;
+use bytes::Bytes;
+use spin::RwLock;
 use std::any::{Any, TypeId};
 use std::sync::Arc;
 
@@ -17,7 +20,9 @@ impl RwFrameworkState {
     }
 
     pub(crate) fn into_app_state(self) -> FrameworkState {
-        FrameworkState { state: self.state }
+        FrameworkState {
+            state: RwArc::new(self.state),
+        }
     }
 }
 
@@ -29,22 +34,55 @@ impl Default for RwFrameworkState {
     }
 }
 
+pub trait FrameworkStateContainer: Clone + Send + Sync {
+    fn set<T: Any + Send + Sync>(&mut self, t: T) -> &mut Self;
+    fn get<T: Any + Send + Sync>(&self) -> Option<Arc<T>>;
+    fn remove<T: Any + Send + Sync>(&mut self) -> Option<Arc<T>>;
+    fn has<T: Any + Send + Sync>(&self) -> bool {
+        self.get::<T>().is_some()
+    }
+}
+
 #[derive(Clone)]
 pub struct FrameworkState {
     // A map for storing application state keyed by TypeId
-    state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+    state: RwArc<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
 }
 
 impl FrameworkState {
     // Create a new AppState
     pub fn new(state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>) -> Self {
+        let state = RwArc::new(state);
         Self { state }
     }
+}
 
-    // Get a reference to a value in the state by type
-    pub fn get<T: Any + Send + Sync>(&self) -> Option<&T> {
+impl Default for FrameworkState {
+    fn default() -> Self {
+        Self {
+            state: RwArc::new(HashMap::new()),
+        }
+    }
+}
+
+impl FrameworkStateContainer for FrameworkState {
+    fn set<T: Any + Send + Sync>(&mut self, t: T) -> &mut Self {
+        self.state.write().insert(TypeId::of::<T>(), Arc::new(t));
+        self
+    }
+
+    fn get<T: Any + Send + Sync>(&self) -> Option<Arc<T>> {
         self.state
+            .read()
             .get(&TypeId::of::<T>())
-            .and_then(|boxed| boxed.downcast_ref::<T>())
+            .and_then(|v| v.downcast_ref::<Arc<T>>())
+            .map(|t| t.clone())
+    }
+
+    fn remove<T: Any + Send + Sync>(&mut self) -> Option<Arc<T>> {
+        self.state
+            .write()
+            .remove(&TypeId::of::<T>())
+            .and_then(|t| t.downcast().ok())
     }
 }

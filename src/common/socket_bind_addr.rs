@@ -23,6 +23,28 @@ impl SocketBindAddr {
             default_port: None,
         }
     }
+
+    /// Detects all available IP addresses on the system.
+    /// If there is more than one IP address, it sets the address to 0.0.0.0.
+    #[cfg(all(feature = "pnet", target_os = "linux"))]
+    pub fn detect_ip(&mut self) {
+        let available_ips: Vec<IpAddr> = Self::get_available_ips();
+
+        if available_ips.len() > 1 {
+            // If more than one IP is available, set to 0.0.0.0
+            self.ip = Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)));
+        } else if let Some(ip) = available_ips.first() {
+            // Otherwise, set to the single available IP
+            self.ip = Some(*ip);
+        }
+    }
+
+    #[cfg(all(feature = "pnet", target_os = "linux"))]
+    pub fn with_detect_ip(mut self) -> Self {
+        self.detect_ip();
+        self
+    }
+
     pub fn new_with_defaults(ip: IpAddr, port: u16, default_ip: IpAddr, default_port: u16) -> Self {
         SocketBindAddr {
             ip: Some(ip),
@@ -90,14 +112,24 @@ impl SocketBindAddr {
     }
 
     /// Sets the IP address of the bind address.
-    pub fn with_ip(mut self, ip: IpAddr) -> Self {
-        self.ip = Some(ip);
+    pub fn with_ip(mut self, ip: Option<IpAddr>) -> Self {
+        self.ip = ip;
         self
     }
 
     /// Sets the port of the bind address.
-    pub fn with_port(mut self, port: u16) -> Self {
+    pub fn with_port(mut self, port: Option<u16>) -> Self {
+        self.port = port;
+        self
+    }
+
+    pub fn set_port(&mut self, port: u16) -> &mut Self {
         self.port = Some(port);
+        self
+    }
+
+    pub fn set_ip(&mut self, ip: IpAddr) -> &mut Self {
+        self.ip = Some(ip);
         self
     }
 
@@ -114,16 +146,6 @@ impl SocketBindAddr {
     }
     pub fn ip_with_defaults(&self) -> IpAddr {
         self.ip().unwrap_or(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))
-    }
-
-    pub fn set_port(&mut self, port: u16) -> &mut Self {
-        self.port = Some(port);
-        self
-    }
-
-    pub fn set_ip(&mut self, ip: IpAddr) -> &mut Self {
-        self.ip = Some(ip);
-        self
     }
 }
 
@@ -189,6 +211,26 @@ impl SocketBindAddr {
                 }
             }
         }
+    }
+
+    /// Helper function to get a list of all available IP addresses on the system.
+    #[cfg(all(feature = "pnet", target_os = "linux"))]
+    fn get_available_ips() -> Vec<IpAddr> {
+        let mut ips = Vec::new();
+        let interfaces = pnet::datalink::interfaces();
+        for interface in interfaces {
+            for ip in interface.ips {
+                ips.push(ip.ip());
+            }
+        }
+
+        ips
+    }
+}
+
+impl Default for SocketBindAddr {
+    fn default() -> Self {
+        SocketBindAddr::default_addr()
     }
 }
 
@@ -436,13 +478,13 @@ mod tests {
     #[test]
     fn test_socket_bind_addr_with_ip() {
         let addr =
-            SocketBindAddr::default_addr().with_ip(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)));
+            SocketBindAddr::default_addr().with_ip(Some(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
         assert_eq!(addr.ip(), Some(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
     }
 
     #[test]
     fn test_socket_bind_addr_with_port() {
-        let addr = SocketBindAddr::default_addr().with_port(8080);
+        let addr = SocketBindAddr::default_addr().with_port(Some(8080));
         assert_eq!(addr.port(), Some(8080));
     }
 

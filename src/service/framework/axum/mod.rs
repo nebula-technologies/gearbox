@@ -9,6 +9,7 @@ pub mod log_formatter;
 pub mod log_output_style;
 pub mod module_manager;
 pub mod server_builder;
+pub mod server_framework_config;
 pub mod status;
 
 pub use self::{
@@ -24,6 +25,7 @@ pub type BoxFn<T> = Arc<dyn Fn() -> T + Send + Sync>;
 #[cfg(test)]
 mod test {
     use super::{FrameworkState, ModuleDefinition, RwFrameworkState};
+    use crate::collections::HashMap;
     use axum::Router;
     use std::sync::Arc;
 
@@ -59,9 +61,9 @@ mod test {
 
         let server_builder = crate::service::framework::axum::ServerBuilder::new();
         server_builder
-            .add_module::<TestModule>()
-            .set_worker_pool(30)
-            .with_log_service_discovery(|t| None)
-            .build_test();
+            .with_module::<TestModule>()
+            .with_worker_pool(30)
+            .with_trace_layer()
+            .build_test(FrameworkState::new(HashMap::new()));
     }
 }

@@ -152,7 +152,7 @@ rails-tracing = ["rails"]
 service = ["std"]
 service-discovery = ["service", "with_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all", "bytes", "common-ip-range", "common-socket-bind-addr", "semver", "collections-const-hash-map"]
 service-discovery-loggers-impl = ["service-discovery"]
-service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge"]
+service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge", "pnet"]
 
 # Storage
 storage = ["std", "common-try-default", "error-tracer", "dep_serde", "rails-ext"]

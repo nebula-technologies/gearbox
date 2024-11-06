@@ -1,28 +1,27 @@
 use crate::collections::const_hash_map::HashMap as ConstHashMap;
-use crate::collections::HashMap;
+use crate::common::socket_bind_addr::SocketBindAddr;
 use crate::log::tracing::formatter::deeplog;
 use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
 use crate::log::tracing::layer::LogLayer;
 use crate::service::discovery::service_binding::ServiceBinding;
-use crate::service::discovery::service_discovery::{Service, ServiceDiscovery};
-use crate::service::framework::axum::advertiser_builder::AdvertiserBuilder;
+use crate::service::discovery::service_discovery::{
+    Broadcaster, Discoverer, Service, ServiceDiscovery,
+};
+use crate::service::framework::axum::server_framework_config::ServerFrameworkConfig;
 use crate::service::framework::axum::{
-    BoxFn, ConnectionBuilder, DiscovererBuilder, FrameworkState, HyperConfig, LogFormatter,
+    ConnectionBuilder, FrameworkState, FrameworkStateContainer, HyperConfig, LogFormatter,
     LogOutput, ModuleDefinition, ModuleManager, RwFrameworkState, ServerRuntimeError,
     ServerRuntimeStatus, TokioExecutor,
 };
-use crate::{error, info};
-use axum::extract::State;
+use crate::{debug, error, info};
 use axum::handler::Handler;
-use axum::http::StatusCode;
-use axum::routing::get;
-use axum::{Json, Router};
+use axum::Router;
 use bytes::Bytes;
 use hyper::server::conn::{http1, http2};
 use hyper_util::rt::TokioIo;
 use hyper_util::service::TowerToHyperService;
 use spin::rwlock::RwLock;
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::future::Future;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::pin::Pin;
@@ -44,23 +43,23 @@ static SERVICE_DISCOVERY: RwLock<
 > = RwLock::new(ConstHashMap::new());
 
 pub struct ServerBuilder {
-    address: IpAddr,
-    port: u16,
-    worker_pool: Option<usize>,
-    router: Router<Arc<FrameworkState>>,
-    logger: LogFormatter,
-    logger_output: LogOutput,
-    logger_discovery: bool,
-    trace_layer: bool,
-    app_state: RwFrameworkState,
-    sub_tasks: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
-    use_http2: bool,
-    certificates: Option<(String, String)>,
-    hyper_config: HyperConfig,
-    include_subtasks_in_worker_pool: bool,
-    module_manager: ModuleManager,
-    fallback_response: Option<Router<Arc<FrameworkState>>>,
-    service_discovery: ServiceDiscovery<Arc<FrameworkState>, Bytes>,
+    pub(crate) address: IpAddr,
+    pub(crate) port: u16,
+    pub(crate) worker_pool: Option<usize>,
+    pub(crate) router: Router<Arc<FrameworkState>>,
+    pub(crate) logger: LogFormatter,
+    pub(crate) logger_output: LogOutput,
+    pub(crate) logger_discovery: bool,
+    pub(crate) trace_layer: bool,
+    pub(crate) app_state: RwFrameworkState,
+    pub(crate) sub_tasks: Vec<Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
+    pub(crate) use_http2: bool,
+    pub(crate) certificates: Option<(String, String)>,
+    pub(crate) hyper_config: HyperConfig,
+    pub(crate) include_subtasks_in_worker_pool: bool,
+    pub(crate) module_manager: ModuleManager,
+    pub(crate) fallback_response: Option<Router<Arc<FrameworkState>>>,
+    pub(crate) service_discovery: ServiceDiscovery<Arc<FrameworkState>, Bytes>,
 }
 
 impl Default for ServerBuilder {
@@ -94,12 +93,12 @@ impl ServerBuilder {
         }
     }
 
-    pub fn active_modules(mut self, v: Vec<String>) -> Self {
+    pub fn with_active_modules(mut self, v: Vec<String>) -> Self {
         self.module_manager.active_modules(v);
         self
     }
 
-    pub fn set_log_output<O: Fn(LogOutput) -> LogOutput>(mut self, o: O) -> Self {
+    pub fn with_log_output<O: Fn(LogOutput) -> LogOutput>(mut self, o: O) -> Self {
         self.logger_output = o(LogOutput::Full);
         self
     }
@@ -141,7 +140,7 @@ impl ServerBuilder {
         self
     }
 
-    pub fn add_module<T: ModuleDefinition>(mut self) -> Self {
+    pub fn with_module<T: ModuleDefinition>(mut self) -> Self {
         self.module_manager.add_module::<T>();
 
         self
@@ -152,22 +151,29 @@ impl ServerBuilder {
         self
     }
 
-    pub fn add_service_broadcast<O: FnOnce(AdvertiserBuilder) -> Option<AdvertiserBuilder>>(
+    pub fn with_service_broadcast<
+        O: FnOnce(Broadcaster<Bytes>) -> Option<(SocketBindAddr, Broadcaster<Bytes>)>,
+    >(
         mut self,
         o: O,
     ) -> Self {
-        if let Some(t) = o(AdvertiserBuilder::default()) {
-            self.service_broadcast.push(t);
+        if let Some((addr, bcast)) = o(Broadcaster::default()) {
+            self.service_discovery.add_broadcaster(addr, bcast);
         }
         self
     }
 
-    pub fn with_log_service_discovery<O: FnOnce(DiscovererBuilder) -> Option<DiscovererBuilder>>(
+    pub fn with_service_discovery<
+        O: FnOnce(
+            Discoverer<FrameworkState, Bytes>,
+        ) -> Option<(SocketBindAddr, Discoverer<Arc<FrameworkState>, Bytes>)>,
+    >(
         mut self,
         o: O,
     ) -> Self {
-        self.trace_layer = true;
-        self.logger_discovery_builder = o(DiscovererBuilder::default());
+        if let Some((addr, discover)) = o(Discoverer::default()) {
+            self.service_discovery.add_discoverer(addr, discover);
+        }
         self
     }
 
@@ -176,7 +182,7 @@ impl ServerBuilder {
         self
     }
 
-    pub fn set_port(mut self, port: u16) -> Self {
+    pub fn with_port(mut self, port: u16) -> Self {
         self.port = port;
         self
     }
@@ -197,12 +203,12 @@ impl ServerBuilder {
         self
     }
 
-    pub fn set_worker_pool(mut self, max_workers: usize) -> Self {
+    pub fn with_worker_pool(mut self, max_workers: usize) -> Self {
         self.worker_pool = Some(max_workers);
         self
     }
 
-    pub fn fallback<H, T>(mut self, handler: H) -> Self
+    pub fn with_fallback<H, T>(mut self, handler: H) -> Self
     where
         H: Handler<T, Arc<FrameworkState>>,
         T: 'static,
@@ -212,38 +218,56 @@ impl ServerBuilder {
         self
     }
 
-    fn build_inner(mut self, start_server: bool) {
+    fn build_inner<S: FrameworkStateContainer>(mut self, start_server: bool, state_manager: S) {
+        let framework_setup_config = ServerFrameworkConfig::from(&self);
+
         println!("Building body closure");
+        setup_logger(self.logger, self.logger_output);
+
         let num_subtasks = self.sub_tasks.len();
         let body = async {
-            println!("Creating app");
+            debug!("Creating app");
+            debug!("Initializing FrameworkState");
+            let framework_state = self.module_manager.setup_module_states(self.app_state);
+
+            debug!("Setting up advertiser and discoverer from modules");
+            self.module_manager
+                .setup_advertiser(&mut self.service_discovery, &framework_setup_config)
+                .setup_discoverer(&mut self.service_discovery, &framework_setup_config);
+
+            debug!("Starting service discovery");
+
+            self.service_discovery.serve(Some(framework_state.clone()));
+            debug!("Initializing base router");
             let router_with_state = Router::new();
 
+            debug!("Initializing Merger Router");
             let mut router = Router::new();
 
+            debug!("Adding liveness and readiness routers");
             router = router
                 .merge(self.module_manager.setup_liveness_router())
-                .merge(self.module_manager.setup_readiness_router())
-                .merge(self.module_manager.setup_module_routers());
+                .merge(self.module_manager.setup_readiness_router());
+
+            debug!("Adding Module Routers");
+            router = router.merge(self.module_manager.setup_module_routers());
 
             if let Some(fallback) = self.fallback_response {
+                debug!("Adding fallback router");
                 router = router.merge(fallback);
             }
 
-            let framework_state = self.module_manager.setup_module_states(self.app_state);
+            debug!("Building App router with State");
             let app = self
                 .router
                 .merge(router)
                 .with_state(framework_state.clone());
 
-            println!("Setting up advertiser and discoverer from modules");
-            self.module_manager
-                .setup_advertiser()
-                .setup_discoverer(framework_state);
-
+            debug!("Merging routers into base router");
             let mut app_with_state = router_with_state.merge(app);
 
             if self.trace_layer {
+                debug!("Adding Trace and Timeout Layers");
                 app_with_state = app_with_state.layer((
                     TraceLayer::new_for_http(),
                     // Graceful shutdown will wait for outstanding requests to complete. Add a timeout so
@@ -252,39 +276,17 @@ impl ServerBuilder {
                 ));
             }
 
-            for i in self.service_broadcast {
-                let discovery_builder = i.into_broadcaster::<Bytes>(None);
-
-                // let common_broadcaster = CommonServiceDiscovery::default();
-                // common_broadcaster
-                //     .set_service_config(|mut t| {
-                //         if let Some(a) = &mut t.advertiser {
-                //             *a = discovery_builder.clone();
-                //         } else {
-                //             t.advertiser = Some(discovery_builder.clone());
-                //         }
-                //         println!("Advertiser config: {:?}", t);
-                //         t
-                //     })
-                //     .start_broadcast();
-            }
-
-            setup_logger(
-                self.logger,
-                self.logger_discovery,
-                self.logger_discovery_builder,
-                self.logger_output,
-            );
-
+            debug!("Spawning subtasks");
             for i in self.sub_tasks {
                 task::spawn(i);
             }
 
+            debug!("Running module pre-run tasks");
             if self.module_manager.has_pre_run() {
                 self.module_manager.run_pre_run();
             }
 
-            info!("Setting up listener socket address");
+            debug!("Setting up listener socket address");
             let socket_addr = SocketAddr::new(self.address, self.port);
             let listener = tokio::net::TcpListener::bind(socket_addr).await.unwrap();
 
@@ -296,14 +298,14 @@ impl ServerBuilder {
                         panic!("not implemented")
                     }
                 } else {
-                    info!("Starting server");
+                    debug!("Starting server");
                     spin_http1_server(listener, self.hyper_config, app_with_state).await
                 };
 
                 if let Err(e) = result {
                     error!("{}", e);
                 } else if let Ok(t) = result {
-                    info!("{}", t);
+                    debug!("{}", t);
                 }
             }
 
@@ -312,27 +314,27 @@ impl ServerBuilder {
             }
         };
 
-        info!("Setting up the thread builder for tokio");
+        debug!("Setting up the thread builder for tokio");
         let mut builder = tokio::runtime::Builder::new_multi_thread();
 
         if let Some(threads) = self.worker_pool.as_ref() {
             if self.include_subtasks_in_worker_pool {
-                info!("Using defined worker threads");
+                debug!("Using defined worker threads");
                 builder.worker_threads(*threads);
             } else {
-                info!("Using defined worker threads");
+                debug!("Using defined worker threads");
                 builder.worker_threads(
                     *threads + num_subtasks + if self.logger_discovery { 1 } else { 0 },
                 );
             }
         } else {
-            info!("Using auto-lookup worker threads");
+            debug!("Using auto-lookup worker threads");
             let num_cores = num_cpus::get();
             if self.include_subtasks_in_worker_pool {
-                info!("Using defined worker threads");
+                debug!("Using defined worker threads");
                 builder.worker_threads(num_cores);
             } else {
-                info!("Using defined worker threads");
+                debug!("Using defined worker threads");
                 builder.worker_threads(
                     num_cores + num_subtasks + if self.logger_discovery { 1 } else { 0 },
                 );
@@ -346,13 +348,13 @@ impl ServerBuilder {
             .block_on(body)
     }
 
-    pub fn build(self) {
-        self.build_inner(true)
+    pub fn build<S: FrameworkStateContainer>(self, s: S) {
+        self.build_inner(true, s)
     }
 
     #[cfg(test)]
-    pub(crate) fn build_test(self) {
-        self.build_inner(false)
+    pub(crate) fn build_test<S: FrameworkStateContainer>(self, s: S) {
+        self.build_inner(false, s)
     }
 }
 async fn spin_h2c_server(
@@ -498,12 +500,7 @@ async fn shutdown_signal_capture(
     }
 }
 
-fn setup_logger(
-    logger: LogFormatter,
-    discovery: bool,
-    builder: Option<DiscovererBuilder>,
-    output: LogOutput,
-) {
+fn setup_logger(logger: LogFormatter, output: LogOutput) {
     let mut formatter = match logger {
         LogFormatter::Bunyan => {
             panic!("Bunyan not currently supported")
@@ -513,6 +510,7 @@ fn setup_logger(
             match output {
                 LogOutput::Minimal => formatter.set_output_style(deeplog::LogStyleOutput::Minimal),
                 LogOutput::Full => formatter.set_output_style(deeplog::LogStyleOutput::Full),
+                LogOutput::Human => formatter.set_output_style(deeplog::LogStyleOutput::Human),
                 LogOutput::Default => formatter,
             }
         }
@@ -520,19 +518,6 @@ fn setup_logger(
             panic!("Syslog not currently supported")
         }
     };
-
-    if discovery {
-        // let (fmt, handle) = formatter
-        //     .set_service_config(|mut t| {
-        //         let current_discovery_builder = builder.clone();
-        //         let discovery_builder = current_discovery_builder.unwrap_or_default();
-        //         t.discoverer = Some(discovery_builder.into_discoverer());
-        //
-        //         t
-        //     })
-        //     .start_discovery();
-        // formatter = fmt;
-    }
 
     let formatter = LogLayer::new(None, std::io::stdout, formatter);
     let subscriber = Registry::default().with(formatter);

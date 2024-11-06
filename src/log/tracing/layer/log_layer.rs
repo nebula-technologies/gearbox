@@ -2,6 +2,7 @@ use crate::log::tracing::{get_exec_name, layer::Storage};
 use crate::log::tracing::{LogFormatter, Value};
 use alloc::{string::String, vec::Vec};
 use core::fmt;
+use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::result::Result;
 use hashbrown::HashMap;
@@ -88,7 +89,7 @@ impl<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default> LogLayer<W,
 
 impl<S, W, F> Layer<S> for LogLayer<W, F>
 where
-    S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>,
+    S: Subscriber + Debug + for<'a> tracing_subscriber::registry::LookupSpan<'a>,
     W: for<'a> MakeWriter<'a> + 'static,
     F: LogFormatter + Default + 'static,
 {

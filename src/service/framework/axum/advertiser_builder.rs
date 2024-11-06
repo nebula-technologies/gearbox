@@ -1,17 +1,24 @@
+use crate::common::socket_bind_addr::SocketBindAddr;
 use crate::service::discovery::entity::Advertisement;
-use crate::service::discovery::service_discovery::{AdvertisementTransformer, Broadcaster};
+use crate::service::discovery::service_discovery::{
+    AdvertisementTransformer, Broadcaster, Discoverer,
+};
+use crate::service::framework::axum::FrameworkState;
 use crate::time::DateTime;
 use bytes::Bytes;
 use std::net::{IpAddr, Ipv4Addr};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct AdvertiserBuilder {
     pub(crate) ip: Option<IpAddr>,
     pub(crate) port: Option<u16>,
+    pub(crate) bind_ip: Option<IpAddr>,
     pub(crate) bind_port: Option<u16>,
+    pub(crate) broadcast: Option<SocketBindAddr>,
     pub(crate) interval: Option<usize>,
     pub(crate) service_name: Option<String>,
-    pub(crate) advertisement: Advertisement,
+    pub(crate) advertisement: Option<Advertisement>,
 }
 
 impl Default for AdvertiserBuilder {
@@ -20,41 +27,79 @@ impl Default for AdvertiserBuilder {
             interval: Some(5),
             ip: Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
             port: Some(9999),
+            bind_ip: Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
             bind_port: Some(9999),
+            broadcast: None,
             service_name: Some("Log-service".to_string()),
-            advertisement: Advertisement::default(),
+            advertisement: None,
         }
     }
 }
 
 impl AdvertiserBuilder {
-    pub fn set_ip(mut self, ip: IpAddr) -> Self {
+    pub fn with_ip(mut self, ip: Option<IpAddr>) -> Self {
+        self.ip = ip;
+        self
+    }
+    pub fn set_ip(&mut self, ip: IpAddr) -> &mut Self {
         self.ip = Some(ip);
         self
     }
 
-    pub fn set_port(mut self, port: u16) -> Self {
+    pub fn with_port(mut self, port: Option<u16>) -> Self {
+        self.port = port;
+        self
+    }
+
+    pub fn set_port(&mut self, port: u16) -> &mut Self {
         self.port = Some(port);
         self
     }
 
-    pub fn set_bind_port(mut self, port: u16) -> Self {
+    pub fn with_bind_port(mut self, port: Option<u16>) -> Self {
+        self.bind_port = port;
+        self
+    }
+    pub fn set_bind_port(&mut self, port: u16) -> &mut Self {
         self.bind_port = Some(port);
         self
     }
 
-    pub fn set_interval(mut self, interval: usize) -> Self {
+    pub fn with_bind_ip(mut self, ip: Option<IpAddr>) -> Self {
+        self.bind_ip = ip;
+        self
+    }
+    pub fn set_bind_ip(&mut self, ip: IpAddr) -> &mut Self {
+        self.bind_ip = Some(ip);
+        self
+    }
+
+    pub fn with_interval(mut self, interval: Option<usize>) -> Self {
+        self.interval = interval;
+        self
+    }
+
+    pub fn set_interval(&mut self, interval: usize) -> &mut Self {
         self.interval = Some(interval);
         self
     }
 
-    pub fn set_service_name(mut self, service_name: &str) -> Self {
+    pub fn with_service_name(mut self, service_name: Option<String>) -> Self {
+        self.service_name = service_name;
+        self
+    }
+
+    pub fn set_service_name(&mut self, service_name: &str) -> &mut Self {
         self.service_name = Some(service_name.to_string());
         self
     }
 
-    pub fn set_advertisement(mut self, advert: Advertisement) -> Self {
+    pub fn with_advertisement(mut self, advert: Option<Advertisement>) -> Self {
         self.advertisement = advert;
+        self
+    }
+    pub fn set_advertisement(&mut self, advert: Advertisement) -> &mut Self {
+        self.advertisement = Some(advert);
         self
     }
 
@@ -66,24 +111,37 @@ impl AdvertiserBuilder {
         self
     }
 
-    pub fn into_broadcaster<A: Into<Bytes>>(self, message: Option<A>) -> Broadcaster<Bytes>
+    pub fn into_broadcaster<A: Into<Bytes>>(
+        self,
+        message: Option<A>,
+    ) -> (SocketBindAddr, Broadcaster<Bytes>)
     where
         Broadcaster<Bytes>: AdvertisementTransformer<Bytes>,
     {
-        let mut broadcaster: Broadcaster<Bytes> = Broadcaster::new();
-        *broadcaster.ip_mut() = self.ip;
-        *broadcaster.port_mut() = self.port;
-        *broadcaster.interval_mut() = self.interval.map(|t| t as u64);
-        *broadcaster.service_name_mut() = self.service_name;
+        let mut bind = SocketBindAddr::default()
+            .with_ip(self.bind_ip)
+            .with_port(self.bind_port);
 
-        if let Some(t) = message {
-            broadcaster = broadcaster.with_advertisement(t.into());
-        }
-        if let Some(t) = self.bind_port {
-            broadcaster = broadcaster.bcast_port(t);
-        }
+        let advertisement = self.advertisement.or_else(|| {
+            Some(
+                Advertisement::default()
+                    .with_ip(self.ip.map(|t| vec![t]))
+                    .with_port(self.port)
+                    .with_service_id(self.service_name.clone()),
+            )
+        });
 
-        broadcaster
+        (
+            bind,
+            Broadcaster::default()
+                .with_interval(self.interval.map(|t| t as u64))
+                .with_service_name(self.service_name)
+                .with_advertisement(
+                    advertisement
+                        .map(|t| t.into())
+                        .or_else(|| message.map(|t| t.into())),
+                ),
+        )
     }
 }
 
