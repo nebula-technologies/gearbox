@@ -20,7 +20,7 @@ use tracing::{Event, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::registry::{LookupSpan, SpanRef};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Syslog {
     facility: Option<Facility>,
     severity: Option<Severity>,
@@ -158,7 +158,7 @@ impl LogFormatter for Syslog {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StructuredData(HashMap<String, Value>);
 
 impl ToString for StructuredData {

@@ -3,6 +3,7 @@ use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::{
     AdvertisementTransformer, Broadcaster, Discoverer,
 };
+use crate::service::framework::axum::bindable::{Bindable, BindableError};
 use crate::service::framework::axum::FrameworkState;
 use crate::time::DateTime;
 use bytes::Bytes;
@@ -103,6 +104,16 @@ impl AdvertiserBuilder {
         self
     }
 
+    pub fn with_broadcast(mut self, broadcast: Option<SocketBindAddr>) -> Self {
+        self.broadcast = broadcast;
+        self
+    }
+
+    pub fn set_broadcast(&mut self, broadcast: SocketBindAddr) -> &mut Self {
+        self.broadcast = Some(broadcast);
+        self
+    }
+
     pub fn merge(mut self, other: AdvertiserBuilder) -> Self {
         self.ip = other.ip.or(self.ip);
         self.port = other.port.or(self.port);
@@ -114,7 +125,7 @@ impl AdvertiserBuilder {
     pub fn into_broadcaster<A: Into<Bytes>>(
         self,
         message: Option<A>,
-    ) -> (SocketBindAddr, Broadcaster<Bytes>)
+    ) -> Result<Bindable<Broadcaster<Bytes>>, BindableError>
     where
         Broadcaster<Bytes>: AdvertisementTransformer<Bytes>,
     {
@@ -136,12 +147,19 @@ impl AdvertiserBuilder {
             Broadcaster::default()
                 .with_interval(self.interval.map(|t| t as u64))
                 .with_service_name(self.service_name)
+                .with_broadcast(self.broadcast.or_else(|| {
+                    SocketBindAddr::default()
+                        .with_detect_ip_match(".*", true)
+                        .as_broadcast_addr(None)
+                        .ok()
+                }))
                 .with_advertisement(
                     advertisement
                         .map(|t| t.into())
                         .or_else(|| message.map(|t| t.into())),
                 ),
         )
+            .try_into()
     }
 }
 

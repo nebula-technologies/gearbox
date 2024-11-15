@@ -1,5 +1,5 @@
 use crate::service::framework::axum::{
-    HyperConfig, LogFormatter, LogOutput, ModuleManager, ServerBuilder,
+    HyperConfig, LogFormatterBackend, LogOutput, ModuleManager, ServerBuilder,
 };
 use std::net::IpAddr;
 
@@ -8,7 +8,7 @@ pub struct ServerFrameworkConfig {
     pub address: IpAddr,
     pub port: u16,
     pub worker_pool: Option<usize>,
-    pub logger: LogFormatter,
+    pub logger: LogFormatterBackend,
     pub logger_output: LogOutput,
     pub logger_discovery: bool,
     pub trace_layer: bool,

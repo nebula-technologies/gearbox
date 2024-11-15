@@ -480,6 +480,11 @@ impl<A> Broadcaster<A> {
         self
     }
 
+    pub fn with_broadcast(mut self, broadcast: Option<SocketBindAddr>) -> Self {
+        self.broadcast = broadcast;
+        self
+    }
+
     pub fn bcast_mut(&mut self) -> &mut Option<SocketBindAddr> {
         &mut self.broadcast
     }

@@ -1,6 +1,7 @@
 use crate::log::tracing::entity::deeplog::{
     Caller, DeepLog, Device, ProcessInfo, SystemInfo, Timestamps,
 };
+use crate::net::endpoint_config::EndpointConfig;
 use crate::{
     collections::HashMap,
     log::tracing::{
@@ -44,6 +45,8 @@ pub struct DeepLogFormatter {
     pub log: Option<DeepLog>,
     #[serde(skip)]
     pub output_style: Option<LogStyleOutput>,
+    #[serde(skip)]
+    pub endpoint: Option<EndpointConfig>,
 }
 
 impl DeepLogFormatter {
@@ -56,6 +59,7 @@ impl DeepLogFormatter {
         Self {
             log: Some(DeepLog::default()),
             output_style: None,
+            endpoint: None,
         }
     }
 
@@ -108,6 +112,7 @@ impl Default for DeepLogFormatter {
         Self {
             log: Some(DeepLog::default()),
             output_style: None,
+            endpoint: None,
         }
     }
 }
@@ -128,6 +133,7 @@ impl LogFormatter for DeepLogFormatter {
         Self {
             log: Some(DeepLog::default()),
             output_style: self.output_style.clone(),
+            endpoint: self.endpoint.clone(),
         }
     }
     fn format_event<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>>(

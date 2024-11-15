@@ -2,6 +2,7 @@ use crate::common::ip_range::IpRanges;
 use crate::common::socket_bind_addr::SocketBindAddr;
 use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::Discoverer;
+use crate::service::framework::axum::bindable::{Bindable, BindableError};
 use crate::service::framework::axum::FrameworkState;
 use crate::time::DateTime;
 use bytes::Bytes;
@@ -120,13 +121,16 @@ impl DiscovererBuilder {
         self
     }
 
-    pub fn into_discoverer(self) -> (SocketBindAddr, Discoverer<Arc<FrameworkState>, Bytes>) {
+    pub fn into_discoverer(
+        self,
+    ) -> Result<Bindable<Discoverer<Arc<FrameworkState>, Bytes>>, BindableError> {
         (
             self.bind,
             Discoverer::new()
                 .with_interval(self.interval.map(|t| t as u64))
                 .with_service_name(self.service_name),
         )
+            .try_into()
     }
 }
 

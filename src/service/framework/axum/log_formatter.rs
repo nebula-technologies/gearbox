@@ -1,5 +1,5 @@
 #[derive(Clone)]
-pub enum LogFormatter {
+pub enum LogFormatterBackend {
     Bunyan,
     DeepLog,
     Syslog,

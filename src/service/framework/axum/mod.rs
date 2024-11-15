@@ -1,4 +1,5 @@
 pub mod advertiser_builder;
+pub mod bindable;
 pub mod connection;
 pub mod connection_builder;
 pub mod discovery_builder;

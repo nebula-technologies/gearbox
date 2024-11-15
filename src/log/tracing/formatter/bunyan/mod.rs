@@ -34,6 +34,7 @@ fn to_bunyan_level(level: &tracing::Level) -> u16 {
 /// This layer is exclusively concerned with formatting information using the [Bunyan format](https://github.com/trentm/node-bunyan).
 /// It relies on the upstream `JsonStorageLayer` to get access to the fields attached to
 /// each span.
+#[derive(Debug, Clone)]
 pub struct Bunyan {
     pid: u32,
     hostname: String,

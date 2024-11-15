@@ -1,6 +1,8 @@
 use crate::externs::collections::HashSet;
 use crate::rails::ext::blocking::Tap;
 use core::fmt::{Display, Formatter};
+#[cfg(feature = "regex")]
+use regex::Regex;
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
 
@@ -39,9 +41,43 @@ impl SocketBindAddr {
         }
     }
 
+    #[cfg(all(feature = "regex", feature = "pnet", target_os = "linux"))]
+    pub fn detect_ip_match(&mut self, pattern: &str, capture_first_valid: bool) {
+        let available_ips: Vec<IpAddr> = Self::get_available_ips();
+        let re = Regex::new(pattern).expect("Invalid regular expression");
+
+        // If not capturing the first valid IP, check all available IPs against the pattern
+        for ip in &available_ips {
+            if re.is_match(&ip.to_string()) {
+                // Attempt to find the first valid (non-localhost, non-global) IP
+                match ip {
+                    IpAddr::V4(ip_v4)
+                        if *ip_v4 != Ipv4Addr::new(0, 0, 0, 0) && *ip_v4 != Ipv4Addr::LOCALHOST =>
+                    {
+                        self.ip = Some(*ip);
+                        return;
+                    }
+                    IpAddr::V6(ip_v6)
+                        if *ip_v6 != Ipv6Addr::UNSPECIFIED && *ip_v6 != Ipv6Addr::LOCALHOST =>
+                    {
+                        self.ip = Some(*ip);
+                        return;
+                    }
+                    _ => continue,
+                }
+            }
+        }
+    }
+
     #[cfg(all(feature = "pnet", target_os = "linux"))]
     pub fn with_detect_ip(mut self) -> Self {
         self.detect_ip();
+        self
+    }
+
+    #[cfg(all(feature = "regex", feature = "pnet", target_os = "linux"))]
+    pub fn with_detect_ip_match(mut self, pattern: &str, capture_first_valid: bool) -> Self {
+        self.detect_ip_match(pattern, capture_first_valid);
         self
     }
 
@@ -146,6 +182,12 @@ impl SocketBindAddr {
     }
     pub fn ip_with_defaults(&self) -> IpAddr {
         self.ip().unwrap_or(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))
+    }
+    pub fn has_valid_nonglobal_binding(&self) -> bool {
+        match self.ip_with_defaults() {
+            IpAddr::V4(ip) => ip != Ipv4Addr::new(0, 0, 0, 0) && self.port_with_defaults() != 0,
+            IpAddr::V6(ip) => ip != Ipv6Addr::UNSPECIFIED && self.port_with_defaults() != 0,
+        }
     }
 }
 

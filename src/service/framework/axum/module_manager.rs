@@ -11,7 +11,7 @@ use std::sync::Arc;
 use crate::service::discovery::service_discovery::ServiceDiscovery;
 use crate::service::framework::axum::advertiser_builder::AdvertiserBuilder;
 use crate::service::framework::axum::server_framework_config::ServerFrameworkConfig;
-use crate::{debug, info};
+use crate::{debug, error, info};
 use axum::http::StatusCode;
 use bytes::Bytes;
 
@@ -131,8 +131,11 @@ impl ModuleManager {
                 let func_output = func(config);
                 let func_len = func_output.len();
                 for t in func_output {
-                    let (bind, broadcaster) = t.into_broadcaster::<Bytes>(None);
-                    service.add_broadcaster(bind, broadcaster);
+                    if let Ok(bindable) = t.into_broadcaster::<Bytes>(None) {
+                        service.add_broadcaster(bindable.bind_owned(), bindable.into_data());
+                    } else {
+                        error!("Failed to add broadcaster for module: {}", module.name);
+                    }
                 }
                 debug!(
                     "Added {} broadcasters for module: {}",
@@ -154,8 +157,11 @@ impl ModuleManager {
                 let func_output = func(config);
                 let func_len = func_output.len();
                 for t in func_output {
-                    let (bind, discover) = t.into_discoverer();
-                    service.add_discoverer(bind, discover);
+                    if let Ok(bindable) = t.into_discoverer() {
+                        service.add_discoverer(bindable.bind_owned(), bindable.into_data());
+                    } else {
+                        error!("Failed to add discoverer for module: {}", module.name);
+                    }
                 }
                 debug!("Added {} discoverers for module: {}", func_len, module.name);
             };

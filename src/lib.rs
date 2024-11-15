@@ -288,7 +288,6 @@
 //! # Signature (gearbox::net::signature)
 //! ([docs: gearbox::net::signature](./src/net/signature/mod.rs))
 //!
-//!
 //! # Railway Future extension (gearbox::rails::ext::future)
 //! ([docs: gearbox::serde::dynamic](./src/rails/ext/future/mod.rs))
 //!

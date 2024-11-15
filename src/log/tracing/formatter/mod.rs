@@ -1,6 +1,8 @@
+use crate::externs::sync::Arc;
 use crate::log::tracing::layer::log_layer::LogEmitter;
 use crate::log::tracing::layer::{LogLayer, Storage, Type};
 use alloc::string::String;
+use core::fmt::Debug;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::registry::SpanRef;

@@ -1,15 +1,19 @@
 use crate::collections::const_hash_map::HashMap as ConstHashMap;
 use crate::common::socket_bind_addr::SocketBindAddr;
+use crate::externs::tracing::{Event, Subscriber};
+use crate::log::tracing::formatter::bunyan::Bunyan;
 use crate::log::tracing::formatter::deeplog;
 use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
-use crate::log::tracing::layer::LogLayer;
+use crate::log::tracing::formatter::syslog::Syslog;
+use crate::log::tracing::layer::{LogLayer, Storage, Type};
+use crate::log::tracing::LogFormatter;
 use crate::service::discovery::service_binding::ServiceBinding;
 use crate::service::discovery::service_discovery::{
     Broadcaster, Discoverer, Service, ServiceDiscovery,
 };
 use crate::service::framework::axum::server_framework_config::ServerFrameworkConfig;
 use crate::service::framework::axum::{
-    ConnectionBuilder, FrameworkState, FrameworkStateContainer, HyperConfig, LogFormatter,
+    ConnectionBuilder, FrameworkState, FrameworkStateContainer, HyperConfig, LogFormatterBackend,
     LogOutput, ModuleDefinition, ModuleManager, RwFrameworkState, ServerRuntimeError,
     ServerRuntimeStatus, TokioExecutor,
 };
@@ -35,7 +39,9 @@ use tokio::{signal, task};
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use tracing::{event, Level};
+use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::registry::SpanRef;
 use tracing_subscriber::Registry;
 
 static SERVICE_DISCOVERY: RwLock<
@@ -47,7 +53,7 @@ pub struct ServerBuilder {
     pub(crate) port: u16,
     pub(crate) worker_pool: Option<usize>,
     pub(crate) router: Router<Arc<FrameworkState>>,
-    pub(crate) logger: LogFormatter,
+    pub(crate) logger: LogFormatterBackend,
     pub(crate) logger_output: LogOutput,
     pub(crate) logger_discovery: bool,
     pub(crate) trace_layer: bool,
@@ -77,7 +83,7 @@ impl ServerBuilder {
             port: 3000,
             worker_pool: None,
             router,
-            logger: LogFormatter::DeepLog,
+            logger: LogFormatterBackend::DeepLog,
             logger_output: LogOutput::Full,
             logger_discovery: false,
             trace_layer: false,
@@ -221,14 +227,14 @@ impl ServerBuilder {
     fn build_inner<S: FrameworkStateContainer>(mut self, start_server: bool, state_manager: S) {
         let framework_setup_config = ServerFrameworkConfig::from(&self);
 
-        println!("Building body closure");
-        setup_logger(self.logger, self.logger_output);
-
         let num_subtasks = self.sub_tasks.len();
         let body = async {
             debug!("Creating app");
             debug!("Initializing FrameworkState");
             let framework_state = self.module_manager.setup_module_states(self.app_state);
+
+            debug!("Building body closure");
+            setup_logger(self.logger, self.logger_output, &framework_state);
 
             debug!("Setting up advertiser and discoverer from modules");
             self.module_manager
@@ -500,12 +506,15 @@ async fn shutdown_signal_capture(
     }
 }
 
-fn setup_logger(logger: LogFormatter, output: LogOutput) {
-    let mut formatter = match logger {
-        LogFormatter::Bunyan => {
+fn setup_logger(logger: LogFormatterBackend, output: LogOutput, state: &Arc<FrameworkState>) {
+    let mut formatter: LogFormatterWrapper = match logger {
+        LogFormatterBackend::Bunyan => {
             panic!("Bunyan not currently supported")
         }
-        LogFormatter::DeepLog => {
+        LogFormatterBackend::DeepLog => {
+            DEFAULT_LOG_BACKEND
+                .write()
+                .replace(LogFormatterBackend::DeepLog);
             let formatter = DeepLogFormatter::default();
             match output {
                 LogOutput::Minimal => formatter.set_output_style(deeplog::LogStyleOutput::Minimal),
@@ -513,18 +522,99 @@ fn setup_logger(logger: LogFormatter, output: LogOutput) {
                 LogOutput::Human => formatter.set_output_style(deeplog::LogStyleOutput::Human),
                 LogOutput::Default => formatter,
             }
+            .into()
         }
-        LogFormatter::Syslog => {
+        LogFormatterBackend::Syslog => {
             panic!("Syslog not currently supported")
         }
     };
 
-    let formatter = LogLayer::new(None, std::io::stdout, formatter);
-    let subscriber = Registry::default().with(formatter);
+    let log_layer = LogLayer::new(None, std::io::stdout, formatter);
+    let subscriber = Registry::default().with(log_layer);
     tracing::subscriber::set_global_default(subscriber).expect("Failed to attach log subscriber");
     event!(
         Level::DEBUG,
         level = "emergency",
         "Testing subscriber with level override"
     );
+}
+
+static DEFAULT_LOG_BACKEND: RwLock<Option<LogFormatterBackend>> = RwLock::new(None);
+
+pub enum LogFormatterWrapper {
+    DeepLog(DeepLogFormatter),
+    Bunyan(Bunyan),
+    Syslog(Syslog),
+}
+
+impl Default for LogFormatterWrapper {
+    fn default() -> Self {
+        match DEFAULT_LOG_BACKEND.read().as_ref() {
+            Some(LogFormatterBackend::Bunyan) => LogFormatterWrapper::Bunyan(Bunyan::default()),
+            Some(LogFormatterBackend::DeepLog) => {
+                LogFormatterWrapper::DeepLog(DeepLogFormatter::default())
+            }
+            Some(LogFormatterBackend::Syslog) => LogFormatterWrapper::Syslog(Syslog::default()),
+            None => LogFormatterWrapper::DeepLog(DeepLogFormatter::default()),
+        }
+    }
+}
+
+impl From<DeepLogFormatter> for LogFormatterWrapper {
+    fn from(f: DeepLogFormatter) -> Self {
+        LogFormatterWrapper::DeepLog(f)
+    }
+}
+
+impl LogFormatter for LogFormatterWrapper {
+    fn log_layer_defaults<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default>(
+        &self,
+        layer: &LogLayer<W, F>,
+    ) -> Self {
+        match self {
+            LogFormatterWrapper::DeepLog(formatter) => {
+                formatter.log_layer_defaults(layer);
+                LogFormatterWrapper::DeepLog(formatter.clone())
+            }
+            LogFormatterWrapper::Bunyan(formatter) => {
+                formatter.log_layer_defaults(layer);
+                LogFormatterWrapper::Bunyan(formatter.clone())
+            }
+            LogFormatterWrapper::Syslog(formatter) => {
+                formatter.log_layer_defaults(layer);
+                LogFormatterWrapper::Syslog(formatter.clone())
+            }
+        }
+    }
+
+    fn format_event<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>>(
+        &mut self,
+        current_span: &Option<SpanRef<S>>,
+        event: &Event,
+        event_visitor: &Storage<'_>,
+    ) -> String {
+        match self {
+            LogFormatterWrapper::DeepLog(formatter) => {
+                formatter.format_event(current_span, event, event_visitor)
+            }
+            LogFormatterWrapper::Bunyan(formatter) => {
+                formatter.format_event(current_span, event, event_visitor)
+            }
+            LogFormatterWrapper::Syslog(formatter) => {
+                formatter.format_event(current_span, event, event_visitor)
+            }
+        }
+    }
+
+    fn format_span<S: Subscriber + for<'a> tracing_subscriber::registry::LookupSpan<'a>>(
+        &mut self,
+        span: &SpanRef<S>,
+        ty: Type,
+    ) -> String {
+        match self {
+            LogFormatterWrapper::DeepLog(formatter) => formatter.format_span(span, ty),
+            LogFormatterWrapper::Bunyan(formatter) => formatter.format_span(span, ty),
+            LogFormatterWrapper::Syslog(formatter) => formatter.format_span(span, ty),
+        }
+    }
 }
