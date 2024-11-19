@@ -5,7 +5,7 @@ extern crate serde_derive;
 
 use async_trait::async_trait;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 use std::error::Error;
 use std::future::Future;
 use std::net::SocketAddr;

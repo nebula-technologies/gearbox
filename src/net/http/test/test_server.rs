@@ -1,3 +1,4 @@
+use crate::externs::serde::derive::*;
 use futures::{StreamExt, TryStreamExt};
 use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
@@ -6,7 +7,6 @@ use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{body::Body, header::HeaderName, header::HeaderValue, Request, Response};
 use hyper_util::rt::TokioIo;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use tokio::net::{TcpListener as TokioTcpListener, TcpListener};

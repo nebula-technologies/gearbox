@@ -1694,13 +1694,18 @@ impl Add for DateTime {
     }
 }
 impl Add for &DateTime {
-    type Output = Self;
+    type Output = DateTime;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let _self = self.clone();
-        let mut _rhs = rhs.clone();
+        let mut _self = self.clone();
+        let mut rhs_clone = rhs.clone();
 
-        self + rhs
+        let zone = _self.timezone();
+
+        rhs_clone.shift_timezone(zone.clone());
+
+        _self.time.add_time(rhs_clone.time);
+        _self
     }
 }
 
@@ -1715,7 +1720,7 @@ impl Sub for DateTime {
 
         rhs_clone.shift_timezone(zone.clone());
 
-        _self.time.subtract_time(rhs_clone.time);
+        _self.time.add_time(rhs_clone.time);
         _self
     }
 }

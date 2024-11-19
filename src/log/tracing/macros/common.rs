@@ -79,16 +79,16 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($i:ident) => {
-        $crate::log_func_generator!($i(()), Info, info, UserlevelMessages, "{:?}")
+        $crate::log_func_generator!($i(()), info, UserlevelMessages, "{:?}")
     };
     ($i:ident, $s:literal) => {
-        $crate::log_func_generator!($i(()), Info, info, UserlevelMessages, $s)
+        $crate::log_func_generator!($i(()), info, UserlevelMessages, $s)
     };
     ($i:ident, $f:ident) => {
-        $crate::log_func_generator!($i(()), Info, info, $f, "{:?}")
+        $crate::log_func_generator!($i(()), info, $f, "{:?}")
     };
     ($i:ident, $f:ident, $s:literal) => {
-        $crate::log_func_generator!($i(()), Info, info, $f, $s)
+        $crate::log_func_generator!($i(()), info, $f, $s)
     };
     ($($arg:tt)*) => {
         $crate::externs::tracing::debug!($($arg)*);
@@ -98,16 +98,16 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($i:ident) => {
-        $crate::log_func_generator!($i(()), Debug, debug, UserlevelMessages, "{:?}")
+        $crate::log_func_generator!($i(()), debug, UserlevelMessages, "{:?}")
     };
     ($i:ident, $s:literal) => {
-        $crate::log_func_generator!($i(()), Debug, debug, UserlevelMessages, $s)
+        $crate::log_func_generator!($i(()), debug, UserlevelMessages, $s)
     };
     ($i:ident, $f:ident) => {
-        $crate::log_func_generator!($i(()), Debug, debug, $f, "{:?}")
+        $crate::log_func_generator!($i(()), debug, $f, "{:?}")
     };
     ($i:ident, $f:ident, $s:literal) => {
-        $crate::log_func_generator!($i(()), Debug, debug, $f, $s)
+        $crate::log_func_generator!($i(()), debug, $f, $s)
     };
     ($($arg:tt)*) => {
         $crate::externs::tracing::trace!($($arg)*);

@@ -13,6 +13,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -32,6 +33,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -51,6 +53,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -70,6 +73,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -94,6 +98,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -118,6 +123,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -142,6 +148,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -166,6 +173,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -190,6 +198,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -215,6 +224,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -241,6 +251,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureOptional;
 //!
@@ -272,6 +283,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
@@ -291,9 +303,8 @@
 //! ##### Example
 //!
 //! ```rust
-//! # futures::executor::block_on(async
-//!
-//!  {
+//! # #[cfg(feature = "rails-ext")]
+//! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
 //! let future_res = async { Ok::<_, ()>(1) };
@@ -317,6 +328,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
@@ -336,6 +348,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
@@ -355,6 +368,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
@@ -379,6 +393,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
@@ -403,6 +418,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
@@ -427,6 +443,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
@@ -452,6 +469,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!
@@ -478,6 +496,7 @@
 //! ##### Example
 //!
 //! ```rust
+//! # #[cfg(feature = "rails-ext")]
 //! # futures::executor::block_on(async {
 //! use gearbox::rails::ext::future::FutureResult;
 //!

@@ -13,39 +13,41 @@ use tokio::sync::broadcast;
 
 static DEEPLOG_ENDPOINT: RwLock<Option<SocketBindAddr>> = RwLock::new(None);
 
-impl ServiceDiscoveryTrait for DeepLog {
-    fn broadcasters() -> Vec<Broadcaster> {
+impl ServiceDiscoveryTrait<(), Bytes> for DeepLog {
+    fn broadcasters() -> Vec<Broadcaster<Bytes>> {
         let broadcast: Broadcaster<Bytes> = Broadcaster::new()
-            .with_service_name("DeepLog")
-            .with_port(9999)
-            .with_ip(IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0)))
-            .broadcast_mask(IpAddr::V4(std::net::Ipv4Addr::new(255, 255, 255, 0)));
+            .with_service_name(Some("DeepLog".to_string()))
+            .with_port(Some(9999))
+            .with_ip(Some(IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0))))
+            .with_broadcast_mask(Some(IpAddr::V4(std::net::Ipv4Addr::new(255, 255, 255, 0))));
 
         vec![broadcast]
     }
-    fn discoverers() -> Vec<Discoverer> {
-        let mut discoverer: Discoverer<Bytes> = Discoverer::new();
-        discoverer.add_processor(|data| async {
-            Advertisement::try_from(data)
-                .ok()
-                .and_then(|t| t.ip.zip(t.port))
-                .and_then(|(mut ips, port)| ips.pop().zip(Some(port)))
-                .map(|(ip, port)| SocketBindAddr::from((ip, port)))
-                .and_then(|t| DEEPLOG_ENDPOINT.write().replace(t));
+    fn discoverers() -> Vec<Discoverer<(), Bytes>> {
+        let mut discoverer: Discoverer<(), Bytes> = Discoverer::new();
+        discoverer.add_processor(|data, _| {
+            Box::pin(async {
+                Advertisement::try_from(data)
+                    .ok()
+                    .and_then(|t| t.ip.zip(t.port))
+                    .and_then(|(mut ips, port)| ips.pop().zip(Some(port)))
+                    .map(|(ip, port)| SocketBindAddr::from((ip, port)))
+                    .and_then(|t| DEEPLOG_ENDPOINT.write().replace(t));
+            })
         });
 
         vec![discoverer]
-    }
-    fn ip() -> IpAddr {
-        std::env::var("DEEPLOG_IP")
-            .ok()
-            .and_then(|t| IpAddr::from_str(&t).ok())
-            .unwrap_or(IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0)))
     }
     fn port() -> usize {
         std::env::var("DEEPLOG_PORT")
             .ok()
             .and_then(|t| t.parse().ok())
             .unwrap_or(9999)
+    }
+    fn ip() -> IpAddr {
+        std::env::var("DEEPLOG_IP")
+            .ok()
+            .and_then(|t| IpAddr::from_str(&t).ok())
+            .unwrap_or(IpAddr::V4(std::net::Ipv4Addr::new(0, 0, 0, 0)))
     }
 }

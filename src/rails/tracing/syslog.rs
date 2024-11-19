@@ -16,6 +16,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "log-tracing-macros-syslog")]
 mod test {
     use super::RailsSyslog;
     use crate::log::tracing::entity::syslog::facility::Facility::*;

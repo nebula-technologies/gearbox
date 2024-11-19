@@ -35,7 +35,7 @@ where
     type Output = Result<U, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut this = unsafe { self.get_unchecked_mut() };
+        let this = unsafe { self.get_unchecked_mut() };
         match this.state {
             State::Waiting { ref mut future, .. } => {
                 match unsafe { Pin::new_unchecked(future) }.poll(cx) {

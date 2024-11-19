@@ -795,6 +795,16 @@ pub trait ServiceDiscoveryStateTrait {
     fn list<T: Sync + Send + Any + Copy>(&self) -> Vec<T>;
 }
 
+impl ServiceDiscoveryStateTrait for () {
+    fn set_state<T: Sync + Send + Any + Copy>(&mut self, key: &str, state: T) {}
+    fn state<T: Sync + Send + Any + Copy>(&self, key: &str) -> Option<T> {
+        None
+    }
+    fn list<T: Sync + Send + Any + Copy>(&self) -> Vec<T> {
+        Vec::new()
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ServiceDiscoveryState {
     state: Arc<RwLock<HashMap<std::any::TypeId, HashMap<String, Box<dyn Any + Send + Sync>>>>>,

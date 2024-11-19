@@ -7,6 +7,7 @@ use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
 use crate::log::tracing::formatter::syslog::Syslog;
 use crate::log::tracing::layer::{LogLayer, Storage, Type};
 use crate::log::tracing::LogFormatter;
+use crate::rails::ext::blocking::TapResult;
 use crate::service::discovery::service_binding::ServiceBinding;
 use crate::service::discovery::service_discovery::{
     Broadcaster, Discoverer, Service, ServiceDiscovery,
@@ -294,7 +295,15 @@ impl ServerBuilder {
 
             debug!("Setting up listener socket address");
             let socket_addr = SocketAddr::new(self.address, self.port);
-            let listener = tokio::net::TcpListener::bind(socket_addr).await.unwrap();
+            let listener = tokio::net::TcpListener::bind(socket_addr)
+                .await
+                .tap_err(|e| {
+                    error!(
+                        "Failed to bind to the expected socket address: {} with the error {}",
+                        socket_addr, e
+                    )
+                })
+                .unwrap();
 
             if start_server {
                 let result = if self.use_http2 {

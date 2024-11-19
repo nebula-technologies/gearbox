@@ -57,6 +57,7 @@ where
 }
 
 // Helper function for asserting future type
+#[allow(unused)]
 fn assert_future<T, F>(future: F) -> F
 where
     F: Future<Output = T>,

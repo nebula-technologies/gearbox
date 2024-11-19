@@ -28,7 +28,7 @@ maintenance = { status = "actively-developed" }
 default = ["std"]
 
 ## Full - all features available
-full = []
+full = ["collections-all", "common-all", "did-all", "error-all", "log-tracing-all", "net-all", "path-all", "rails-all", "service-all", "storage-all", "sync-all", "template-all", "time-all"]
 
 ##
 ## Global Cross deps
@@ -121,18 +121,20 @@ error-type-registry = ["error", "spin", "collections-hash-map"]
 # Log
 # > TODO: std and libc needs removal from the implementation
 log = ["tracing", "common-process", "net-hostname", "tracing_subscriber", "std", "libc"]
+
 # > TODO: log has a bad dep of log-tracing-syslog this needs to be moved out and or changed
 log-tracing = ["log", "collections-hash-map", "hashbrown", "time", "log-tracing-syslog", "tracing-subscriber/std", "tracing-subscriber/fmt", "dep_serde", "serde_json", "serde_derive"]
 log-tracing-all = ["log-tracing", "log-tracing-deeplog", "log-tracing-bunyan", "log-tracing-syslog", "log-tracing-macros"]
 log-tracing-bunyan = ["log-tracing", "with_serde"]
 log-tracing-deeplog = ["log-tracing", "pnet", "dep:tokio", "futures", "toml", "sync-rw-arc", "sys_info", "with_serde", "serde_json"]
 log-tracing-syslog = ["log-tracing"]
-log-tracing-macros = ["log", "log-tracing", "log-tracing-macros-common"]
+log-tracing-macros = ["log", "log-tracing"]
 log-tracing-macros-syslog = ["log-tracing-macros"]
 log-tracing-macros-common = ["log-tracing-macros"]
 
 # Net
 net = ["std"]
+net-all = ["net", "net-endpoint-config", "net-hostname", "net-http", "net-signature", "net-http-dyno-request", "net-http-request", "net-http-request-chaining"]
 net-endpoint-config = []
 net-hostname = ["net", "libc"]
 net-http = ["net"]
@@ -144,18 +146,21 @@ net-http-request-chaining = ["net-http", "dep_serde", "error-tracer", "spin", "t
 
 # Path - common paths in systems
 path = ["std"]
+path-all = ["path", "path-dirs"]
 path-dirs = ["path", "dep:dirs"]
 
 # Rails - Railway oriented Programming extenstions
 rails = ["std"]
+rails-all = ["rails", "rails-ext", "rails-tracing"]
 rails-ext = ["rails", "error-tracer", "spin"]
 rails-tracing = ["rails"]
 
 # Services - Builders and more
 service = ["std"]
+service-all = ["service", "service-discovery", "service-discovery-loggers-impl", "service-framework-axum"]
 service-discovery = ["service", "with_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all", "bytes", "common-ip-range", "common-socket-bind-addr", "semver", "collections-const-hash-map"]
 service-discovery-loggers-impl = ["service-discovery"]
-service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge", "pnet"]
+service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge", "pnet", "regex"]
 
 # Storage
 storage = ["std", "common-try-default", "error-tracer", "dep_serde", "rails-ext"]
@@ -167,13 +172,16 @@ storage-json-ext = ["storage", "with_json"]
 
 # Sync/Async support blocks
 sync = ["std"]
+sync-all = ["sync", "sync-rw-arc"]
 sync-rw-arc = ["sync"]
 
 # Template Engine
 template = ["std", "hashbrown", "spin", "regex", "time", "error-tracer"]
+template-all = ["template"]
 
 # Time
 time = ["std", "spin", "rails-ext", "error-tracer"]
+time-all = ["time", "time-serde"]
 time-serde = ["time", "dep_serde"]
 
 
@@ -295,3 +303,6 @@ tokio = { version = "1", features = ["full"] }
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
 wasm-bindgen-test = "0.3.43"
+futures = { version = "0.3.30" }
+hex = "0.4.3"
+

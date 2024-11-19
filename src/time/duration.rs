@@ -278,6 +278,86 @@ impl Duration {
             },
         }
     }
+
+    pub(crate) fn add_time(&mut self, time: Self) {
+        match self {
+            Self::Negative(ref mut sec, ref mut n) => match time {
+                Self::Negative(sec2, n2) => {
+                    let new_nanos = *n as i32 + n2 as i32;
+                    if new_nanos >= NANOS_PER_SEC as i32 {
+                        *n = (new_nanos - NANOS_PER_SEC as i32) as u32;
+                        *sec += 1;
+                    } else {
+                        *n = new_nanos as u32;
+                    }
+                    *sec += sec2;
+                }
+                Self::Positive(sec2, n2) => {
+                    let new_nanos = *n as i32 - n2 as i32;
+                    if new_nanos.is_negative() {
+                        *n = (NANOS_PER_SEC as i32 + new_nanos) as u32;
+                        if *sec > 0 {
+                            *sec -= 1;
+                        } else {
+                            *self =
+                                Self::Positive(sec2 - 1, (NANOS_PER_SEC as i32 + new_nanos) as u32);
+                            return;
+                        }
+                    } else {
+                        *n = new_nanos as u32;
+                    }
+                    if *sec >= sec2 {
+                        *sec -= sec2;
+                    } else {
+                        *self = Self::Positive(sec2 - *sec, *n);
+                    }
+                }
+                Self::Zero => {}
+            },
+            Self::Positive(ref mut sec, ref mut n) => match time {
+                Self::Negative(sec2, n2) => {
+                    let new_nanos = *n as i32 - n2 as i32;
+                    if new_nanos.is_negative() {
+                        *n = (NANOS_PER_SEC as i32 + new_nanos) as u32;
+                        if *sec > 0 {
+                            *sec -= 1;
+                        } else {
+                            *self =
+                                Self::Negative(sec2 - 1, (NANOS_PER_SEC as i32 + new_nanos) as u32);
+                            return;
+                        }
+                    } else {
+                        *n = new_nanos as u32;
+                    }
+                    if *sec >= sec2 {
+                        *sec -= sec2;
+                    } else {
+                        *self = Self::Negative(sec2 - *sec, *n);
+                    }
+                }
+                Self::Positive(sec2, n2) => {
+                    let new_nanos = *n as i32 + n2 as i32;
+                    if new_nanos >= NANOS_PER_SEC as i32 {
+                        *n = (new_nanos - NANOS_PER_SEC as i32) as u32;
+                        *sec += 1;
+                    } else {
+                        *n = new_nanos as u32;
+                    }
+                    *sec += sec2;
+                }
+                Self::Zero => {}
+            },
+            Self::Zero => match time {
+                Self::Negative(sec, n) => {
+                    *self = Self::Negative(sec, n);
+                }
+                Self::Positive(sec, n) => {
+                    *self = Self::Positive(sec, n);
+                }
+                Self::Zero => {}
+            },
+        }
+    }
 }
 
 #[cfg(feature = "std")]

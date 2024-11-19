@@ -65,6 +65,7 @@ mod test {
             .with_module::<TestModule>()
             .with_worker_pool(30)
             .with_trace_layer()
+            .with_port(3000)
             .build_test(FrameworkState::new(HashMap::new()));
     }
 }
