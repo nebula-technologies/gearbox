@@ -1058,6 +1058,7 @@ mod tests {
             version: Some("1.0.0".to_string()),
             ..Default::default()
         };
+
         let broadcaster = Broadcaster::new()
             .with_interval(Some(1))
             .with_ip(Some(IpAddr::V4(Ipv4Addr::new(192, 168, 10, 100))))

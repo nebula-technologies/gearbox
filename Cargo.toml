@@ -134,10 +134,11 @@ log-tracing-macros-common = ["log-tracing-macros"]
 
 # Net
 net = ["std"]
-net-all = ["net", "net-endpoint-config", "net-hostname", "net-http", "net-signature", "net-http-dyno-request", "net-http-request", "net-http-request-chaining"]
+net-all = ["net", "net-endpoint-config", "net-hostname", "net-http", "net-ip", "net-signature", "net-http-dyno-request", "net-http-request", "net-http-request-chaining"]
 net-endpoint-config = []
 net-hostname = ["net", "libc"]
 net-http = ["net"]
+net-ip = ["net", "if_addrs"]
 net-signature = ["net", "base64", "bs58", "hashbrown", "dep_serde", "hmac", "sha2", "time"]
 net-http-dyno-request = ["net-http"]
 net-http-request = ["net-http", "url", "serde_json", "reqwest", "dep_serde", "error-tracer", "rails-ext", "hashbrown", "serde_derive", "spin", "bytes", "common-boxed-future"]

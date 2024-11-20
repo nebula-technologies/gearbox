@@ -4,6 +4,8 @@ pub mod endpoint_config;
 pub mod hostname;
 #[cfg(feature = "net-http")]
 pub mod http;
+#[cfg(feature = "net-ip")]
+pub mod ip;
 #[cfg(feature = "net-signature")]
 pub mod signature;
 
