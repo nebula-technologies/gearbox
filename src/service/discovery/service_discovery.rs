@@ -1,8 +1,8 @@
 use super::entity::Advertisement;
 use crate::collections::const_hash_map::HashMap;
-use crate::common::ip_range::IpRanges;
-use crate::common::socket_bind_addr::SocketBindAddr;
 use crate::externs::spin::RwLock;
+use crate::net::ip_range::IpRanges;
+use crate::net::socket_bind_addr::SocketAddr;
 use crate::rails::ext::blocking::TapResult;
 use crate::service::discovery::service_binding::ServiceBinding;
 use crate::service::framework::axum::FrameworkStateContainer;
@@ -14,7 +14,7 @@ use std::any::Any;
 use std::any::TypeId;
 use std::future::Future;
 use std::marker::PhantomData;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr as StdSocketAddr, ToSocketAddrs};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
@@ -89,7 +89,7 @@ where
         self
     }
 
-    pub fn add_broadcaster<T: Into<SocketBindAddr>>(
+    pub fn add_broadcaster<T: Into<SocketAddr>>(
         &mut self,
         bind: T,
         broadcaster: Broadcaster<A>,
@@ -124,7 +124,7 @@ where
         self
     }
 
-    pub fn add_discoverer<T: Into<SocketBindAddr>>(
+    pub fn add_discoverer<T: Into<SocketAddr>>(
         &mut self,
         bind: T,
         discoverer: Discoverer<S, A>,
@@ -157,7 +157,7 @@ where
     where
         O: Fn(&Arc<Bytes>) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + Sync + 'static,
-        T: Into<SocketBindAddr>,
+        T: Into<SocketAddr>,
     {
         let bind = bind.into();
         if let Some(managed_state) = self.managed_state {
@@ -211,7 +211,7 @@ where
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
     pub managed: bool,
-    pub bind: SocketBindAddr,
+    pub bind: SocketAddr,
     pub service_types: Vec<ServiceDiscoveryType<S, A>>,
     pub discovery_functions: Vec<
         Box<dyn Fn(&Arc<Bytes>) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>,
@@ -225,7 +225,7 @@ where
 
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
-    pub fn new<T: Into<SocketBindAddr>>(bind: T, managed: bool) -> Self {
+    pub fn new<T: Into<SocketAddr>>(bind: T, managed: bool) -> Self {
         Service {
             managed,
             bind: bind.into(),
@@ -257,15 +257,14 @@ where
         self
     }
 
-    pub fn get_bind(&mut self) -> SocketBindAddr {
+    pub fn get_bind(&mut self) -> SocketAddr {
         self.bind.clone()
     }
 
     pub async fn serve(mut self, state: Option<S>) -> Result<(), String> {
-        let bind: SocketAddr = self.get_bind().into();
+        let bind: StdSocketAddr = self.get_bind().into();
 
         debug!("Binding to: {:?}", bind);
-        // Bind the socket to the IP and port
         let socket = UdpSocket::bind(bind)
             .await
             .and_then(|t| t.set_broadcast(true).map(|_| t))
@@ -293,7 +292,7 @@ where
                                     (broadcaster.advert_into_bytes(), &broadcaster.broadcast)
                                 {
                                     thread_socket
-                                        .send_to(&*data, SocketAddr::from(broadcast))
+                                        .send_to(&*data, StdSocketAddr::from(broadcast))
                                         .await
                                         .tap(|t| {
                                             debug!(
@@ -394,7 +393,7 @@ where
 pub struct Broadcaster<A> {
     ip: Option<IpAddr>,
     port: Option<u16>,
-    broadcast: Option<SocketBindAddr>,
+    broadcast: Option<SocketAddr>,
     service_name: Option<String>,
     version: Option<String>,
     interval: Option<u64>,
@@ -406,7 +405,7 @@ impl<A> Broadcaster<A> {
         Broadcaster {
             ip: None,
             port: None,
-            broadcast: SocketBindAddr::default_addr().as_broadcast_addr(None).ok(),
+            broadcast: SocketAddr::default_addr().as_broadcast_addr(None).ok(),
             service_name: None,
             version: None,
             interval: Some(5),
@@ -437,7 +436,7 @@ impl<A> Broadcaster<A> {
             })
             .or_else(|| {
                 Some(
-                    SocketBindAddr::default_addr()
+                    SocketAddr::default_addr()
                         .as_broadcast_addr(None)
                         .unwrap()
                         .set_port(port)
@@ -455,7 +454,7 @@ impl<A> Broadcaster<A> {
             })
             .or_else(|| {
                 Some(
-                    SocketBindAddr::default_addr()
+                    SocketAddr::default_addr()
                         .as_broadcast_addr(None)
                         .unwrap()
                         .set_ip(ip)
@@ -467,25 +466,25 @@ impl<A> Broadcaster<A> {
 
     pub fn with_broadcast_mask(mut self, mask: Option<IpAddr>) -> Self {
         if let (Some(ip), Some(port)) = (&self.ip, &self.port) {
-            self.broadcast = SocketBindAddr::new(*ip, *port).as_broadcast_addr(mask).ok();
+            self.broadcast = SocketAddr::new(*ip, *port).as_broadcast_addr(mask).ok();
         }
         self
     }
     pub fn set_broadcast_mask(&mut self, mask: IpAddr) -> &mut Self {
         if let (Some(ip), Some(port)) = (&self.ip, &self.port) {
-            self.broadcast = SocketBindAddr::new(*ip, *port)
+            self.broadcast = SocketAddr::new(*ip, *port)
                 .as_broadcast_addr(Some(mask))
                 .ok();
         }
         self
     }
 
-    pub fn with_broadcast(mut self, broadcast: Option<SocketBindAddr>) -> Self {
+    pub fn with_broadcast(mut self, broadcast: Option<SocketAddr>) -> Self {
         self.broadcast = broadcast;
         self
     }
 
-    pub fn bcast_mut(&mut self) -> &mut Option<SocketBindAddr> {
+    pub fn bcast_mut(&mut self) -> &mut Option<SocketAddr> {
         &mut self.broadcast
     }
     pub fn with_service_name(mut self, service_name: Option<String>) -> Self {

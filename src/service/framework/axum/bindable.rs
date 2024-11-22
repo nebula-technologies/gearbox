@@ -1,16 +1,16 @@
-use crate::common::socket_bind_addr::SocketBindAddr;
+use crate::net::socket_bind_addr::SocketAddr;
 
 pub struct Bindable<S> {
-    bind: SocketBindAddr,
+    bind: SocketAddr,
     data: S,
 }
 
 impl<S> Bindable<S> {
-    pub fn bind(&self) -> &SocketBindAddr {
+    pub fn bind(&self) -> &SocketAddr {
         &self.bind
     }
 
-    pub fn bind_owned(&self) -> SocketBindAddr {
+    pub fn bind_owned(&self) -> SocketAddr {
         (&self.bind).to_owned()
     }
 
@@ -29,9 +29,9 @@ impl<S: Clone> Bindable<S> {
     }
 }
 
-impl<S> TryFrom<(SocketBindAddr, S)> for Bindable<S> {
+impl<S> TryFrom<(SocketAddr, S)> for Bindable<S> {
     type Error = BindableError;
-    fn try_from((bind, data): (SocketBindAddr, S)) -> Result<Self, Self::Error> {
+    fn try_from((bind, data): (SocketAddr, S)) -> Result<Self, Self::Error> {
         if bind.has_valid_nonglobal_binding() {
             return Err(BindableError::InvalidSocketBindAddr);
         }

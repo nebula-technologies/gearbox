@@ -1,4 +1,4 @@
-use crate::common::socket_bind_addr::SocketBindAddr;
+use crate::net::socket_bind_addr::SocketAddr;
 use core::fmt::{Display, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -28,14 +28,14 @@ impl Display for ServiceBinding {
     }
 }
 
-impl From<SocketBindAddr> for ServiceBinding {
-    fn from(bind: SocketBindAddr) -> Self {
+impl From<SocketAddr> for ServiceBinding {
+    fn from(bind: SocketAddr) -> Self {
         ServiceBinding::new(bind.port_with_defaults() as usize, bind.ip_with_defaults())
     }
 }
 
-impl From<&SocketBindAddr> for ServiceBinding {
-    fn from(bind: &SocketBindAddr) -> Self {
+impl From<&SocketAddr> for ServiceBinding {
+    fn from(bind: &SocketAddr) -> Self {
         ServiceBinding::new(bind.port_with_defaults() as usize, bind.ip_with_defaults())
     }
 }

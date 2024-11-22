@@ -1,5 +1,4 @@
 use crate::collections::const_hash_map::HashMap as ConstHashMap;
-use crate::common::socket_bind_addr::SocketBindAddr;
 use crate::externs::tracing::{Event, Subscriber};
 use crate::log::tracing::formatter::bunyan::Bunyan;
 use crate::log::tracing::formatter::deeplog;
@@ -7,6 +6,7 @@ use crate::log::tracing::formatter::deeplog::DeepLogFormatter;
 use crate::log::tracing::formatter::syslog::Syslog;
 use crate::log::tracing::layer::{LogLayer, Storage, Type};
 use crate::log::tracing::LogFormatter;
+use crate::net::socket_bind_addr::SocketAddr;
 use crate::rails::ext::blocking::TapResult;
 use crate::service::discovery::service_binding::ServiceBinding;
 use crate::service::discovery::service_discovery::{
@@ -28,7 +28,7 @@ use hyper_util::service::TowerToHyperService;
 use spin::rwlock::RwLock;
 use std::any::TypeId;
 use std::future::Future;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -159,7 +159,7 @@ impl ServerBuilder {
     }
 
     pub fn with_service_broadcast<
-        O: FnOnce(Broadcaster<Bytes>) -> Option<(SocketBindAddr, Broadcaster<Bytes>)>,
+        O: FnOnce(Broadcaster<Bytes>) -> Option<(SocketAddr, Broadcaster<Bytes>)>,
     >(
         mut self,
         o: O,
@@ -173,7 +173,7 @@ impl ServerBuilder {
     pub fn with_service_discovery<
         O: FnOnce(
             Discoverer<FrameworkState, Bytes>,
-        ) -> Option<(SocketBindAddr, Discoverer<Arc<FrameworkState>, Bytes>)>,
+        ) -> Option<(SocketAddr, Discoverer<Arc<FrameworkState>, Bytes>)>,
     >(
         mut self,
         o: O,
@@ -294,7 +294,7 @@ impl ServerBuilder {
             }
 
             debug!("Setting up listener socket address");
-            let socket_addr = SocketAddr::new(self.address, self.port);
+            let socket_addr: StdSocketAddr = SocketAddr::new(self.address, self.port).into();
             let listener = tokio::net::TcpListener::bind(socket_addr)
                 .await
                 .tap_err(|e| {

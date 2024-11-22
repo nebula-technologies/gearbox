@@ -4,21 +4,21 @@ use core::fmt::{Display, Formatter};
 #[cfg(feature = "regex")]
 use regex::Regex;
 use std::io;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr, ToSocketAddrs};
 
 // Struct representing a single IP address and port binding
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct SocketBindAddr {
+pub struct SocketAddr {
     ip: Option<IpAddr>,
     port: Option<u16>,
     default_ip: Option<IpAddr>,
     default_port: Option<u16>,
 }
 
-impl SocketBindAddr {
+impl SocketAddr {
     /// Creates a new `SocketBindAddr` with the provided IP and port.
     pub fn new(ip: IpAddr, port: u16) -> Self {
-        SocketBindAddr {
+        SocketAddr {
             ip: Some(ip),
             port: Some(port),
             default_ip: None,
@@ -82,14 +82,14 @@ impl SocketBindAddr {
     }
 
     pub fn new_with_defaults(ip: IpAddr, port: u16, default_ip: IpAddr, default_port: u16) -> Self {
-        SocketBindAddr {
+        SocketAddr {
             ip: Some(ip),
             port: Some(port),
             default_ip: Some(default_ip),
             default_port: Some(default_port),
         }
     }
-    pub fn as_broadcast_addr(&self, subnet_mask: Option<IpAddr>) -> Result<SocketBindAddr, String> {
+    pub fn as_broadcast_addr(&self, subnet_mask: Option<IpAddr>) -> Result<SocketAddr, String> {
         let mask = subnet_mask
             .and_then(Self::is_valid_subnet_mask)
             .unwrap_or(Self::default_subnet_mask(subnet_mask));
@@ -192,7 +192,7 @@ impl SocketBindAddr {
 }
 
 /// Private methods
-impl SocketBindAddr {
+impl SocketAddr {
     /// Returns the default subnet mask for a given IP address.
     /// If the input is `None`, it returns the default IPv4 mask.
     /// If the input is an IPv4 address, it returns the default IPv4 mask.
@@ -270,13 +270,13 @@ impl SocketBindAddr {
     }
 }
 
-impl Default for SocketBindAddr {
+impl Default for SocketAddr {
     fn default() -> Self {
-        SocketBindAddr::default_addr()
+        SocketAddr::default_addr()
     }
 }
 
-impl Display for SocketBindAddr {
+impl Display for SocketAddr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -287,11 +287,11 @@ impl Display for SocketBindAddr {
     }
 }
 
-impl ToSocketAddrs for SocketBindAddr {
-    type Iter = std::vec::IntoIter<SocketAddr>;
+impl ToSocketAddrs for SocketAddr {
+    type Iter = std::vec::IntoIter<StdSocketAddr>;
 
     fn to_socket_addrs(&self) -> io::Result<Self::Iter> {
-        Ok(vec![SocketAddr::new(
+        Ok(vec![StdSocketAddr::new(
             self.ip_with_defaults(),
             self.port_with_defaults(),
         )]
@@ -299,90 +299,90 @@ impl ToSocketAddrs for SocketBindAddr {
     }
 }
 
-impl From<SocketBindAddr> for SocketAddr {
-    fn from(bind_addr: SocketBindAddr) -> Self {
-        SocketAddr::new(bind_addr.ip_with_defaults(), bind_addr.port_with_defaults())
+impl From<SocketAddr> for StdSocketAddr {
+    fn from(bind_addr: SocketAddr) -> Self {
+        StdSocketAddr::new(bind_addr.ip_with_defaults(), bind_addr.port_with_defaults())
     }
 }
 
-impl From<&SocketBindAddr> for SocketAddr {
-    fn from(bind_addr: &SocketBindAddr) -> Self {
-        SocketAddr::new(bind_addr.ip_with_defaults(), bind_addr.port_with_defaults())
+impl From<&SocketAddr> for StdSocketAddr {
+    fn from(bind_addr: &SocketAddr) -> Self {
+        StdSocketAddr::new(bind_addr.ip_with_defaults(), bind_addr.port_with_defaults())
     }
 }
 
-impl From<SocketBindAddr> for SocketBindAddrs {
-    fn from(bind_addr: SocketBindAddr) -> Self {
+impl From<SocketAddr> for SocketAddrs {
+    fn from(bind_addr: SocketAddr) -> Self {
         let mut set = HashSet::new();
         set.insert(bind_addr);
-        SocketBindAddrs {
+        SocketAddrs {
             bind_addr: Some(set),
             default_bind_addr: None,
         }
     }
 }
 
-impl From<(&IpAddr, &u16)> for SocketBindAddr {
+impl From<(&IpAddr, &u16)> for SocketAddr {
     fn from((addr, port): (&IpAddr, &u16)) -> Self {
-        SocketBindAddr::new(*addr, *port)
+        SocketAddr::new(*addr, *port)
     }
 }
-impl From<(IpAddr, &u16)> for SocketBindAddr {
+impl From<(IpAddr, &u16)> for SocketAddr {
     fn from((addr, port): (IpAddr, &u16)) -> Self {
         (&addr, port).into()
     }
 }
-impl From<(&IpAddr, u16)> for SocketBindAddr {
+impl From<(&IpAddr, u16)> for SocketAddr {
     fn from((addr, port): (&IpAddr, u16)) -> Self {
         (addr, &port).into()
     }
 }
 
-impl From<(IpAddr, u16)> for SocketBindAddr {
+impl From<(IpAddr, u16)> for SocketAddr {
     fn from((addr, port): (IpAddr, u16)) -> Self {
         (&addr, &port).into()
     }
 }
 
-impl From<(&IpAddr, &i32)> for SocketBindAddr {
+impl From<(&IpAddr, &i32)> for SocketAddr {
     fn from((addr, port): (&IpAddr, &i32)) -> Self {
-        SocketBindAddr::new(*addr, *port as u16)
+        SocketAddr::new(*addr, *port as u16)
     }
 }
-impl From<(IpAddr, &i32)> for SocketBindAddr {
+impl From<(IpAddr, &i32)> for SocketAddr {
     fn from((addr, port): (IpAddr, &i32)) -> Self {
         (&addr, port).into()
     }
 }
-impl From<(&IpAddr, i32)> for SocketBindAddr {
+impl From<(&IpAddr, i32)> for SocketAddr {
     fn from((addr, port): (&IpAddr, i32)) -> Self {
         (addr, &port).into()
     }
 }
 
-impl From<(IpAddr, i32)> for SocketBindAddr {
+impl From<(IpAddr, i32)> for SocketAddr {
     fn from((addr, port): (IpAddr, i32)) -> Self {
         (&addr, &port).into()
     }
 }
 
-impl From<(&IpAddr, &usize)> for SocketBindAddr {
+impl From<(&IpAddr, &usize)> for SocketAddr {
     fn from((addr, port): (&IpAddr, &usize)) -> Self {
-        SocketBindAddr::new(*addr, *port as u16)
+        SocketAddr::new(*addr, *port as u16)
     }
 }
-impl From<(IpAddr, &usize)> for SocketBindAddr {
+impl From<(IpAddr, &usize)> for SocketAddr {
     fn from((addr, port): (IpAddr, &usize)) -> Self {
         (&addr, port).into()
     }
 }
-impl From<(&IpAddr, usize)> for SocketBindAddr {
+impl From<(&IpAddr, usize)> for SocketAddr {
     fn from((addr, port): (&IpAddr, usize)) -> Self {
         (addr, &port).into()
     }
 }
 
-impl From<(IpAddr, usize)> for SocketBindAddr {
+impl From<(IpAddr, usize)> for SocketAddr {
     fn from((addr, port): (IpAddr, usize)) -> Self {
         (&addr, &port).into()
     }
@@ -390,14 +390,14 @@ impl From<(IpAddr, usize)> for SocketBindAddr {
 
 // Struct representing multiple IP address and port bindings
 #[derive(Debug, Default)]
-pub struct SocketBindAddrs {
-    pub bind_addr: Option<HashSet<SocketBindAddr>>,
-    pub default_bind_addr: Option<HashSet<SocketBindAddr>>,
+pub struct SocketAddrs {
+    pub bind_addr: Option<HashSet<SocketAddr>>,
+    pub default_bind_addr: Option<HashSet<SocketAddr>>,
 }
 
-impl SocketBindAddrs {
+impl SocketAddrs {
     pub fn add_bind_ipv4_port(&mut self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) {
-        let addr = SocketBindAddr::new(IpAddr::V4(Ipv4Addr::new(o1, o2, o3, o4)), port);
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(o1, o2, o3, o4)), port);
         self.add_bind_addr(addr);
     }
 
@@ -413,7 +413,7 @@ impl SocketBindAddrs {
         o8: u16,
         port: u16,
     ) {
-        let addr = SocketBindAddr::new(
+        let addr = SocketAddr::new(
             IpAddr::V6(Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8)),
             port,
         );
@@ -421,12 +421,12 @@ impl SocketBindAddrs {
     }
 
     pub fn add_bind_ipaddr_port(&mut self, ip: IpAddr, port: u16) {
-        let addr = SocketBindAddr::new(ip, port);
+        let addr = SocketAddr::new(ip, port);
         self.add_bind_addr(addr);
     }
 
     /// Adds a new bind address to the list.
-    pub fn add_bind_addr(&mut self, addr: SocketBindAddr) {
+    pub fn add_bind_addr(&mut self, addr: SocketAddr) {
         if let Some(ref mut bind_addrs) = self.bind_addr {
             bind_addrs.insert(addr);
         } else {
@@ -437,7 +437,7 @@ impl SocketBindAddrs {
     }
 
     /// Adds a new default bind address to the list.
-    pub fn add_default_bind_addr(&mut self, addr: SocketBindAddr) {
+    pub fn add_default_bind_addr(&mut self, addr: SocketAddr) {
         if let Some(ref mut default_bind_addrs) = self.default_bind_addr {
             default_bind_addrs.insert(addr);
         } else {
@@ -449,10 +449,10 @@ impl SocketBindAddrs {
 
     /// Creates a `SocketBindAddrs` with a single default address.
     pub fn with_default() -> Self {
-        let default_addr = SocketBindAddr::default_addr();
+        let default_addr = SocketAddr::default_addr();
         let mut set = HashSet::new();
         set.insert(default_addr);
-        SocketBindAddrs {
+        SocketAddrs {
             bind_addr: None,
             default_bind_addr: Some(set),
         }
@@ -467,21 +467,21 @@ impl SocketBindAddrs {
     }
 }
 
-impl ToSocketAddrs for SocketBindAddrs {
-    type Iter = std::vec::IntoIter<SocketAddr>;
+impl ToSocketAddrs for SocketAddrs {
+    type Iter = std::vec::IntoIter<StdSocketAddr>;
 
     fn to_socket_addrs(&self) -> io::Result<Self::Iter> {
         let mut addrs = Vec::new();
 
         if let Some(bind_addrs) = &self.bind_addr {
             for addr in bind_addrs {
-                addrs.push(SocketAddr::from(addr.clone()));
+                addrs.push(StdSocketAddr::from(addr.clone()));
             }
         }
 
         if let Some(default_bind_addrs) = &self.default_bind_addr {
             for addr in default_bind_addrs {
-                addrs.push(SocketAddr::from(addr.clone()));
+                addrs.push(StdSocketAddr::from(addr.clone()));
             }
         }
 
@@ -489,8 +489,8 @@ impl ToSocketAddrs for SocketBindAddrs {
     }
 }
 
-impl From<SocketBindAddrs> for Vec<SocketBindAddr> {
-    fn from(bind_addrs: SocketBindAddrs) -> Self {
+impl From<SocketAddrs> for Vec<SocketAddr> {
+    fn from(bind_addrs: SocketAddrs) -> Self {
         if let Some(addrs) = bind_addrs.bind_addr {
             addrs.iter().cloned().collect()
         } else {
@@ -501,18 +501,18 @@ impl From<SocketBindAddrs> for Vec<SocketBindAddr> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr};
 
     #[test]
     fn test_socket_bind_addr_new() {
-        let addr = SocketBindAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
         assert_eq!(addr.ip(), Some(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))));
         assert_eq!(addr.port(), Some(8080));
     }
 
     #[test]
     fn test_socket_bind_addr_default() {
-        let addr = SocketBindAddr::default_addr();
+        let addr = SocketAddr::default_addr();
         assert_eq!(addr.ip(), Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))));
         assert_eq!(addr.port(), Some(9999));
     }
@@ -520,87 +520,87 @@ mod tests {
     #[test]
     fn test_socket_bind_addr_with_ip() {
         let addr =
-            SocketBindAddr::default_addr().with_ip(Some(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
+            SocketAddr::default_addr().with_ip(Some(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
         assert_eq!(addr.ip(), Some(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1))));
     }
 
     #[test]
     fn test_socket_bind_addr_with_port() {
-        let addr = SocketBindAddr::default_addr().with_port(Some(8080));
+        let addr = SocketAddr::default_addr().with_port(Some(8080));
         assert_eq!(addr.port(), Some(8080));
     }
 
     #[test]
     fn test_socket_bind_addr_to_socket_addrs() {
-        let addr = SocketBindAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
         let mut addrs_iter = addr.to_socket_addrs().unwrap();
         assert_eq!(
             addrs_iter.next().unwrap(),
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
+            StdSocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
         );
     }
 
     #[test]
     fn test_from_socket_bind_addr_to_socket_addr() {
-        let bind_addr = SocketBindAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)), 8080);
-        let socket_addr: SocketAddr = bind_addr.into();
+        let bind_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)), 8080);
+        let socket_addr: StdSocketAddr = bind_addr.into();
         assert_eq!(
             socket_addr,
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)), 8080)
+            StdSocketAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)), 8080)
         );
     }
 
     #[test]
     fn test_socket_bind_addrs_add_bind_ipv4_port() {
-        let mut bind_addrs = SocketBindAddrs::default();
+        let mut bind_addrs = SocketAddrs::default();
         bind_addrs.add_bind_ipv4_port(192, 168, 1, 1, 8080);
         assert!(bind_addrs.bind_addr.is_some());
     }
 
     #[test]
     fn test_socket_bind_addrs_add_bind_ipv6_port() {
-        let mut bind_addrs = SocketBindAddrs::default();
+        let mut bind_addrs = SocketAddrs::default();
         bind_addrs.add_bind_ipv6_port(0xfe80, 0, 0, 0, 0, 0, 0, 1, 8080);
         assert!(bind_addrs.bind_addr.is_some());
     }
 
     #[test]
     fn test_socket_bind_addrs_with_default() {
-        let bind_addrs = SocketBindAddrs::with_default();
+        let bind_addrs = SocketAddrs::with_default();
         assert!(bind_addrs.default_bind_addr.is_some());
     }
 
     #[test]
     fn test_socket_bind_addrs_merge_defaults() {
-        let mut bind_addrs = SocketBindAddrs::with_default();
+        let mut bind_addrs = SocketAddrs::with_default();
         bind_addrs.merge_defaults();
         assert!(bind_addrs.bind_addr.is_some());
     }
 
     #[test]
     fn test_to_socket_addrs_for_socket_bind_addrs() {
-        let mut bind_addrs = SocketBindAddrs::default();
+        let mut bind_addrs = SocketAddrs::default();
         bind_addrs.add_bind_ipv4_port(127, 0, 0, 1, 8080);
         let addrs_iter = bind_addrs.to_socket_addrs().unwrap();
-        let addrs: Vec<SocketAddr> = addrs_iter.collect();
+        let addrs: Vec<StdSocketAddr> = addrs_iter.collect();
         assert_eq!(addrs.len(), 1);
         assert_eq!(
             addrs[0],
-            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
+            StdSocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
         );
     }
 
     #[test]
     fn test_from_socket_bind_addrs_to_vec() {
-        let mut bind_addrs = SocketBindAddrs::default();
+        let mut bind_addrs = SocketAddrs::default();
         bind_addrs.add_bind_ipv4_port(127, 0, 0, 1, 8080);
-        let vec: Vec<SocketBindAddr> = bind_addrs.into();
+        let vec: Vec<SocketAddr> = bind_addrs.into();
         assert_eq!(vec.len(), 1);
     }
 
     #[test]
     fn test_socket_bind_addr_as_broadcast_ipv4() {
-        let addr = SocketBindAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 10)), 8080);
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, 10)), 8080);
         let broadcast = addr
             .as_broadcast_addr(Some(IpAddr::V4(Ipv4Addr::new(255, 255, 255, 0))))
             .ok();
@@ -612,7 +612,7 @@ mod tests {
 
     #[test]
     fn test_socket_bind_addr_as_broadcast_ipv6() {
-        let addr = SocketBindAddr::new(
+        let addr = SocketAddr::new(
             IpAddr::V6(Ipv6Addr::new(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1)),
             8080,
         );

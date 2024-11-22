@@ -1,5 +1,5 @@
-use crate::common::socket_bind_addr::SocketBindAddr;
 use crate::log::tracing::entity::deeplog::DeepLog;
+use crate::net::socket_bind_addr::SocketAddr;
 use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::{
     Broadcaster, Discoverer, ServiceDiscoveryTrait,
@@ -11,7 +11,7 @@ use std::net::IpAddr;
 use std::sync::mpsc::channel;
 use tokio::sync::broadcast;
 
-static DEEPLOG_ENDPOINT: RwLock<Option<SocketBindAddr>> = RwLock::new(None);
+static DEEPLOG_ENDPOINT: RwLock<Option<SocketAddr>> = RwLock::new(None);
 
 impl ServiceDiscoveryTrait<(), Bytes> for DeepLog {
     fn broadcasters() -> Vec<Broadcaster<Bytes>> {
@@ -31,7 +31,7 @@ impl ServiceDiscoveryTrait<(), Bytes> for DeepLog {
                     .ok()
                     .and_then(|t| t.ip.zip(t.port))
                     .and_then(|(mut ips, port)| ips.pop().zip(Some(port)))
-                    .map(|(ip, port)| SocketBindAddr::from((ip, port)))
+                    .map(|(ip, port)| SocketAddr::from((ip, port)))
                     .and_then(|t| DEEPLOG_ENDPOINT.write().replace(t));
             })
         });

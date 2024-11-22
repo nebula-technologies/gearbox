@@ -1,4 +1,4 @@
-use crate::common::socket_bind_addr::SocketBindAddr;
+use crate::net::socket_bind_addr::SocketAddr;
 use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::{
     AdvertisementTransformer, Broadcaster, Discoverer,
@@ -16,7 +16,7 @@ pub struct AdvertiserBuilder {
     pub(crate) port: Option<u16>,
     pub(crate) bind_ip: Option<IpAddr>,
     pub(crate) bind_port: Option<u16>,
-    pub(crate) broadcast: Option<SocketBindAddr>,
+    pub(crate) broadcast: Option<SocketAddr>,
     pub(crate) interval: Option<usize>,
     pub(crate) service_name: Option<String>,
     pub(crate) advertisement: Option<Advertisement>,
@@ -104,12 +104,12 @@ impl AdvertiserBuilder {
         self
     }
 
-    pub fn with_broadcast(mut self, broadcast: Option<SocketBindAddr>) -> Self {
+    pub fn with_broadcast(mut self, broadcast: Option<SocketAddr>) -> Self {
         self.broadcast = broadcast;
         self
     }
 
-    pub fn set_broadcast(&mut self, broadcast: SocketBindAddr) -> &mut Self {
+    pub fn set_broadcast(&mut self, broadcast: SocketAddr) -> &mut Self {
         self.broadcast = Some(broadcast);
         self
     }
@@ -129,7 +129,7 @@ impl AdvertiserBuilder {
     where
         Broadcaster<Bytes>: AdvertisementTransformer<Bytes>,
     {
-        let mut bind = SocketBindAddr::default()
+        let mut bind = SocketAddr::default()
             .with_ip(self.bind_ip)
             .with_port(self.bind_port);
 
@@ -148,7 +148,7 @@ impl AdvertiserBuilder {
                 .with_interval(self.interval.map(|t| t as u64))
                 .with_service_name(self.service_name)
                 .with_broadcast(self.broadcast.or_else(|| {
-                    SocketBindAddr::default()
+                    SocketAddr::default()
                         .with_detect_ip_match(".*", true)
                         .as_broadcast_addr(None)
                         .ok()

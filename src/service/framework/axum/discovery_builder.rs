@@ -1,5 +1,5 @@
-use crate::common::ip_range::IpRanges;
-use crate::common::socket_bind_addr::SocketBindAddr;
+use crate::net::ip_range::IpRanges;
+use crate::net::socket_bind_addr::SocketAddr;
 use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::Discoverer;
 use crate::service::framework::axum::bindable::{Bindable, BindableError};
@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct DiscovererBuilder {
-    pub(crate) bind: SocketBindAddr,
+    pub(crate) bind: SocketAddr,
     pub(crate) ip: Option<IpRanges>,
     pub(crate) port: Option<u16>,
     pub(crate) interval: Option<usize>,
@@ -21,7 +21,7 @@ pub struct DiscovererBuilder {
 
 impl Default for DiscovererBuilder {
     fn default() -> Self {
-        let mut bind = SocketBindAddr::default().with_detect_ip();
+        let mut bind = SocketAddr::default().with_detect_ip();
         DiscovererBuilder {
             bind,
             interval: Some(5),
@@ -83,12 +83,12 @@ impl DiscovererBuilder {
         self
     }
 
-    pub fn with_bind(mut self, bind: SocketBindAddr) -> Self {
+    pub fn with_bind(mut self, bind: SocketAddr) -> Self {
         self.bind = bind;
         self
     }
 
-    pub fn set_bind(&mut self, bind: SocketBindAddr) -> &mut Self {
+    pub fn set_bind(&mut self, bind: SocketAddr) -> &mut Self {
         self.bind = bind;
         self
     }
