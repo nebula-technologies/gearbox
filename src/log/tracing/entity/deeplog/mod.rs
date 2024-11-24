@@ -6,8 +6,8 @@ pub mod system_info;
 pub mod timestamp;
 pub mod user;
 
-use crate::externs::serde::derive::{Deserialize, Serialize};
 use crate::log::tracing::entity::syslog::{Facility, Severity};
+use crate::prelude::serde::derive::{Deserialize, Serialize};
 use crate::sync::rw_arc::RwArc;
 pub use caller::Caller;
 pub use device::Device;

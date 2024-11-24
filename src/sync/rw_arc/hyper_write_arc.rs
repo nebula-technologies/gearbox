@@ -1,5 +1,5 @@
 use super::{compare_exchange, RelaxStrategy, RwArcInner, Spin, UPGRADED, WRITER};
-use crate::externs::{
+use crate::prelude::{
     ops::{Deref, DerefMut},
     sync::{atomic::Ordering, Arc},
 };

@@ -4,10 +4,10 @@ use super::{
     UpgradableArc, WriteArc, READER, UPGRADED, WRITER,
 };
 #[cfg(feature = "with_serde")]
-use crate::externs::serde::{Deserialize, Deserializer, Serialize, Serializer};
+use crate::prelude::serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(target_arch = "wasm32")]
-use crate::externs::wasm_bindgen::{convert::*, describe::*, prelude::*};
-use crate::externs::{
+use crate::prelude::wasm_bindgen::{convert::*, describe::*, prelude::*};
+use crate::prelude::{
     cell::UnsafeCell,
     fmt,
     marker::PhantomData,

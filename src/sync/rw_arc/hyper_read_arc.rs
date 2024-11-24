@@ -1,5 +1,5 @@
 use super::RwArcInner;
-use crate::externs::{ops::Deref, sync::Arc};
+use crate::prelude::{ops::Deref, sync::Arc};
 
 pub struct HyperReadArc<T: ?Sized + Clone, R> {
     pub(super) inner: Arc<RwArcInner<T, R>>,

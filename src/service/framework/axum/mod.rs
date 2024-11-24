@@ -21,8 +21,6 @@ pub use self::{
 
 use std::sync::Arc;
 
-pub type BoxFn<T> = Arc<dyn Fn() -> T + Send + Sync>;
-
 #[cfg(test)]
 mod test {
     use super::{FrameworkState, ModuleDefinition, RwFrameworkState};

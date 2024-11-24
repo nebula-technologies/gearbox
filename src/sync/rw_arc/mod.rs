@@ -152,7 +152,7 @@ pub mod upgradable_arc;
 pub mod write_arc;
 
 pub(crate) use super::{RelaxStrategy, Spin};
-use crate::externs::sync::atomic::{AtomicUsize, Ordering};
+use crate::prelude::sync::atomic::{AtomicUsize, Ordering};
 pub use detatched_rw_arc::DetachedArc;
 pub use hyper_read_arc::HyperReadArc;
 pub use hyper_write_arc::HyperWriteArc;

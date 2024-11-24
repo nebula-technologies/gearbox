@@ -6,14 +6,14 @@ pub mod hostname;
 pub mod http;
 #[cfg(feature = "net-ip")]
 pub mod ip;
-#[cfg(feature = "common-ip-range")]
+#[cfg(feature = "net-ip-range")]
 pub mod ip_range;
-#[cfg(feature = "common-ips")]
+#[cfg(feature = "net-ips")]
 pub mod ips;
 #[cfg(feature = "net-signature")]
 pub mod signature;
-#[cfg(feature = "common-socket-bind-addr")]
-pub mod socket_bind_addr;
+#[cfg(feature = "net-socket-addr")]
+pub mod socket_addr;
 
 #[cfg(feature = "net-hostname")]
 pub use hostname::gethostname;

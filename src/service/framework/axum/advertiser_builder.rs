@@ -1,4 +1,4 @@
-use crate::net::socket_bind_addr::SocketAddr;
+use crate::net::socket_addr::SocketAddr;
 use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::{
     AdvertisementTransformer, Broadcaster, Discoverer,

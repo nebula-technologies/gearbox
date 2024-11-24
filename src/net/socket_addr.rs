@@ -1,4 +1,4 @@
-use crate::externs::collections::HashSet;
+use crate::prelude::collections::HashSet;
 use crate::rails::ext::blocking::Tap;
 use core::fmt::{Display, Formatter};
 #[cfg(feature = "regex")]

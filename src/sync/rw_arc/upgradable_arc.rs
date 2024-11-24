@@ -1,7 +1,7 @@
 use super::{
     compare_exchange, ReadArc, RelaxStrategy, RwArcInner, Spin, WriteArc, READER, UPGRADED, WRITER,
 };
-use crate::externs::{
+use crate::prelude::{
     fmt, mem,
     mem::ManuallyDrop,
     ops::{Deref, DerefMut},

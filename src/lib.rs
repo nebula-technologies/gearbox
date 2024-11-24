@@ -473,7 +473,7 @@ pub mod macros {
     }
 }
 
-pub mod externs {
+pub mod prelude {
 
     pub mod collections {
         #[cfg(feature = "hashbrown")]
@@ -534,6 +534,34 @@ pub mod externs {
     pub mod tracing {
         pub use tracing::*;
     }
+
+    #[cfg(feature = "prelude-defaults")]
+    pub use {
+        // Alloc types
+        alloc::boxed::Box,
+        alloc::string::String,
+        alloc::vec::Vec,
+        alloc::{format, vec},
+
+        // Core traits
+        core::clone::Clone,
+        core::cmp::{Eq, Ord, PartialEq, PartialOrd},
+        core::convert::{From, Into, TryFrom, TryInto},
+        core::default::Default,
+        core::fmt::{Debug, Display},
+        core::hash::Hash,
+        core::iter::{FromIterator, IntoIterator, Iterator},
+        core::marker::Copy,
+
+        // Core types
+        core::option::Option,
+        core::option::Option::{None, Some},
+        core::result::Result,
+        core::result::Result::{Err, Ok},
+        core::slice::Iter,
+        // Core macros
+        core::{assert, assert_eq, debug_assert, debug_assert_eq, todo, unreachable},
+    };
 }
 
 #[cfg(test)]

@@ -16,5 +16,8 @@ pub use crate::net::ips::get_ips;
 pub use boxed_future::BoxedFuture;
 #[cfg(feature = "common-process")]
 pub use process::id as process_id;
+use std::sync::Arc;
 #[cfg(feature = "common-try-default")]
 pub use try_default::TryDefault;
+
+pub type ArcFn<T> = Arc<dyn Fn() -> T + Send + Sync>;

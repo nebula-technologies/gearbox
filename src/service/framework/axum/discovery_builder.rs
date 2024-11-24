@@ -1,5 +1,5 @@
 use crate::net::ip_range::IpRanges;
-use crate::net::socket_bind_addr::SocketAddr;
+use crate::net::socket_addr::SocketAddr;
 use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::Discoverer;
 use crate::service::framework::axum::bindable::{Bindable, BindableError};

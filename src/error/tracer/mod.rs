@@ -3,7 +3,7 @@ pub mod error_macro;
 pub mod extended_info;
 // Local uses
 #[cfg(feature = "with_serde")]
-use crate::externs::serde::{
+use crate::prelude::serde::{
     de::{self, MapAccess, Visitor},
     derive,
     ser::{self, Error, SerializeStruct},

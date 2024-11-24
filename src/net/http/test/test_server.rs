@@ -1,4 +1,4 @@
-use crate::externs::serde::derive::*;
+use crate::prelude::serde::derive::*;
 use futures::{StreamExt, TryStreamExt};
 use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;

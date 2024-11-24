@@ -27,6 +27,9 @@ maintenance = { status = "actively-developed" }
 ## Default - None
 default = ["std"]
 
+## Prelude
+prelude-defaults = []
+
 ## Full - all features available
 full = ["collections-all", "common-all", "did-all", "error-all", "log-tracing-all", "net-all", "path-all", "rails-all", "service-all", "storage-all", "sync-all", "template-all", "time-all"]
 
@@ -100,11 +103,8 @@ common = ["std"]
 common-all = ["common-try-default"]
 common-try-default = ["common"]
 common-boxed-future = ["common"]
-common-ips = ["common", "if_addrs"]
 common-process = ["common"]
 common-merge = ["common"]
-common-socket-bind-addr = ["common", "std"]
-common-ip-range = ["common"]
 common-vec-ext = ["common"]
 
 did = ["std"]
@@ -134,11 +134,14 @@ log-tracing-macros-common = ["log-tracing-macros"]
 
 # Net
 net = ["std"]
-net-all = ["net", "net-endpoint-config", "net-hostname", "net-http", "net-ip", "net-signature", "net-http-dyno-request", "net-http-request", "net-http-request-chaining"]
+net-all = ["net", "net-endpoint-config", "net-hostname", "net-http", "net-ip", "net-signature", "net-http-dyno-request", "net-http-request", "net-http-request-chaining", "net-socket-addr", "net-ip-range", "net-ips", "net-ip"]
 net-endpoint-config = []
 net-hostname = ["net", "libc"]
 net-http = ["net"]
 net-ip = ["net", "if_addrs"]
+net-ips = ["net", "if_addrs"]
+net-socket-addr = ["net", "std"]
+net-ip-range = ["net"]
 net-signature = ["net", "base64", "bs58", "hashbrown", "dep_serde", "hmac", "sha2", "time"]
 net-http-dyno-request = ["net-http"]
 net-http-request = ["net-http", "url", "serde_json", "reqwest", "dep_serde", "error-tracer", "rails-ext", "hashbrown", "serde_derive", "spin", "bytes", "common-boxed-future"]
@@ -159,9 +162,9 @@ rails-tracing = ["rails"]
 # Services - Builders and more
 service = ["std"]
 service-all = ["service", "service-discovery", "service-discovery-loggers-impl", "service-framework-axum"]
-service-discovery = ["service", "with_json", "tokio", "dep_serde", "serde_derive", "time", "common-ips", "log-tracing-all", "bytes", "common-ip-range", "common-socket-bind-addr", "semver", "collections-const-hash-map"]
+service-discovery = ["service", "with_json", "tokio", "dep_serde", "serde_derive", "time", "net-ips", "log-tracing-all", "bytes", "net-ip-range", "net-socket-addr", "semver", "collections-const-hash-map"]
 service-discovery-loggers-impl = ["service-discovery"]
-service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "common-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge", "pnet", "regex"]
+service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "net-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge", "pnet", "regex", "net-socket-addr"]
 
 # Storage
 storage = ["std", "common-try-default", "error-tracer", "dep_serde", "rails-ext"]

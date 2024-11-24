@@ -1,7 +1,7 @@
 use super::{ReadArc, RelaxStrategy, RwArc, RwArcInner, Spin, WriteArc};
 #[cfg(feature = "with_serde")]
-use crate::externs::serde::{Deserialize, Serialize};
-use crate::externs::{
+use crate::prelude::serde::{Deserialize, Serialize};
+use crate::prelude::{
     cell::UnsafeCell,
     marker::PhantomData,
     ops::{Deref, DerefMut},
@@ -9,7 +9,7 @@ use crate::externs::{
 };
 #[cfg(target_arch = "wasm32")]
 use crate::{
-    externs::wasm_bindgen::{__rt::IntoJsResult, convert::*, describe::*, prelude::*},
+    prelude::wasm_bindgen::{__rt::IntoJsResult, convert::*, describe::*, prelude::*},
     serde::wasm_bindgen::to_value,
 };
 

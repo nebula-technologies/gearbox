@@ -1,5 +1,5 @@
 use super::{compare_exchange, RelaxStrategy, RwArcInner, Spin, READER, UPGRADED, WRITER};
-use crate::externs::{
+use crate::prelude::{
     fmt,
     mem::ManuallyDrop,
     ops::{Deref, DerefMut},

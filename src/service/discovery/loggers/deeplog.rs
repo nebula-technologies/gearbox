@@ -1,5 +1,5 @@
 use crate::log::tracing::entity::deeplog::DeepLog;
-use crate::net::socket_bind_addr::SocketAddr;
+use crate::net::socket_addr::SocketAddr;
 use crate::service::discovery::entity::Advertisement;
 use crate::service::discovery::service_discovery::{
     Broadcaster, Discoverer, ServiceDiscoveryTrait,

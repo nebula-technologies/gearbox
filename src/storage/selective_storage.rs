@@ -1,5 +1,5 @@
 use crate::common::TryDefault;
-use crate::externs::serde;
+use crate::prelude::serde;
 use crate::rails::ext::syn::RailsMapErrIntoBox;
 #[cfg(all(target_arch = "x86_64", feature = "std", feature = "storage-io"))]
 use crate::storage::io::file::error::Error as FileError;

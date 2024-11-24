@@ -1,4 +1,4 @@
-use crate::net::socket_bind_addr::SocketAddr;
+use crate::net::socket_addr::SocketAddr;
 
 pub struct Bindable<S> {
     bind: SocketAddr,
