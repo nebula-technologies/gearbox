@@ -1,6 +1,21 @@
 use crate::collections::HashMap;
+use crate::common::ArcFn;
+use crate::net::socket_addr::{SocketAddressTryWithBuilder, SocketAddrs};
+use crate::service::discovery::service_discovery::{
+    Broadcaster, Discoverer, ServiceDiscovery, ServiceDiscoveryState,
+};
+use crate::service::framework::axumv1::framework_manager::FrameworkManager;
 use crate::service::framework::axumv1::module::definition::ModuleDefinition;
 use crate::service::framework::axumv1::module::module::Module;
+use crate::service::framework::axumv1::probe::probe_result::ProbeResult;
+use crate::service::framework::axumv1::probe::status_response::StatusResponse;
+use crate::service::framework::axumv1::{RwStateController, StateController};
+use crate::{debug, error};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::routing::get;
+use axum::Router;
+use bytes::Bytes;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -26,6 +41,7 @@ impl ModuleManager {
         self.modules.insert(
             T::NAME.to_string(),
             Arc::new(Module {
+                pre_init: T::PRE_INIT,
                 pre_run: T::PRE_RUN,
                 post_run: T::POST_RUN,
                 name: T::NAME,
@@ -46,20 +62,31 @@ impl ModuleManager {
 
     pub(crate) fn setup_advertiser(
         &mut self,
-        service: &mut ServiceDiscovery<Arc<FrameworkState>, Bytes>,
-        config: &ServerFrameworkConfig,
+        service: &mut ServiceDiscovery<Arc<ServiceDiscoveryState>, Bytes>,
+        config: &FrameworkManager,
     ) -> &mut Self {
         for module in self.active_modules.clone() {
             if let Some(module) = self.modules.get(&module) {
                 let func = module.broadcast;
                 let func_output = func(config);
                 let func_len = func_output.len();
-                for t in func_output {
-                    if let Ok(bindable) = t.into_broadcaster::<Bytes>(None) {
-                        service.add_broadcaster(bindable.bind_owned(), bindable.into_data());
-                    } else {
-                        error!("Failed to add broadcaster for module: {}", module.name);
-                    }
+                for (bcast, addr) in func_output {
+                    let addr_fixed = addr
+                        .map(|t| {
+                            t.as_builder()
+                                .if_default_port(9999)
+                                .if_try_capture_ips()
+                                .build()
+                                .expect("Failed to build the socket addr")
+                        })
+                        .unwrap_or(
+                            SocketAddrs::with()
+                                .default_port(9999)
+                                .try_capture_ips()
+                                .build()
+                                .expect("Failed to build SocketAddrs"),
+                        );
+                    service.add_broadcaster(addr_fixed, bcast);
                 }
                 debug!(
                     "Added {} broadcasters for module: {}",
@@ -72,20 +99,31 @@ impl ModuleManager {
 
     pub(crate) fn setup_discoverer(
         &mut self,
-        service: &mut ServiceDiscovery<Arc<FrameworkState>, Bytes>,
-        config: &ServerFrameworkConfig,
+        service: &mut ServiceDiscovery<Arc<ServiceDiscoveryState>, Bytes>,
+        config: &FrameworkManager,
     ) -> &mut Self {
         for module in self.active_modules.clone() {
             if let Some(module) = self.modules.get(&module) {
                 let func = module.discovery;
                 let func_output = func(config);
                 let func_len = func_output.len();
-                for t in func_output {
-                    if let Ok(bindable) = t.into_discoverer() {
-                        service.add_discoverer(bindable.bind_owned(), bindable.into_data());
-                    } else {
-                        error!("Failed to add discoverer for module: {}", module.name);
-                    }
+                for (discover, addr) in func_output {
+                    let addr_fixed = addr
+                        .map(|t| {
+                            t.as_builder()
+                                .if_default_port(9999)
+                                .if_try_capture_ips()
+                                .build()
+                                .expect("Failed to build the socket addr")
+                        })
+                        .unwrap_or(
+                            SocketAddrs::with()
+                                .default_port(9999)
+                                .try_capture_ips()
+                                .build()
+                                .expect("Failed to build SocketAddrs"),
+                        );
+                    service.add_discoverer(addr_fixed, discover.clone());
                 }
                 debug!("Added {} discoverers for module: {}", func_len, module.name);
             };
@@ -135,7 +173,28 @@ impl ModuleManager {
         self
     }
 
-    pub(crate) fn setup_liveness_router(&self) -> Router<Arc<FrameworkState>> {
+    pub(crate) fn has_pre_init(&self) -> bool {
+        let mut avail_func = Vec::new();
+        for module in &self.active_modules.clone() {
+            self.modules.get(module).map(|t| {
+                let func = t.pre_init;
+                func().into_iter().for_each(|_| avail_func.push(()))
+            });
+        }
+        !avail_func.is_empty()
+    }
+
+    pub(crate) fn run_pre_init(&self) -> &Self {
+        for module in &self.active_modules.clone() {
+            self.modules.get(module).map(|t| {
+                let func = t.pre_init;
+                func().into_iter().for_each(|t| t())
+            });
+        }
+        self
+    }
+
+    pub(crate) fn setup_liveness_router(&self) -> Router<Arc<StateController>> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -147,7 +206,7 @@ impl ModuleManager {
         self.router_config("/health/liveness", probes)
     }
 
-    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<FrameworkState>> {
+    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<StateController>> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -159,7 +218,7 @@ impl ModuleManager {
         self.router_config("/health/readiness", probes)
     }
 
-    pub(crate) fn setup_module_routers(&self) -> Router<Arc<FrameworkState>> {
+    pub(crate) fn setup_module_routers(&self) -> Router<Arc<StateController>> {
         let mut router = Router::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -176,26 +235,26 @@ impl ModuleManager {
 
     pub(crate) fn setup_module_states(
         &self,
-        mut app_state: RwFrameworkState,
-    ) -> Arc<FrameworkState> {
+        mut app_state: RwStateController,
+    ) -> RwStateController {
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
                 (module.state)(&mut app_state);
             }
         }
 
-        Arc::new(FrameworkState::new(app_state.state))
+        app_state
     }
 
     fn router_config(
         &self,
         path: &str,
         probes: Vec<(String, Vec<ArcFn<(String, ProbeResult)>>)>,
-    ) -> Router<Arc<FrameworkState>> {
+    ) -> Router<Arc<StateController>> {
         let mut router = Router::new();
         router.route(
             path,
-            get(|State(state): State<Arc<FrameworkState>>| async move {
+            get(|State(state): State<Arc<StateController>>| async move {
                 let mut module_status_map = HashMap::new();
                 for (module_name, vec_func) in probes {
                     let mut module_status = Vec::new();

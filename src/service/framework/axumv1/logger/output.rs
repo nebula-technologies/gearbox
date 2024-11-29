@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum LogOutput {
     Full,
     Minimal,
@@ -18,5 +18,11 @@ impl LogOutput {
     }
     pub fn human(mut self) -> Self {
         Self::Human
+    }
+}
+
+impl Default for LogOutput {
+    fn default() -> Self {
+        Self::Default
     }
 }

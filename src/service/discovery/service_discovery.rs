@@ -1,11 +1,10 @@
 use super::entity::Advertisement;
 use crate::collections::const_hash_map::HashMap;
 use crate::net::ip_range::IpRanges;
-use crate::net::socket_addr::SocketAddr;
+use crate::net::socket_addr::{SocketAddr, SocketAddrs};
 use crate::prelude::spin::RwLock;
 use crate::rails::ext::blocking::TapResult;
 use crate::service::discovery::service_binding::ServiceBinding;
-use crate::service::framework::axum::FrameworkStateContainer;
 use crate::{debug, error};
 use bytes::Bytes;
 use core::fmt::{Debug, Formatter};
@@ -22,6 +21,10 @@ use std::u64;
 use tokio::net::UdpSocket;
 use tokio::time::sleep;
 
+pub static COMMON_SERVICE_DISCOVERY_STATE: RwLock<
+    HashMap<ServiceBinding, Service<ServiceDiscoveryState, Bytes>>,
+> = RwLock::new(HashMap::new());
+
 /// Service Discovery
 /// This is the manager that handles the 2 parts of a service discovery system:
 /// It also allows for management of the services, if they need to be handled by the Discovery Lock,
@@ -29,38 +32,37 @@ use tokio::time::sleep;
 /// ig you have a system that both listens for new service broadcasts and also is broadcasting services,
 /// this will allow us to pick up the specific service and post multiple and recieving multiple using
 /// existing broadcast and discovery systems.
-pub struct ServiceDiscovery<S, A>
+pub struct ServiceDiscovery<S, A, M>
 where
-    A: 'static + Send + Sync,
-    S: 'static + Send + Sync,
+    A: 'static + Send + Sync + Clone,
+    S: 'static + Send + Sync + Clone,
+    M: 'static + Send + Sync + ServiceManagerTrait<S, A>,
 
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
-    discovery_type: HashMap<ServiceBinding, Service<S, A>>,
     phantom_data: PhantomData<(S, A)>,
-    managed_state: Option<&'static RwLock<HashMap<ServiceBinding, Service<S, A>>>>,
+    managed_state: Option<Arc<M>>,
 }
 
-impl<S, A> ServiceDiscovery<S, A>
+impl<S, A, M> ServiceDiscovery<S, A, M>
 where
-    A: Send + Sync,
+    A: Send + Sync + Clone,
     S: Send + Sync + Clone,
+    M: 'static + Send + Sync + ServiceManagerTrait<S, A>,
 
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
     pub fn unmanaged() -> Self {
         ServiceDiscovery {
-            discovery_type: HashMap::new(),
             phantom_data: Default::default(),
             managed_state: None,
         }
     }
 
-    pub fn managed(state_ref: &'static RwLock<HashMap<ServiceBinding, Service<S, A>>>) -> Self {
+    pub fn managed<IM: Into<Arc<M>>>(state_ref: IM) -> Self {
         ServiceDiscovery {
-            discovery_type: HashMap::new(),
             phantom_data: Default::default(),
-            managed_state: Some(state_ref),
+            managed_state: Some(state_ref.into()),
         }
     }
 
@@ -89,16 +91,15 @@ where
         self
     }
 
-    pub fn add_broadcaster<T: Into<SocketAddr>>(
+    pub fn add_broadcaster<T: Into<SocketAddrs>>(
         &mut self,
-        bind: T,
+        binds: T,
         broadcaster: Broadcaster<A>,
     ) -> &mut Self {
-        let bind = bind.into();
-        if let Some(managed_state) = self.managed_state {
-            let mut writer = managed_state.write();
-            writer
-                .get_or_insert_with(
+        let binds = binds.into();
+        for bind in binds {
+            self.managed_state.as_ref().map(|t| {
+                t.get_or_insert_with(
                     (bind.ip_with_defaults(), bind.port_with_defaults()).into(),
                     || Service {
                         managed: true,
@@ -107,49 +108,34 @@ where
                         discovery_functions: vec![],
                     },
                 )
-                .add_broadcaster(broadcaster);
-        } else {
-            self.discovery_type
-                .get_or_insert_with(
+                .add_broadcaster(broadcaster.clone())
+            });
+        }
+        self
+    }
+
+    pub fn add_discoverer<T: Into<SocketAddrs>>(
+        &mut self,
+        binds: T,
+        discoverer: Discoverer<S, A>,
+    ) -> &mut Self {
+        let binds = binds.into();
+
+        for bind in binds {
+            self.managed_state.as_ref().map(|t| {
+                t.get_or_insert_with(
                     (bind.ip_with_defaults(), bind.port_with_defaults()).into(),
                     || Service {
-                        managed: false,
+                        managed: true,
                         bind: bind,
                         service_types: Vec::new(),
                         discovery_functions: vec![],
                     },
                 )
-                .add_broadcaster(broadcaster);
+                .add_discoverer(discoverer.clone())
+            });
         }
-        self
-    }
 
-    pub fn add_discoverer<T: Into<SocketAddr>>(
-        &mut self,
-        bind: T,
-        discoverer: Discoverer<S, A>,
-    ) -> &mut Self {
-        let bind = bind.into();
-        if let Some(managed_state) = self.managed_state {
-            let mut writer = managed_state.write();
-            writer
-                .get_or_insert_with((&bind).into(), || Service {
-                    managed: true,
-                    bind,
-                    service_types: Vec::new(),
-                    discovery_functions: vec![],
-                })
-                .add_discoverer(discoverer);
-        } else {
-            self.discovery_type
-                .get_or_insert_with((&bind).into(), || Service {
-                    managed: false,
-                    bind,
-                    service_types: Vec::new(),
-                    discovery_functions: vec![],
-                })
-                .add_discoverer(discoverer);
-        }
         self
     }
 
@@ -160,26 +146,16 @@ where
         T: Into<SocketAddr>,
     {
         let bind = bind.into();
-        if let Some(managed_state) = self.managed_state {
-            let mut writer = managed_state.write();
-            writer
-                .get_or_insert_with((&bind).into(), || Service {
-                    managed: true,
-                    bind,
-                    service_types: Vec::new(),
-                    discovery_functions: vec![],
-                })
-                .add_discovery_function(f);
-        } else {
-            self.discovery_type
-                .get_or_insert_with((&bind).into(), || Service {
-                    managed: false,
-                    bind,
-                    service_types: Vec::new(),
-                    discovery_functions: vec![],
-                })
-                .add_discovery_function(f);
-        }
+        self.managed_state.as_ref().map(|t| {
+            t.get_or_insert_with((&bind).into(), || Service {
+                managed: true,
+                bind,
+                service_types: Vec::new(),
+                discovery_functions: vec![],
+            })
+            .add_discovery_function(f)
+        });
+
         self
     }
 
@@ -187,10 +163,9 @@ where
         debug!("Starting service discovery...");
         let services = if let Some(managed_state) = self.managed_state {
             debug!("Service discovery system is managed...");
-            let mut writer = managed_state.write();
-            std::mem::take(&mut *writer)
+            managed_state.as_owned_services()
         } else {
-            std::mem::take(&mut self.discovery_type)
+            HashMap::new()
         };
 
         for (t, service) in services.into_iter() {
@@ -205,7 +180,7 @@ where
 
 pub struct Service<S, A>
 where
-    A: 'static + Send + Sync,
+    A: 'static + Send + Sync + Clone,
     S: 'static + Send + Sync,
 
     Broadcaster<A>: AdvertisementTransformer<A>,
@@ -220,7 +195,7 @@ where
 
 impl<S, A> Service<S, A>
 where
-    A: 'static + Send + Sync,
+    A: 'static + Send + Sync + Clone,
     S: 'static + Send + Sync,
 
     Broadcaster<A>: AdvertisementTransformer<A>,
@@ -358,6 +333,7 @@ where
 }
 pub enum ServiceDiscoveryType<S, A = Bytes>
 where
+    A: Clone,
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
     Broadcaster(Broadcaster<A>),
@@ -366,6 +342,7 @@ where
 
 impl<S, A> ServiceDiscoveryType<S, A>
 where
+    A: Clone,
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
     pub fn is_broadcaster(&self) -> bool {
@@ -390,7 +367,11 @@ where
     }
 }
 
-pub struct Broadcaster<A> {
+#[derive(Clone)]
+pub struct Broadcaster<A>
+where
+    A: Clone,
+{
     ip: Option<IpAddr>,
     port: Option<u16>,
     broadcast: Option<SocketAddr>,
@@ -400,7 +381,10 @@ pub struct Broadcaster<A> {
     advertisement: Option<A>,
 }
 
-impl<A> Broadcaster<A> {
+impl<A> Broadcaster<A>
+where
+    A: Clone,
+{
     pub fn new() -> Self {
         Broadcaster {
             ip: None,
@@ -510,7 +494,10 @@ impl<A> Broadcaster<A> {
     }
 }
 
-impl<A> Debug for Broadcaster<A> {
+impl<A> Debug for Broadcaster<A>
+where
+    A: Clone,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Broadcaster")
             .field("ip", &self.ip)
@@ -527,7 +514,10 @@ impl<A> Debug for Broadcaster<A> {
     }
 }
 
-impl<A: Into<Vec<u8>>> Default for Broadcaster<A> {
+impl<A: Into<Vec<u8>>> Default for Broadcaster<A>
+where
+    A: Clone,
+{
     fn default() -> Self {
         Self::new()
     }
@@ -535,6 +525,7 @@ impl<A: Into<Vec<u8>>> Default for Broadcaster<A> {
 
 pub trait AdvertisementTransformer<A>
 where
+    A: Clone,
     Self: Sized,
 {
     fn with_advertisement(self, a: Option<A>) -> Self;
@@ -589,15 +580,16 @@ impl AdvertisementTransformer<Bytes> for Broadcaster<Bytes> {
     }
 }
 
+#[derive(Clone)]
 pub struct Discoverer<S, A> {
     ip: IpRanges,
     service_name: Option<String>,
     version: Option<String>,
     interval: Option<u64>,
     advert: Option<A>,
-    validator: Option<Box<dyn Fn(&Arc<Bytes>) -> Result<(), DiscovererError> + Send + Sync>>,
+    validator: Option<Arc<dyn Fn(&Arc<Bytes>) -> Result<(), DiscovererError> + Send + Sync>>,
     processor: Vec<
-        Box<
+        Arc<
             dyn Fn(
                     Arc<Bytes>,
                     Option<&S>,
@@ -661,7 +653,7 @@ impl<S, A> Discoverer<S, A> {
         mut self,
         validator: O,
     ) -> Self {
-        self.validator = Some(Box::new(validator));
+        self.validator = Some(Arc::new(validator));
         self
     }
 
@@ -671,7 +663,7 @@ impl<S, A> Discoverer<S, A> {
         &mut self,
         validator: O,
     ) -> &mut Self {
-        self.validator = Some(Box::new(validator));
+        self.validator = Some(Arc::new(validator));
         self
     }
 }
@@ -687,7 +679,7 @@ where
             + Sync
             + 'static,
     {
-        self.processor.push(Box::new(f));
+        self.processor.push(Arc::new(f));
         self
     }
 }
@@ -765,7 +757,7 @@ impl<S, A> DiscovererAdvertCapture<Advertisement> for Discoverer<S, A> {
     }
 }
 
-pub trait ServiceDiscoveryTrait<S, A> {
+pub trait ServiceDiscoveryTrait<S, A: Clone> {
     fn broadcasters() -> Vec<Broadcaster<A>> {
         Vec::new()
     }
@@ -860,6 +852,22 @@ impl ServiceDiscoveryStateTrait for ServiceDiscoveryState {
             })
             .unwrap_or_default()
     }
+}
+
+pub trait ServiceManagerTrait<S, A>
+where
+    A: Clone + Send + Sync,
+    S: Clone + Send + Sync,
+    Broadcaster<A>: AdvertisementTransformer<A>,
+{
+    fn add_service(&self, service: Service<S, A>) -> &mut Self;
+    fn remove_service(&self, service: Service<S, A>) -> &mut Self;
+
+    fn get_or_insert_with<F>(&self, k: ServiceBinding, default: F) -> &mut Service<S, A>
+    where
+        F: FnOnce() -> Service<S, A>;
+    fn list_services(&self) -> Vec<&Service<S, A>>;
+    fn as_owned_services(&self) -> HashMap<ServiceBinding, Service<S, A>>;
 }
 
 #[cfg(test)]

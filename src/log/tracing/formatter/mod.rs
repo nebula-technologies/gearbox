@@ -1,3 +1,10 @@
+#[cfg(feature = "log-tracing-bunyan")]
+pub mod bunyan;
+#[cfg(feature = "log-tracing-deeplog")]
+pub mod deeplog;
+#[cfg(feature = "log-tracing-syslog")]
+pub mod syslog;
+
 use crate::log::tracing::layer::log_layer::LogEmitter;
 use crate::log::tracing::layer::{LogLayer, Storage, Type};
 use crate::prelude::sync::Arc;
@@ -8,11 +15,11 @@ use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::registry::SpanRef;
 
 #[cfg(feature = "log-tracing-bunyan")]
-pub mod bunyan;
+pub use bunyan::Bunyan;
 #[cfg(feature = "log-tracing-deeplog")]
-pub mod deeplog;
+pub use deeplog::DeepLogFormatter;
 #[cfg(feature = "log-tracing-syslog")]
-pub mod syslog;
+pub use syslog::Syslog;
 
 pub trait LogFormatter {
     fn log_layer_defaults<W: for<'a> MakeWriter<'a> + 'static, F: LogFormatter + Default>(

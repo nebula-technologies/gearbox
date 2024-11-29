@@ -2,7 +2,8 @@ use crate::rails::ext::blocking::Tap;
 use alloc::vec::Vec;
 use if_addrs::get_if_addrs;
 use std::io::Error;
-use std::net::IpAddr;
+pub use std::net::IpAddr;
+use std::ops::{Deref, DerefMut};
 
 pub struct IpAddrs(Vec<IpAddr>);
 
@@ -52,5 +53,28 @@ impl IpAddrs {
 impl From<Vec<IpAddr>> for IpAddrs {
     fn from(ips: Vec<IpAddr>) -> Self {
         IpAddrs(ips)
+    }
+}
+
+impl Deref for IpAddrs {
+    type Target = Vec<IpAddr>;
+
+    fn deref(&self) -> &Vec<IpAddr> {
+        &self.0
+    }
+}
+
+impl DerefMut for IpAddrs {
+    fn deref_mut(&mut self) -> &mut Vec<IpAddr> {
+        &mut self.0
+    }
+}
+
+impl IntoIterator for IpAddrs {
+    type Item = IpAddr;
+    type IntoIter = std::vec::IntoIter<IpAddr>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }

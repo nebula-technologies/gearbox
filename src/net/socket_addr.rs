@@ -1,10 +1,12 @@
+use crate::net::ip::IpAddrs;
 use crate::prelude::collections::HashSet;
-use crate::rails::ext::blocking::Tap;
+use crate::rails::ext::blocking::{Merge, Tap};
 use core::fmt::{Display, Formatter};
 #[cfg(feature = "regex")]
 use regex::Regex;
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr, ToSocketAddrs};
+use std::ops::Deref;
 
 // Struct representing a single IP address and port binding
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -318,6 +320,7 @@ impl From<SocketAddr> for SocketAddrs {
         SocketAddrs {
             bind_addr: Some(set),
             default_bind_addr: None,
+            default_port: None,
         }
     }
 }
@@ -389,13 +392,26 @@ impl From<(IpAddr, usize)> for SocketAddr {
 }
 
 // Struct representing multiple IP address and port bindings
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct SocketAddrs {
     pub bind_addr: Option<HashSet<SocketAddr>>,
     pub default_bind_addr: Option<HashSet<SocketAddr>>,
+    pub default_port: Option<u16>,
 }
 
 impl SocketAddrs {
+    pub fn with() -> SocketAddrsWithBuilder {
+        SocketAddrsWithBuilder::default()
+    }
+
+    pub fn as_builder(self) -> SocketAddrsWithBuilder {
+        SocketAddrsWithBuilder {
+            bind_addr: self.bind_addr,
+            default_bind_addr: self.default_bind_addr,
+            default_port: self.default_port,
+        }
+    }
+
     pub fn add_bind_ipv4_port(&mut self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) {
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(o1, o2, o3, o4)), port);
         self.add_bind_addr(addr);
@@ -447,6 +463,18 @@ impl SocketAddrs {
         }
     }
 
+    pub fn with_default_port(mut self, port: u16) -> Self {
+        self.default_port = Some(port);
+        self
+    }
+
+    pub fn with_default_port_if_none(mut self, port: u16) -> Self {
+        if self.default_port.is_none() {
+            self.default_port = Some(port);
+        }
+        self
+    }
+
     /// Creates a `SocketBindAddrs` with a single default address.
     pub fn with_default() -> Self {
         let default_addr = SocketAddr::default_addr();
@@ -455,14 +483,63 @@ impl SocketAddrs {
         SocketAddrs {
             bind_addr: None,
             default_bind_addr: Some(set),
+            default_port: None,
         }
     }
 
     /// Merges bind addresses with default bind addresses.
     /// Defaults are added only if no primary bind addresses are provided.
-    pub fn merge_defaults(&mut self) {
+    pub fn merged_defaults(&mut self) -> Vec<SocketAddr> {
         if self.bind_addr.is_none() {
             self.bind_addr = self.default_bind_addr.take();
+        }
+        self.bind_addr
+            .clone()
+            .unwrap_or(HashSet::new())
+            .into_iter()
+            .collect::<Vec<SocketAddr>>()
+    }
+}
+
+impl IntoIterator for SocketAddrs {
+    type Item = SocketAddr;
+    type IntoIter = crate::prelude::vec::Iter<Self::Item>;
+
+    fn into_iter(mut self) -> Self::IntoIter {
+        self.merged_defaults().into_iter()
+    }
+}
+trait TryWithSocketAddrs<T> {
+    type Error;
+    fn try_with_capture_ips(self) -> Result<T, Self::Error>;
+    fn try_with_capture_ips_if_none(self) -> Result<T, Self::Error>;
+}
+
+impl TryWithSocketAddrs<SocketAddrs> for SocketAddrs {
+    type Error = SocketAddrsError;
+    fn try_with_capture_ips(mut self) -> Result<Self, Self::Error> {
+        self.default_port
+            .ok_or(SocketAddrsError::FailedToCaptureIp(
+                "No default port".to_string(),
+            ))
+            .merge(
+                IpAddrs::new()
+                    .try_with_capture_ips()
+                    .map_err(|e| SocketAddrsError::FailedToCaptureIp(format!("{:?}", e))),
+                |port, ips| {
+                    for ip in ips.into_iter() {
+                        self.add_bind_ipaddr_port(ip, port);
+                    }
+                    Ok(self)
+                },
+            )
+    }
+
+    fn try_with_capture_ips_if_none(mut self) -> Result<Self, Self::Error> {
+        if self.bind_addr.is_none() {
+            self.try_with_capture_ips()
+        } else {
+            Ok(self)
         }
     }
 }
@@ -495,6 +572,381 @@ impl From<SocketAddrs> for Vec<SocketAddr> {
             addrs.iter().cloned().collect()
         } else {
             Vec::new()
+        }
+    }
+}
+
+impl From<(IpAddr, u16)> for SocketAddrs {
+    fn from((ip, port): (IpAddr, u16)) -> Self {
+        Self::from((&ip, &port))
+    }
+}
+impl From<(&IpAddr, &u16)> for SocketAddrs {
+    fn from(sock: (&IpAddr, &u16)) -> Self {
+        let mut set = HashSet::new();
+        set.insert(sock.into());
+        SocketAddrs {
+            bind_addr: Some(set),
+            default_bind_addr: None,
+            default_port: None,
+        }
+    }
+}
+impl From<(&IpAddr, &usize)> for SocketAddrs {
+    fn from(sock: (&IpAddr, &usize)) -> Self {
+        let mut set = HashSet::new();
+        set.insert(sock.into());
+        SocketAddrs {
+            bind_addr: Some(set),
+            default_bind_addr: None,
+            default_port: None,
+        }
+    }
+}
+impl From<(IpAddr, usize)> for SocketAddrs {
+    fn from(sock: (IpAddr, usize)) -> Self {
+        let mut set = HashSet::new();
+        set.insert(sock.into());
+        SocketAddrs {
+            bind_addr: Some(set),
+            default_bind_addr: None,
+            default_port: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SocketAddrsWithBuilder {
+    bind_addr: Option<HashSet<SocketAddr>>,
+    default_bind_addr: Option<HashSet<SocketAddr>>,
+    default_port: Option<u16>,
+}
+
+impl SocketAddrsWithBuilder {}
+
+pub trait SocketAddressTryWithBuilder<T> {
+    type Error;
+
+    fn ipv4_port(self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) -> Self;
+
+    fn ipv6_port(
+        self,
+        o1: u16,
+        o2: u16,
+        o3: u16,
+        o4: u16,
+        o5: u16,
+        o6: u16,
+        o7: u16,
+        o8: u16,
+        port: u16,
+    ) -> Self;
+
+    fn ipaddr_port(self, ip: IpAddr, port: u16) -> Self;
+
+    fn addr(self, addr: SocketAddr) -> Self;
+
+    fn default_addr(self, addr: SocketAddr) -> Self;
+
+    fn with_default_ipv4(self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) -> Self;
+
+    fn with_default_ipv6(
+        self,
+        o1: u16,
+        o2: u16,
+        o3: u16,
+        o4: u16,
+        o5: u16,
+        o6: u16,
+        o7: u16,
+        o8: u16,
+        port: u16,
+    ) -> Self;
+
+    fn default_port(self, port: u16) -> Self;
+
+    fn if_default_port(self, port: u16) -> Self;
+    fn try_capture_ips(self) -> Result<T, Self::Error>;
+    fn if_try_capture_ips(self) -> Result<SocketAddrsWithBuilder, Self::Error>;
+    fn try_capture_broadcast(self) -> Result<T, Self::Error>;
+    fn if_try_capture_broadcast(self) -> Result<SocketAddrsWithBuilder, Self::Error>;
+    fn build(self) -> Result<SocketAddrs, Self::Error>;
+}
+
+impl SocketAddressTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilder {
+    type Error = SocketAddrsError;
+
+    fn ipv4_port(mut self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) -> Self {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(o1, o2, o3, o4)), port);
+        self.addr(addr)
+    }
+
+    fn ipv6_port(
+        mut self,
+        o1: u16,
+        o2: u16,
+        o3: u16,
+        o4: u16,
+        o5: u16,
+        o6: u16,
+        o7: u16,
+        o8: u16,
+        port: u16,
+    ) -> Self {
+        let addr = SocketAddr::new(
+            IpAddr::V6(Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8)),
+            port,
+        );
+        self.addr(addr)
+    }
+
+    fn ipaddr_port(mut self, ip: IpAddr, port: u16) -> Self {
+        let addr = SocketAddr::new(ip, port);
+        self.addr(addr)
+    }
+
+    fn addr(mut self, addr: SocketAddr) -> Self {
+        if let Some(ref mut bind_addrs) = self.bind_addr {
+            bind_addrs.insert(addr);
+        } else {
+            let mut set = HashSet::new();
+            set.insert(addr);
+            self.bind_addr = Some(set);
+        }
+        self
+    }
+
+    fn default_addr(mut self, addr: SocketAddr) -> Self {
+        if let Some(ref mut default_bind_addrs) = self.default_bind_addr {
+            default_bind_addrs.insert(addr);
+        } else {
+            let mut set = HashSet::new();
+            set.insert(addr);
+            self.default_bind_addr = Some(set);
+        }
+        self
+    }
+
+    fn with_default_ipv4(mut self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) -> Self {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(o1, o2, o3, o4)), port);
+        self.default_addr(addr)
+    }
+
+    fn with_default_ipv6(
+        mut self,
+        o1: u16,
+        o2: u16,
+        o3: u16,
+        o4: u16,
+        o5: u16,
+        o6: u16,
+        o7: u16,
+        o8: u16,
+        port: u16,
+    ) -> Self {
+        let addr = SocketAddr::new(
+            IpAddr::V6(Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8)),
+            port,
+        );
+        self.default_addr(addr)
+    }
+
+    fn default_port(mut self, port: u16) -> Self {
+        self.default_port = Some(port);
+        self
+    }
+
+    fn if_default_port(mut self, port: u16) -> Self {
+        if self.default_port.is_none() {
+            self.default_port = Some(port);
+        }
+        self
+    }
+    fn try_capture_ips(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.default_port
+            .ok_or(SocketAddrsError::FailedToCaptureIp(
+                "No default port".to_string(),
+            ))
+            .merge(
+                IpAddrs::new()
+                    .try_with_capture_ips()
+                    .map_err(|e| SocketAddrsError::FailedToCaptureIp(format!("{:?}", e))),
+                |port, ips| {
+                    for ip in ips.into_iter() {
+                        self.bind_addr
+                            .get_or_insert(HashSet::new())
+                            .insert(SocketAddr::new(ip, port));
+                    }
+                    Ok(self)
+                },
+            )
+    }
+    fn if_try_capture_ips(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        if self.bind_addr.is_none() {
+            self.try_capture_ips()
+        } else {
+            Ok(self)
+        }
+    }
+
+    fn try_capture_broadcast(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.default_port
+            .ok_or(SocketAddrsError::FailedToCaptureIp(
+                "No default port".to_string(),
+            ))
+            .merge(
+                IpAddrs::new()
+                    .try_with_capture_broadcast()
+                    .map_err(|e| SocketAddrsError::FailedToCaptureIp(format!("{:?}", e))),
+                |port, ips| {
+                    for ip in ips.into_iter() {
+                        self.bind_addr
+                            .get_or_insert(HashSet::new())
+                            .insert(SocketAddr::new(ip, port));
+                    }
+                    Ok(self)
+                },
+            )
+    }
+    fn if_try_capture_broadcast(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        if self.bind_addr.is_none() {
+            self.try_capture_broadcast()
+        } else {
+            Ok(self)
+        }
+    }
+    fn build(self) -> Result<SocketAddrs, Self::Error> {
+        // In this implementation, `build` is infallible because the configuration is
+        // intentionally flexible and doesn't enforce constraints on the presence of addresses.
+        Ok(SocketAddrs {
+            bind_addr: self.bind_addr,
+            default_bind_addr: self.default_bind_addr,
+            default_port: self.default_port,
+        })
+    }
+}
+
+impl SocketAddressTryWithBuilder<SocketAddrsWithBuilder>
+    for Result<SocketAddrsWithBuilder, SocketAddrsError>
+{
+    type Error = SocketAddrsError;
+
+    fn ipv4_port(
+        self,
+        o1: u8,
+        o2: u8,
+        o3: u8,
+        o4: u8,
+        port: u16,
+    ) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.ipv4_port(o1, o2, o3, o4, port))
+    }
+
+    fn ipv6_port(
+        self,
+        o1: u16,
+        o2: u16,
+        o3: u16,
+        o4: u16,
+        o5: u16,
+        o6: u16,
+        o7: u16,
+        o8: u16,
+        port: u16,
+    ) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.ipv6_port(o1, o2, o3, o4, o5, o6, o7, o8, port))
+    }
+
+    fn ipaddr_port(self, ip: IpAddr, port: u16) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.ipaddr_port(ip, port))
+    }
+
+    fn addr(self, addr: SocketAddr) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.addr(addr))
+    }
+
+    fn default_addr(self, addr: SocketAddr) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.default_addr(addr))
+    }
+
+    fn with_default_ipv4(
+        self,
+        o1: u8,
+        o2: u8,
+        o3: u8,
+        o4: u8,
+        port: u16,
+    ) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.with_default_ipv4(o1, o2, o3, o4, port))
+    }
+
+    fn with_default_ipv6(
+        self,
+        o1: u16,
+        o2: u16,
+        o3: u16,
+        o4: u16,
+        o5: u16,
+        o6: u16,
+        o7: u16,
+        o8: u16,
+        port: u16,
+    ) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.with_default_ipv6(o1, o2, o3, o4, o5, o6, o7, o8, port))
+    }
+
+    fn default_port(self, port: u16) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.default_port(port))
+    }
+
+    fn if_default_port(self, port: u16) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.map(|t| t.if_default_port(port))
+    }
+    fn try_capture_ips(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.and_then(|t| t.try_capture_ips())
+    }
+
+    fn if_try_capture_ips(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.and_then(|t| t.if_try_capture_ips())
+    }
+
+    fn try_capture_broadcast(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.and_then(|t| t.try_capture_broadcast())
+    }
+
+    fn if_try_capture_broadcast(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.and_then(|t| t.if_try_capture_broadcast())
+    }
+
+    fn build(self) -> Result<SocketAddrs, Self::Error> {
+        // In this implementation, `build` is infallible because the configuration is
+        // intentionally flexible and doesn't enforce constraints on the presence of addresses.
+        self.and_then(|t| t.build())
+    }
+}
+
+#[derive(Debug)]
+pub enum SocketAddrsError {
+    /// Failed to capture IP addresses with additional context
+    FailedToCaptureIp(String),
+    /// Missing bind addresses in the SocketAddrs configuration
+    MissingBindAddresses,
+    /// Failed to determine broadcast addresses
+    FailedToDetermineBroadcast(String),
+}
+
+impl std::fmt::Display for SocketAddrsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SocketAddrsError::FailedToCaptureIp(reason) => {
+                write!(f, "Failed to capture IP addresses: {}", reason)
+            }
+            SocketAddrsError::MissingBindAddresses => {
+                write!(f, "No bind addresses provided in the configuration")
+            }
+            SocketAddrsError::FailedToDetermineBroadcast(reason) => {
+                write!(f, "Failed to determine broadcast addresses: {}", reason)
+            }
         }
     }
 }
@@ -573,7 +1025,7 @@ mod tests {
     #[test]
     fn test_socket_bind_addrs_merge_defaults() {
         let mut bind_addrs = SocketAddrs::with_default();
-        bind_addrs.merge_defaults();
+        bind_addrs.merged_defaults();
         assert!(bind_addrs.bind_addr.is_some());
     }
 
