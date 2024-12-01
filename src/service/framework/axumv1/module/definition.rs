@@ -5,7 +5,7 @@ use crate::service::discovery::service_discovery::{
 };
 use crate::service::framework::axumv1::framework_manager::FrameworkManager;
 use crate::service::framework::axumv1::probe::probe_result::ProbeResult;
-use crate::service::framework::axumv1::state::controller::StateController;
+use crate::service::framework::axumv1::state::controller::CommonStateController;
 use crate::service::framework::axumv1::state::rw_controller::RwStateController;
 use crate::service::framework::axumv1::FrameworkConfig;
 use axum::Router;
@@ -18,7 +18,7 @@ pub trait ModuleDefinition {
     const NAME: &'static str;
 
     /// The router for the module
-    const ROUTER: fn() -> Router<Arc<StateController>> = || Router::new();
+    const ROUTER: fn() -> Router<Arc<CommonStateController>> = || Router::new();
     const NESTED: Option<&'static str> = None;
 
     /// The broadcaster for the module
@@ -30,7 +30,7 @@ pub trait ModuleDefinition {
         Discoverer<Arc<ServiceDiscoveryState>, Bytes>,
         Option<SocketAddrs>,
     )> = |_| Vec::new();
-    const DISCOVERY_CAPTURE: Option<fn(Arc<StateController>, &Bytes)> = None;
+    const DISCOVERY_CAPTURE: Option<fn(Arc<CommonStateController>, &Bytes)> = None;
 
     const STATES: fn(&mut RwStateController) = |_| {};
 

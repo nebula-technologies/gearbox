@@ -10,8 +10,8 @@ pub mod server_framework_config;
 pub mod state;
 pub mod status;
 
+pub mod state_controller;
+
 pub use self::{
-    server_builder::ServerBuilder,
-    server_framework_config::FrameworkConfig,
-    state::{RwStateController, StateController},
+    server_builder::ServerBuilder, server_framework_config::FrameworkConfig, state_controller::*,
 };

@@ -5,8 +5,11 @@ use core::fmt::{Display, Formatter};
 #[cfg(feature = "regex")]
 use regex::Regex;
 use std::io;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr, ToSocketAddrs};
+use std::net::{
+    IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr, ToSocketAddrs as StdToSocketAddrs,
+};
 use std::ops::Deref;
+use tokio::net::ToSocketAddrs as TokioToSocketAddrs;
 
 // Struct representing a single IP address and port binding
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -289,7 +292,7 @@ impl Display for SocketAddr {
     }
 }
 
-impl ToSocketAddrs for SocketAddr {
+impl StdToSocketAddrs for SocketAddr {
     type Iter = std::vec::IntoIter<StdSocketAddr>;
 
     fn to_socket_addrs(&self) -> io::Result<Self::Iter> {
@@ -544,7 +547,7 @@ impl TryWithSocketAddrs<SocketAddrs> for SocketAddrs {
     }
 }
 
-impl ToSocketAddrs for SocketAddrs {
+impl StdToSocketAddrs for SocketAddrs {
     type Iter = std::vec::IntoIter<StdSocketAddr>;
 
     fn to_socket_addrs(&self) -> io::Result<Self::Iter> {

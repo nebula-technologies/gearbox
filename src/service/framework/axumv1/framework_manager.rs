@@ -2,12 +2,18 @@ use crate::prelude::sync::Arc;
 use crate::service::framework::axumv1::{FrameworkConfig, StateController};
 
 #[derive(Debug, Clone)]
-pub struct FrameworkManager {
+pub struct FrameworkManager<S>
+where
+    S: StateController,
+{
     config: FrameworkConfig,
-    state: Arc<StateController>,
+    state: S,
 }
 
-impl FrameworkManager {
+impl<S> FrameworkManager<S>
+where
+    S: StateController,
+{
     pub fn config(&self) -> &FrameworkConfig {
         &self.config
     }
@@ -16,20 +22,27 @@ impl FrameworkManager {
         &mut self.config
     }
 
-    pub fn state(&self) -> &StateController {
+    pub fn state(&self) -> &S {
         &self.state
     }
 
-    pub fn set_state(&mut self, state: StateController) {
-        self.state = Arc::new(state);
+    pub fn state_mut(&mut self) -> &mut S {
+        &mut self.state
+    }
+
+    pub fn set_state(&mut self, state: S) {
+        self.state = state;
     }
 }
 
-impl Default for FrameworkManager {
+impl<S> Default for FrameworkManager<S>
+where
+    S: StateController,
+{
     fn default() -> Self {
         FrameworkManager {
             config: FrameworkConfig::default(),
-            state: Arc::new(StateController::default()),
+            state: S::default(),
         }
     }
 }

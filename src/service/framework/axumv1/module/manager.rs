@@ -194,7 +194,7 @@ impl ModuleManager {
         self
     }
 
-    pub(crate) fn setup_liveness_router(&self) -> Router<Arc<StateController>> {
+    pub(crate) fn setup_liveness_router<S>(&self) -> Router<Arc<S>> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -206,7 +206,7 @@ impl ModuleManager {
         self.router_config("/health/liveness", probes)
     }
 
-    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<StateController>> {
+    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<dyn StateController>> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -218,7 +218,7 @@ impl ModuleManager {
         self.router_config("/health/readiness", probes)
     }
 
-    pub(crate) fn setup_module_routers(&self) -> Router<Arc<StateController>> {
+    pub(crate) fn setup_module_routers(&self) -> Router<Arc<dyn StateController>> {
         let mut router = Router::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -246,11 +246,11 @@ impl ModuleManager {
         app_state
     }
 
-    fn router_config(
+    fn router_config<S>(
         &self,
         path: &str,
         probes: Vec<(String, Vec<ArcFn<(String, ProbeResult)>>)>,
-    ) -> Router<Arc<StateController>> {
+    ) -> Router<Arc<S>> {
         let mut router = Router::new();
         router.route(
             path,

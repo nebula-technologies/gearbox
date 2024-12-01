@@ -1,63 +1,58 @@
-use crate::collections::const_hash_map::HashMap;
-use crate::collections::ConstHashMap;
-use crate::log::tracing::layer::{Storage, Type};
 use crate::net::socket_addr::{SocketAddr, SocketAddrs};
-use crate::prelude::tracing::Subscriber;
 use crate::rails::ext::blocking::TapResult;
-use crate::service::discovery::service_binding::ServiceBinding;
-use crate::service::discovery::service_discovery::{
-    Broadcaster, Discoverer, Service, ServiceDiscovery, ServiceDiscoveryState,
-    COMMON_SERVICE_DISCOVERY_STATE,
+use crate::service::discovery::service_discovery::{ServiceDiscovery, ServiceDiscoveryState};
+use crate::service::framework::axumv1::state_controller::StateController;
+use crate::service::framework::axumv1::{
+    builders::{spin_h2c_server, spin_http1_server},
+    framework_manager::FrameworkManager,
+    logger::LogOutput,
+    module::definition::ModuleDefinition,
+    module::manager::ModuleManager,
+    state::rw_controller::RwStateController,
+    state::CommonStateContainer,
 };
-use crate::service::framework::axumv1::builders::{spin_h2c_server, spin_http1_server};
-use crate::service::framework::axumv1::framework_manager::FrameworkManager;
-use crate::service::framework::axumv1::logger::LogOutput;
-use crate::service::framework::axumv1::module::definition::ModuleDefinition;
-use crate::service::framework::axumv1::module::manager::ModuleManager;
-use crate::service::framework::axumv1::state::rw_controller::RwStateController;
-use crate::service::framework::axumv1::state::CommonStateContainer;
-use crate::service::framework::axumv1::{FrameworkConfig, StateController};
 use crate::{debug, error, info};
-use axum::handler::Handler;
 use axum::Router;
 use bytes::Bytes;
-use hyper::server::conn::{http1, http2};
-use spin::rwlock::RwLock;
-use std::future::Future;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr};
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::net::SocketAddr as StdSocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::{signal, task};
+use tokio::task;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
-use tracing::{event, Level};
 
-pub struct ServerBuilder {
+pub struct ServerBuilder<S>
+where
+    S: StateController,
+{
     modules: ModuleManager,
-    manager: FrameworkManager,
-    rw_state: RwStateController,
+    manager: FrameworkManager<S>,
     discovery: ServiceDiscovery<Arc<ServiceDiscoveryState>, Bytes>,
 }
 
-impl Default for ServerBuilder {
+impl<S> Default for ServerBuilder<S>
+where
+    S: StateController,
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ServerBuilder {
+impl<S> ServerBuilder<S>
+where
+    S: StateController,
+{
     pub fn new() -> Self {
         let router = Router::new();
         let discovery_state = ServiceDiscoveryState::default();
-        let mut state_controller = RwStateController::default();
-        state_controller.add(discovery_state);
+        let mut state_controller = S::default();
+        state_controller.set(discovery_state);
         let arc_discovery: Arc<ServiceDiscoveryState> = state_controller.get().unwrap();
 
         Self {
             modules: ModuleManager::default(),
             manager: FrameworkManager::default(),
-            rw_state: state_controller,
             discovery: ServiceDiscovery::managed(arc_discovery),
         }
     }
@@ -139,15 +134,15 @@ impl ServerBuilder {
     where
         T: Default + Send + Sync + 'static,
     {
-        self.rw_state.add_default::<T>();
+        self.manager.state_mut().set(T::default());
         self
     }
 
-    pub fn add_state_object<T>(mut self, o: T) -> Self
+    pub fn add_state_object<T>(mut self, t: T) -> Self
     where
         T: Send + Sync + 'static,
     {
-        self.rw_state.add::<T>(o);
+        self.manager.state_mut().set(t);
         self
     }
 
@@ -166,7 +161,7 @@ impl ServerBuilder {
     //     self
     // }
 
-    fn build_inner<S: CommonStateContainer>(mut self, start_server: bool, state_manager: S) {
+    fn build_inner(mut self, start_server: bool) {
         // let num_subtasks = self.sub_tasks.len();
         let body = async {
             debug!("Module Pre-Init");
@@ -174,7 +169,7 @@ impl ServerBuilder {
 
             debug!("Creating app");
             debug!("Initializing FrameworkState");
-            let framework_state = self.modules.setup_module_states(self.rw_state);
+            let framework_state = self.modules.setup_module_states(self.manager.state_mut());
 
             debug!("Building framework state");
             let mut framework_manager = Arc::new(self.manager.clone());
@@ -192,7 +187,7 @@ impl ServerBuilder {
             let router_with_state = Router::new();
 
             debug!("Initializing Merger Router");
-            let mut router = Router::new();
+            let mut router: Router<()> = Router::new();
 
             debug!("Adding liveness and readiness routers");
             router = router
@@ -208,15 +203,14 @@ impl ServerBuilder {
             }
 
             debug!("Building App router with State");
-            let app = self
-                .router
+            let app = Router::new()
                 .merge(router)
                 .with_state(framework_state.clone());
 
             debug!("Merging routers into base router");
             let mut app_with_state = router_with_state.merge(app);
 
-            if self.trace_layer {
+            if self.manager.config().trace_layer {
                 debug!("Adding Trace and Timeout Layers");
                 app_with_state = app_with_state.layer((
                     TraceLayer::new_for_http(),
@@ -227,9 +221,9 @@ impl ServerBuilder {
             }
 
             debug!("Spawning subtasks");
-            for i in self.sub_tasks {
-                task::spawn(i);
-            }
+            // for i in self.sub_tasks {
+            //     task::spawn(i);
+            // }
 
             debug!("Running module pre-run tasks");
             if self.modules.has_pre_run() {
@@ -237,13 +231,13 @@ impl ServerBuilder {
             }
 
             debug!("Setting up listener socket address");
-            let socket_addr: StdSocketAddr = SocketAddr::new(self.address, self.port).into();
-            let listener = tokio::net::TcpListener::bind(socket_addr)
+            let listener = tokio::net::TcpListener::bind(&self.manager.config().socket)
                 .await
                 .tap_err(|e| {
                     error!(
                         "Failed to bind to the expected socket address: {} with the error {}",
-                        socket_addr, e
+                        self.manager.config().socket,
+                        e
                     )
                 })
                 .unwrap();

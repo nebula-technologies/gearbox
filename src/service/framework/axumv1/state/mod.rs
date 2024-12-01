@@ -4,7 +4,7 @@ pub mod rw_controller;
 use std::any::Any;
 use std::sync::Arc;
 
-pub use controller::StateController;
+pub use controller::CommonStateController;
 pub use rw_controller::RwStateController;
 
 pub trait CommonStateContainer: Clone + Send + Sync {
