@@ -189,7 +189,7 @@ where
     pub bind: SocketAddr,
     pub service_types: Vec<ServiceDiscoveryType<S, A>>,
     pub discovery_functions: Vec<
-        Box<dyn Fn(&Arc<Bytes>) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>,
+        Arc<dyn Fn(&Arc<Bytes>) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>,
     >,
 }
 
@@ -228,7 +228,7 @@ where
         Fut: Future<Output = ()> + Send + Sync + 'static,
     {
         self.discovery_functions
-            .push(Box::new(move |bytes| Box::pin(f(bytes))));
+            .push(Arc::new(move |bytes| Box::pin(f(bytes))));
         self
     }
 
@@ -860,14 +860,43 @@ where
     S: Clone + Send + Sync,
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
-    fn add_service(&self, service: Service<S, A>) -> &mut Self;
-    fn remove_service(&self, service: Service<S, A>) -> &mut Self;
+    fn insert(&self, k: ServiceBinding, service: Service<S, A>) -> Option<Service<S, A>>;
+    fn remove(&self, k: ServiceBinding) -> Option<Service<S, A>>;
 
     fn get_or_insert_with<F>(&self, k: ServiceBinding, default: F) -> &mut Service<S, A>
     where
         F: FnOnce() -> Service<S, A>;
-    fn list_services(&self) -> Vec<&Service<S, A>>;
+
     fn as_owned_services(&self) -> HashMap<ServiceBinding, Service<S, A>>;
+}
+
+pub type ServiceManagerContainer<S, A> = RwLock<HashMap<ServiceBinding, Service<S, A>>>;
+impl<S, A> ServiceManagerTrait<S, A> for ServiceManagerContainer<S, A>
+where
+    A: Clone + Send + Sync,
+    S: Clone + Send + Sync,
+    Broadcaster<A>: AdvertisementTransformer<A>,
+{
+    fn insert(&self, k: ServiceBinding, service: Service<S, A>) -> Option<Service<S, A>> {
+        self.write().insert(k, service)
+    }
+    fn remove(&self, k: ServiceBinding) -> Option<Service<S, A>> {
+        self.write().remove(&k)
+    }
+
+    fn get_or_insert_with<F>(&self, k: ServiceBinding, default: F) -> &mut Service<S, A>
+    where
+        F: FnOnce() -> Service<S, A>,
+    {
+        self.write().entry(k).or_insert_with(default)
+    }
+
+    fn as_owned_services(&self) -> HashMap<ServiceBinding, Service<S, A>> {
+        self.read()
+            .iter()
+            .map(|(k, v)| ((*k).clone(), (*v).clone()))
+            .collect()
+    }
 }
 
 #[cfg(test)]
