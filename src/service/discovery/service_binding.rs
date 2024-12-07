@@ -2,7 +2,7 @@ use crate::net::socket_addr::SocketAddr;
 use core::fmt::{Display, Formatter};
 use std::net::{IpAddr, Ipv4Addr};
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct ServiceBinding {
     port: usize,
     ip: IpAddr,

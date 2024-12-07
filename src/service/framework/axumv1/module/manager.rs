@@ -2,33 +2,39 @@ use crate::collections::HashMap;
 use crate::common::ArcFn;
 use crate::net::socket_addr::{SocketAddressTryWithBuilder, SocketAddrs};
 use crate::service::discovery::service_discovery::{
-    Broadcaster, Discoverer, ServiceDiscovery, ServiceDiscoveryState,
+    Broadcaster, Discoverer, ServiceDiscovery, ServiceDiscoveryState, ServiceManagerContainer,
 };
 use crate::service::framework::axumv1::framework_manager::FrameworkManager;
 use crate::service::framework::axumv1::module::definition::ModuleDefinition;
 use crate::service::framework::axumv1::module::module::Module;
 use crate::service::framework::axumv1::probe::probe_result::ProbeResult;
 use crate::service::framework::axumv1::probe::status_response::StatusResponse;
-use crate::service::framework::axumv1::{RwStateController, StateController};
+use crate::service::framework::axumv1::StateController;
 use crate::{debug, error};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::Router;
 use bytes::Bytes;
+use std::marker::PhantomData;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
-pub struct ModuleManager {
-    modules: HashMap<String, Arc<Module>>,
+pub struct ModuleManager<S>
+where
+    S: StateController + Clone + Send + Sync + 'static,
+{
+    modules: HashMap<String, Arc<Module<S>>>,
     active_modules: Vec<String>,
+    phantom: PhantomData<S>,
 }
 
-impl ModuleManager {
+impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
     pub fn new() -> Self {
         ModuleManager {
             modules: HashMap::new(),
             active_modules: Vec::new(),
+            phantom: PhantomData::default(),
         }
     }
 
@@ -37,7 +43,7 @@ impl ModuleManager {
         self
     }
 
-    pub fn add_module<T: ModuleDefinition>(&mut self) -> &mut Self {
+    pub fn add_module<T: ModuleDefinition<S>>(&mut self) -> &mut Self {
         self.modules.insert(
             T::NAME.to_string(),
             Arc::new(Module {
@@ -62,8 +68,12 @@ impl ModuleManager {
 
     pub(crate) fn setup_advertiser(
         &mut self,
-        service: &mut ServiceDiscovery<Arc<ServiceDiscoveryState>, Bytes>,
-        config: &FrameworkManager,
+        service: &mut ServiceDiscovery<
+            Arc<ServiceDiscoveryState>,
+            Bytes,
+            ServiceManagerContainer<ServiceDiscoveryState, Bytes>,
+        >,
+        config: &FrameworkManager<S>,
     ) -> &mut Self {
         for module in self.active_modules.clone() {
             if let Some(module) = self.modules.get(&module) {
@@ -99,8 +109,12 @@ impl ModuleManager {
 
     pub(crate) fn setup_discoverer(
         &mut self,
-        service: &mut ServiceDiscovery<Arc<ServiceDiscoveryState>, Bytes>,
-        config: &FrameworkManager,
+        service: &mut ServiceDiscovery<
+            Arc<ServiceDiscoveryState>,
+            Bytes,
+            ServiceManagerContainer<ServiceDiscoveryState, Bytes>,
+        >,
+        config: &FrameworkManager<S>,
     ) -> &mut Self {
         for module in self.active_modules.clone() {
             if let Some(module) = self.modules.get(&module) {

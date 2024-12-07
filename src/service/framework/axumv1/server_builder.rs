@@ -1,6 +1,8 @@
-use crate::net::socket_addr::{SocketAddr, SocketAddrs};
+use crate::net::socket_addr::SocketAddrs;
 use crate::rails::ext::blocking::TapResult;
-use crate::service::discovery::service_discovery::{ServiceDiscovery, ServiceDiscoveryState};
+use crate::service::discovery::service_discovery::{
+    ServiceDiscovery, ServiceDiscoveryState, ServiceManagerContainer,
+};
 use crate::service::framework::axumv1::state_controller::StateController;
 use crate::service::framework::axumv1::{
     builders::{spin_h2c_server, spin_http1_server},
@@ -8,31 +10,33 @@ use crate::service::framework::axumv1::{
     logger::LogOutput,
     module::definition::ModuleDefinition,
     module::manager::ModuleManager,
-    state::rw_controller::RwStateController,
-    state::CommonStateContainer,
 };
 use crate::{debug, error, info};
 use axum::Router;
 use bytes::Bytes;
-use std::net::SocketAddr as StdSocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::task;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
+pub type ServiceDiscoveryType = ServiceDiscovery<
+    Arc<ServiceDiscoveryState>,
+    Bytes,
+    ServiceManagerContainer<Arc<ServiceDiscoveryState>, Bytes>,
+>;
+
 pub struct ServerBuilder<S>
 where
-    S: StateController,
+    S: StateController + Clone + Sync + Send + 'static,
 {
-    modules: ModuleManager,
+    modules: ModuleManager<S>,
     manager: FrameworkManager<S>,
-    discovery: ServiceDiscovery<Arc<ServiceDiscoveryState>, Bytes>,
+    discovery: ServiceDiscoveryType,
 }
 
 impl<S> Default for ServerBuilder<S>
 where
-    S: StateController,
+    S: StateController + Clone + Sync + Send + 'static,
 {
     fn default() -> Self {
         Self::new()
@@ -41,7 +45,7 @@ where
 
 impl<S> ServerBuilder<S>
 where
-    S: StateController,
+    S: StateController + Clone + Sync + Send + 'static,
 {
     pub fn new() -> Self {
         let router = Router::new();
@@ -197,7 +201,7 @@ where
             debug!("Adding Module Routers");
             router = router.merge(self.modules.setup_module_routers());
 
-            if let Some(fallback) = self.fallback_response {
+            if let Some(fallback) = self.modules.fallback_response {
                 debug!("Adding fallback router");
                 router = router.merge(fallback);
             }
@@ -269,27 +273,27 @@ where
         debug!("Setting up the thread builder for tokio");
         let mut builder = tokio::runtime::Builder::new_multi_thread();
 
-        if let Some(threads) = self.worker_pool.as_ref() {
-            if self.include_subtasks_in_worker_pool {
+        if let Some(threads) = self.manager.config().worker_pool.as_ref() {
+            if self.manager.config().include_subtasks_in_worker_pool {
                 debug!("Using defined worker threads");
                 builder.worker_threads(*threads);
             } else {
                 debug!("Using defined worker threads");
-                builder.worker_threads(
-                    *threads + num_subtasks + if self.logger_discovery { 1 } else { 0 },
-                );
+                info!("## Discovery system threads detection not implemented");
+                // TODO: Implem ent the discovery system threads detection
+                builder.worker_threads(*threads);
             }
         } else {
             debug!("Using auto-lookup worker threads");
             let num_cores = num_cpus::get();
-            if self.include_subtasks_in_worker_pool {
+            if self.manager.config().include_subtasks_in_worker_pool {
                 debug!("Using defined worker threads");
                 builder.worker_threads(num_cores);
             } else {
                 debug!("Using defined worker threads");
-                builder.worker_threads(
-                    num_cores + num_subtasks + if self.logger_discovery { 1 } else { 0 },
-                );
+                info!("## Discovery system threads detection not implemented");
+                // TODO: Implem ent the discovery system threads detection
+                builder.worker_threads(num_cores);
             }
         }
 
@@ -300,12 +304,12 @@ where
             .block_on(body)
     }
 
-    pub fn build<S: CommonStateContainer>(self, s: S) {
-        self.build_inner(true, s)
+    pub fn build(self, s: S) {
+        self.build_inner(true)
     }
 
     #[cfg(test)]
-    pub(crate) fn build_test<S: CommonStateContainer>(self, s: S) {
-        self.build_inner(false, s)
+    pub(crate) fn build_test(self, s: S) {
+        self.build_inner(false)
     }
 }

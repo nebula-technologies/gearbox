@@ -5,10 +5,12 @@ use crate::net::socket_addr::{SocketAddr, SocketAddrs};
 use crate::prelude::spin::RwLock;
 use crate::rails::ext::blocking::TapResult;
 use crate::service::discovery::service_binding::ServiceBinding;
+use crate::sync::deferred::Deferred;
 use crate::{debug, error};
 use bytes::Bytes;
 use core::fmt::{Debug, Formatter};
 use semver::Version;
+use spin::RwLockWriteGuard;
 use std::any::Any;
 use std::any::TypeId;
 use std::future::Future;
@@ -863,7 +865,11 @@ where
     fn insert(&self, k: ServiceBinding, service: Service<S, A>) -> Option<Service<S, A>>;
     fn remove(&self, k: ServiceBinding) -> Option<Service<S, A>>;
 
-    fn get_or_insert_with<F>(&self, k: ServiceBinding, default: F) -> &mut Service<S, A>
+    fn get_or_insert_with<F>(
+        &self,
+        k: ServiceBinding,
+        default: F,
+    ) -> Deferred<'_, RwLockWriteGuard<HashMap<ServiceBinding, Service<S, A>>>, Service<S, A>>
     where
         F: FnOnce() -> Service<S, A>;
 
@@ -884,11 +890,21 @@ where
         self.write().remove(&k)
     }
 
-    fn get_or_insert_with<F>(&self, k: ServiceBinding, default: F) -> &mut Service<S, A>
+    fn get_or_insert_with<F>(
+        &self,
+        k: ServiceBinding,
+        default: F,
+    ) -> Deferred<RwLockWriteGuard<HashMap<ServiceBinding, Service<S, A>>>, Service<S, A>>
     where
         F: FnOnce() -> Service<S, A>,
     {
-        self.write().entry(k).or_insert_with(default)
+        let mut guard = self.write();
+        if !guard.contains_key(&k) {
+            guard.insert(k.clone(), default());
+        }
+        let data = guard.get_mut(&k).unwrap();
+
+        Deferred::new(guard, &k)
     }
 
     fn as_owned_services(&self) -> HashMap<ServiceBinding, Service<S, A>> {

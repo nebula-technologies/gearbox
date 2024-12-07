@@ -7,26 +7,30 @@ use crate::service::framework::axumv1::framework_manager::FrameworkManager;
 use crate::service::framework::axumv1::module::definition::ModuleDefinition;
 use crate::service::framework::axumv1::probe::probe_result::ProbeResult;
 use crate::service::framework::axumv1::server_framework_config::FrameworkConfig;
-use crate::service::framework::axumv1::{RwStateController, StateController};
+use crate::service::framework::axumv1::StateController;
 use axum::Router;
 use bytes::Bytes;
 use std::net::IpAddr;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
-pub struct Module {
+pub struct Module<S>
+where
+    S: StateController + Clone + Send + Sync,
+{
     pub(crate) name: &'static str,
-    pub(crate) router: fn() -> Router<Arc<StateController>>,
-    pub(crate) state: fn(&mut RwStateController),
+    pub(crate) router: fn() -> Router<Arc<S>>,
+    pub(crate) state: fn(&mut S),
     pub(crate) nested: Option<&'static str>,
-    pub(crate) broadcast: fn(&FrameworkManager) -> Vec<(Broadcaster<Bytes>, Option<SocketAddrs>)>,
+    pub(crate) broadcast:
+        fn(&FrameworkManager<S>) -> Vec<(Broadcaster<Bytes>, Option<SocketAddrs>)>,
     pub(crate) discovery: fn(
-        &FrameworkManager,
+        &FrameworkManager<S>,
     ) -> Vec<(
         Discoverer<Arc<ServiceDiscoveryState>, Bytes>,
         Option<SocketAddrs>,
     )>,
-    pub(crate) discovery_capture: Option<fn(Arc<StateController>, &Bytes)>,
+    pub(crate) discovery_capture: Option<fn(Arc<S>, &Bytes)>,
     pub(crate) readiness: fn() -> Vec<ArcFn<(String, ProbeResult)>>,
     pub(crate) liveness: fn() -> Vec<ArcFn<(String, ProbeResult)>>,
     pub(crate) pre_init: fn() -> Vec<ArcFn<()>>,
@@ -34,8 +38,11 @@ pub struct Module {
     pub(crate) post_run: fn() -> Vec<ArcFn<()>>,
 }
 
-impl<T: ModuleDefinition> From<T> for Module {
-    fn from(_: T) -> Self {
+impl<S> Module<S>
+where
+    S: StateController + Clone + Send + Sync + 'static,
+{
+    pub fn from_definition<T: ModuleDefinition<S>>() -> Self {
         Module {
             pre_init: T::PRE_INIT,
             pre_run: T::PRE_RUN,
