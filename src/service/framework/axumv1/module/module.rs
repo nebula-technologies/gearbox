@@ -19,7 +19,7 @@ where
     S: StateController + Clone + Send + Sync,
 {
     pub(crate) name: &'static str,
-    pub(crate) router: fn() -> Router<Arc<S>>,
+    pub(crate) router: fn() -> Router<S>,
     pub(crate) state: fn(&mut S),
     pub(crate) nested: Option<&'static str>,
     pub(crate) broadcast:

@@ -21,7 +21,7 @@ where
     const NAME: &'static str;
 
     /// The router for the module
-    const ROUTER: fn() -> Router<Arc<S>> = || Router::new();
+    const ROUTER: fn() -> Router<S> = || Router::new();
     const NESTED: Option<&'static str> = None;
 
     /// The broadcaster for the module

@@ -22,10 +22,10 @@ use spin::RwLock;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-type ServiceDiscoveryType = ServiceDiscovery<
+pub(crate) type ServiceDiscoveryType = ServiceDiscovery<
     Arc<ServiceDiscoveryState>,
     Bytes,
-    ServiceManagerContainerArc<ServiceDiscoveryState, Bytes>,
+    ServiceManagerContainerArc<Arc<ServiceDiscoveryState>, Bytes>,
 >;
 
 #[derive(Debug, Clone)]
@@ -209,7 +209,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         self
     }
 
-    pub(crate) fn setup_liveness_router(&self) -> Router<Arc<S>> {
+    pub(crate) fn setup_liveness_router(&self) -> Router<S> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -221,7 +221,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         self.router_config("/health/liveness", probes)
     }
 
-    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<S>> {
+    pub(crate) fn setup_readiness_router(&self) -> Router<S> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -233,7 +233,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         self.router_config("/health/readiness", probes)
     }
 
-    pub(crate) fn setup_module_routers(&self) -> Router<Arc<S>> {
+    pub(crate) fn setup_module_routers(&self) -> Router<S> {
         let mut router = Router::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -248,25 +248,23 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         router
     }
 
-    pub(crate) fn setup_module_states(&self, mut app_state: S) -> S {
+    pub(crate) fn setup_module_states(&self, app_state: &mut S) {
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
-                (module.state)(&mut app_state);
+                (module.state)(app_state);
             }
         }
-
-        app_state
     }
 
     fn router_config(
         &self,
         path: &str,
         probes: Vec<(String, Vec<ArcFn<(String, ProbeResult)>>)>,
-    ) -> Router<Arc<S>> {
+    ) -> Router<S> {
         let mut router = Router::new();
         router.route(
             path,
-            get(|State(state): State<Arc<S>>| async move {
+            get(|State(state): State<S>| async move {
                 let mut module_status_map = HashMap::new();
                 for (module_name, vec_func) in probes {
                     let mut module_status = Vec::new();

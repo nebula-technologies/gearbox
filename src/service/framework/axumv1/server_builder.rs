@@ -1,8 +1,9 @@
 use crate::net::socket_addr::SocketAddrs;
 use crate::rails::ext::blocking::TapResult;
 use crate::service::discovery::service_discovery::{
-    ServiceDiscovery, ServiceDiscoveryState, ServiceManagerContainer,
+    ServiceDiscovery, ServiceDiscoveryState, ServiceManagerContainerArc,
 };
+use crate::service::framework::axumv1::module::manager::ServiceDiscoveryType;
 use crate::service::framework::axumv1::state_controller::StateController;
 use crate::service::framework::axumv1::{
     builders::{spin_h2c_server, spin_http1_server},
@@ -19,19 +20,17 @@ use std::time::Duration;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
-pub type ServiceDiscoveryType = ServiceDiscovery<
-    Arc<ServiceDiscoveryState>,
-    Bytes,
-    ServiceManagerContainer<Arc<ServiceDiscoveryState>, Bytes>,
->;
-
 pub struct ServerBuilder<S>
 where
     S: StateController + Clone + Sync + Send + 'static,
 {
     modules: ModuleManager<S>,
     manager: FrameworkManager<S>,
-    discovery: ServiceDiscoveryType,
+    discovery: ServiceDiscovery<
+        Arc<ServiceDiscoveryState>,
+        Bytes,
+        ServiceManagerContainerArc<Arc<ServiceDiscoveryState>, Bytes>,
+    >,
 }
 
 impl<S> Default for ServerBuilder<S>
@@ -48,7 +47,7 @@ where
     S: StateController + Clone + Sync + Send + 'static,
 {
     pub fn new() -> Self {
-        let router = Router::new();
+        // let router = Router::new();
         let discovery_state = ServiceDiscoveryState::default();
         let mut state_controller = S::default();
         state_controller.set(discovery_state);
@@ -173,11 +172,12 @@ where
 
             debug!("Creating app");
             debug!("Initializing FrameworkState");
-            let framework_state = self.modules.setup_module_states(self.manager.state_mut());
+            self.modules.setup_module_states(self.manager.state_mut());
+            let framework_state = self.manager.state().clone();
 
             debug!("Building framework state");
             let mut framework_manager = Arc::new(self.manager.clone());
-            framework_manager.set_state(framework_state.into_app_state());
+            framework_manager.set_state(framework_state);
 
             debug!("Setting up advertiser and discoverer from modules");
             self.modules
@@ -191,7 +191,7 @@ where
             let router_with_state = Router::new();
 
             debug!("Initializing Merger Router");
-            let mut router: Router<()> = Router::new();
+            let mut router: Router<S> = Router::new();
 
             debug!("Adding liveness and readiness routers");
             router = router
@@ -201,10 +201,10 @@ where
             debug!("Adding Module Routers");
             router = router.merge(self.modules.setup_module_routers());
 
-            if let Some(fallback) = self.modules.fallback_response {
-                debug!("Adding fallback router");
-                router = router.merge(fallback);
-            }
+            // if let Some(fallback) = self.modules.fallback_response {
+            //     debug!("Adding fallback router");
+            //     router = router.merge(fallback);
+            // }
 
             debug!("Building App router with State");
             let app = Router::new()

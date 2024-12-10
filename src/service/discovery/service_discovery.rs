@@ -28,6 +28,7 @@ pub static COMMON_SERVICE_DISCOVERY_STATE: RwLock<
     HashMap<ServiceBinding, Service<ServiceDiscoveryState, Bytes>>,
 > = RwLock::new(HashMap::new());
 
+#[derive(Clone)]
 /// Service Discovery
 /// This is the manager that handles the 2 parts of a service discovery system:
 /// It also allows for management of the services, if they need to be handled by the Discovery Lock,
@@ -62,10 +63,10 @@ where
         }
     }
 
-    pub fn managed<IM: Into<Arc<M>>>(state_ref: IM) -> Self {
+    pub fn managed(state_ref: Arc<ServiceDiscoveryState>) -> Self {
         ServiceDiscovery {
             phantom_data: Default::default(),
-            managed_state: Some(state_ref.into()),
+            managed_state: Some(state_ref),
         }
     }
 
@@ -894,6 +895,18 @@ where
     S: 'static + Send + Sync,
 
     Broadcaster<A>: AdvertisementTransformer<A>;
+
+impl<S, A> Default for ServiceManagerContainerArc<S, A>
+where
+    A: 'static + Send + Sync + Clone,
+    S: 'static + Send + Sync,
+
+    Broadcaster<A>: AdvertisementTransformer<A>,
+{
+    fn default() -> Self {
+        ServiceManagerContainerArc(RwLock::new(HashMap::new()))
+    }
+}
 
 impl<S, A> ServiceManagerTrait<S, A> for ServiceManagerContainerArc<S, A>
 where
