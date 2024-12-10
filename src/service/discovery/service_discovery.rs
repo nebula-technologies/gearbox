@@ -6,11 +6,12 @@ use crate::prelude::spin::RwLock;
 use crate::rails::ext::blocking::TapResult;
 use crate::service::discovery::service_binding::ServiceBinding;
 use crate::sync::deferred::Deferred;
+use crate::sync::deferred::DeferredUpdate;
 use crate::{debug, error};
 use bytes::Bytes;
 use core::fmt::{Debug, Formatter};
 use semver::Version;
-use spin::RwLockWriteGuard;
+use spin::{RwLockUpgradableGuard, RwLockWriteGuard};
 use std::any::Any;
 use std::any::TypeId;
 use std::future::Future;
@@ -101,16 +102,15 @@ where
         let binds = binds.into();
         for bind in binds {
             self.managed_state.as_ref().map(|t| {
-                t.get_or_insert_with(
-                    (bind.ip_with_defaults(), bind.port_with_defaults()).into(),
-                    || Service {
-                        managed: true,
-                        bind: bind,
-                        service_types: Vec::new(),
-                        discovery_functions: vec![],
-                    },
-                )
-                .add_broadcaster(broadcaster.clone())
+                let key = (bind.ip_with_defaults(), bind.port_with_defaults()).into();
+                let mut v = t.get_or_insert_with(Clone::clone(&key), || Service {
+                    managed: true,
+                    bind: bind,
+                    service_types: Vec::new(),
+                    discovery_functions: vec![],
+                });
+                v.add_broadcaster(broadcaster.clone());
+                t.insert(key, v);
             });
         }
         self
@@ -125,16 +125,15 @@ where
 
         for bind in binds {
             self.managed_state.as_ref().map(|t| {
-                t.get_or_insert_with(
-                    (bind.ip_with_defaults(), bind.port_with_defaults()).into(),
-                    || Service {
-                        managed: true,
-                        bind: bind,
-                        service_types: Vec::new(),
-                        discovery_functions: vec![],
-                    },
-                )
-                .add_discoverer(discoverer.clone())
+                let key = (bind.ip_with_defaults(), bind.port_with_defaults()).into();
+                let mut v = t.get_or_insert_with(Clone::clone(&key), || Service {
+                    managed: true,
+                    bind: bind,
+                    service_types: Vec::new(),
+                    discovery_functions: vec![],
+                });
+                v.add_discoverer(discoverer.clone());
+                t.insert(key, v);
             });
         }
 
@@ -149,13 +148,14 @@ where
     {
         let bind = bind.into();
         self.managed_state.as_ref().map(|t| {
-            t.get_or_insert_with((&bind).into(), || Service {
-                managed: true,
-                bind,
-                service_types: Vec::new(),
-                discovery_functions: vec![],
-            })
-            .add_discovery_function(f)
+            let v = t
+                .get_or_insert_with((&bind).into(), || Service {
+                    managed: true,
+                    bind,
+                    service_types: Vec::new(),
+                    discovery_functions: vec![],
+                })
+                .add_discovery_function(f);
         });
 
         self
@@ -333,6 +333,22 @@ where
         //send_task.abort();
     }
 }
+
+impl<A: Clone + Send + Sync, S: Clone + Send + Sync> Clone for Service<S, A>
+where
+    Broadcaster<A>: AdvertisementTransformer<A>,
+{
+    fn clone(&self) -> Self {
+        Service {
+            managed: self.managed,
+            bind: self.bind.clone(),
+            service_types: self.service_types.clone(),
+            discovery_functions: self.discovery_functions.clone(),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub enum ServiceDiscoveryType<S, A = Bytes>
 where
     A: Clone,
@@ -865,53 +881,46 @@ where
     fn insert(&self, k: ServiceBinding, service: Service<S, A>) -> Option<Service<S, A>>;
     fn remove(&self, k: ServiceBinding) -> Option<Service<S, A>>;
 
-    fn get_or_insert_with<F>(
-        &self,
-        k: ServiceBinding,
-        default: F,
-    ) -> Deferred<'_, RwLockWriteGuard<HashMap<ServiceBinding, Service<S, A>>>, Service<S, A>>
+    fn get_or_insert_with<F>(&self, k: ServiceBinding, default: F) -> Service<S, A>
     where
         F: FnOnce() -> Service<S, A>;
 
     fn as_owned_services(&self) -> HashMap<ServiceBinding, Service<S, A>>;
 }
 
-pub type ServiceManagerContainer<S, A> = RwLock<HashMap<ServiceBinding, Service<S, A>>>;
-impl<S, A> ServiceManagerTrait<S, A> for ServiceManagerContainer<S, A>
+pub struct ServiceManagerContainerArc<S, A>(RwLock<HashMap<Arc<ServiceBinding>, Service<S, A>>>)
+where
+    A: 'static + Send + Sync + Clone,
+    S: 'static + Send + Sync,
+
+    Broadcaster<A>: AdvertisementTransformer<A>;
+
+impl<S, A> ServiceManagerTrait<S, A> for ServiceManagerContainerArc<S, A>
 where
     A: Clone + Send + Sync,
     S: Clone + Send + Sync,
     Broadcaster<A>: AdvertisementTransformer<A>,
 {
     fn insert(&self, k: ServiceBinding, service: Service<S, A>) -> Option<Service<S, A>> {
-        self.write().insert(k, service)
+        self.0.write().insert(k, service)
     }
     fn remove(&self, k: ServiceBinding) -> Option<Service<S, A>> {
-        self.write().remove(&k)
+        self.0.write().remove(&k)
     }
 
-    fn get_or_insert_with<F>(
-        &self,
-        k: ServiceBinding,
-        default: F,
-    ) -> Deferred<RwLockWriteGuard<HashMap<ServiceBinding, Service<S, A>>>, Service<S, A>>
+    fn get_or_insert_with<F>(&self, k: ServiceBinding, default: F) -> Service<S, A>
     where
         F: FnOnce() -> Service<S, A>,
     {
-        let mut guard = self.write();
-        if !guard.contains_key(&k) {
-            guard.insert(k.clone(), default());
-        }
-        let data = guard.get_mut(&k).unwrap();
-
-        Deferred::new(guard, &k)
+        self.0
+            .write()
+            .entry(Arc::from(k))
+            .or_insert_with(default)
+            .clone()
     }
 
     fn as_owned_services(&self) -> HashMap<ServiceBinding, Service<S, A>> {
-        self.read()
-            .iter()
-            .map(|(k, v)| ((*k).clone(), (*v).clone()))
-            .collect()
+        HashMap::new()
     }
 }
 

@@ -1,8 +1,10 @@
-use crate::collections::HashMap;
+use crate::collections::{ConstHashMap, HashMap};
 use crate::common::ArcFn;
 use crate::net::socket_addr::{SocketAddressTryWithBuilder, SocketAddrs};
+use crate::service::discovery::service_binding::ServiceBinding;
 use crate::service::discovery::service_discovery::{
-    Broadcaster, Discoverer, ServiceDiscovery, ServiceDiscoveryState, ServiceManagerContainer,
+    Broadcaster, Discoverer, Service, ServiceDiscovery, ServiceDiscoveryState,
+    ServiceManagerContainerArc, ServiceManagerTrait,
 };
 use crate::service::framework::axumv1::framework_manager::FrameworkManager;
 use crate::service::framework::axumv1::module::definition::ModuleDefinition;
@@ -16,8 +18,15 @@ use axum::http::StatusCode;
 use axum::routing::get;
 use axum::Router;
 use bytes::Bytes;
+use spin::RwLock;
 use std::marker::PhantomData;
 use std::sync::Arc;
+
+type ServiceDiscoveryType = ServiceDiscovery<
+    Arc<ServiceDiscoveryState>,
+    Bytes,
+    ServiceManagerContainerArc<ServiceDiscoveryState, Bytes>,
+>;
 
 #[derive(Debug, Clone)]
 pub struct ModuleManager<S>
@@ -68,11 +77,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
 
     pub(crate) fn setup_advertiser(
         &mut self,
-        service: &mut ServiceDiscovery<
-            Arc<ServiceDiscoveryState>,
-            Bytes,
-            ServiceManagerContainer<ServiceDiscoveryState, Bytes>,
-        >,
+        service: &mut ServiceDiscoveryType,
         config: &FrameworkManager<S>,
     ) -> &mut Self {
         for module in self.active_modules.clone() {
@@ -109,11 +114,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
 
     pub(crate) fn setup_discoverer(
         &mut self,
-        service: &mut ServiceDiscovery<
-            Arc<ServiceDiscoveryState>,
-            Bytes,
-            ServiceManagerContainer<ServiceDiscoveryState, Bytes>,
-        >,
+        service: &mut ServiceDiscoveryType,
         config: &FrameworkManager<S>,
     ) -> &mut Self {
         for module in self.active_modules.clone() {
@@ -208,7 +209,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         self
     }
 
-    pub(crate) fn setup_liveness_router<S>(&self) -> Router<Arc<S>> {
+    pub(crate) fn setup_liveness_router(&self) -> Router<Arc<S>> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -220,7 +221,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         self.router_config("/health/liveness", probes)
     }
 
-    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<dyn StateController>> {
+    pub(crate) fn setup_readiness_router(&self) -> Router<Arc<S>> {
         let mut probes = Vec::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -232,7 +233,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         self.router_config("/health/readiness", probes)
     }
 
-    pub(crate) fn setup_module_routers(&self) -> Router<Arc<dyn StateController>> {
+    pub(crate) fn setup_module_routers(&self) -> Router<Arc<S>> {
         let mut router = Router::new();
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
@@ -247,10 +248,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         router
     }
 
-    pub(crate) fn setup_module_states(
-        &self,
-        mut app_state: RwStateController,
-    ) -> RwStateController {
+    pub(crate) fn setup_module_states(&self, mut app_state: S) -> S {
         for module_name in &self.active_modules.clone() {
             if let Some(module) = self.modules.get(module_name) {
                 (module.state)(&mut app_state);
@@ -260,7 +258,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         app_state
     }
 
-    fn router_config<S>(
+    fn router_config(
         &self,
         path: &str,
         probes: Vec<(String, Vec<ArcFn<(String, ProbeResult)>>)>,
@@ -268,7 +266,7 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
         let mut router = Router::new();
         router.route(
             path,
-            get(|State(state): State<Arc<StateController>>| async move {
+            get(|State(state): State<Arc<S>>| async move {
                 let mut module_status_map = HashMap::new();
                 for (module_name, vec_func) in probes {
                     let mut module_status = Vec::new();
@@ -284,7 +282,10 @@ impl<S: StateController + Clone + Send + Sync + 'static> ModuleManager<S> {
     }
 }
 
-impl Default for ModuleManager {
+impl<S> Default for ModuleManager<S>
+where
+    S: StateController + Clone + Send + Sync + 'static,
+{
     fn default() -> Self {
         ModuleManager::new()
     }

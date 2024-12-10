@@ -118,7 +118,7 @@ where
         self
     }
 
-    pub fn with_module<T: ModuleDefinition>(mut self) -> Self {
+    pub fn with_module<T: ModuleDefinition<S>>(mut self) -> Self {
         self.modules.add_module::<T>();
 
         self
