@@ -564,5 +564,11 @@ pub mod prelude {
     };
 }
 
+fn lib_info() -> String {
+    const CRATE_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+    CRATE_VERSION.to_string()
+}
+
 #[cfg(test)]
 mod tests {}
