@@ -208,7 +208,7 @@ macro_rules! notice {
         $crate::syslog_func_generator!($i(()), Notice, info, $f, $s)
     };
     ($($arg:tt)*) => {
-        $crate::prelude::tracing::info!(log_level=$crate::log::tracing::entity::syslog::Severity::Notice.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Notice.as_str(), $($arg)*);
+        $crate::prelude::tracing::info!(log_level=$crate::log::tracing::entity::syslog::Severity::Notice.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Notice.as_str(), $($arg)*);
     };
 }
 
@@ -227,12 +227,30 @@ macro_rules! info {
         $crate::syslog_func_generator!($i(()), Informational, info, $f, $s)
     };
     ($($arg:tt)*) => {
-        $crate::prelude::tracing::debug!(log_level=$crate::log::tracing::entity::syslog::Severity::Informational.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Informational.as_str(), $($arg)*);
+        $crate::prelude::tracing::info!(log_level=$crate::log::tracing::entity::syslog::Severity::Informational.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Informational.as_str(), $($arg)*);
     };
 }
 
 #[macro_export]
 macro_rules! debug {
+    ($i:ident) => {
+        $crate::syslog_func_generator!($i(()), Debug, trace, UserlevelMessages, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!($i(()), Debug, trace, UserlevelMessages, $s)
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!($i(()), Debug, trace, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!($i(()), Debug, trace, $f, $s)
+    };
+    ($($arg:tt)*) => {
+        $crate::prelude::tracing::trace!(log_level=$crate::log::tracing::entity::syslog::Severity::Debug.as_int(), log_level_name=$crate::log::tracing::entity::syslog::Severity::Debug.as_str(), $($arg)*);
+    };
+}
+#[macro_export]
+macro_rules! trace {
     ($i:ident) => {
         $crate::syslog_func_generator!($i(()), Debug, trace, UserlevelMessages, "{:?}")
     };

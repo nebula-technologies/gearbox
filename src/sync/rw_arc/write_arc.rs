@@ -1,6 +1,5 @@
 use super::{
-    compare_exchange, DetachedArc, ReadArc, RelaxStrategy, RwArcInner, Spin, UpgradableArc, READER,
-    UPGRADED, WRITER,
+    DetachedArc, ReadArc, RelaxStrategy, RwArcInner, Spin, UpgradableArc, UPGRADED, WRITER,
 };
 use crate::prelude::{
     fmt, mem,
@@ -13,13 +12,13 @@ pub struct WriteArc<T: ?Sized, R = Spin> {
     pub(super) inner: Arc<RwArcInner<T, R>>,
 }
 impl<T, R: RelaxStrategy> WriteArc<T, R> {
-    pub fn from_detached(mut self, detached: DetachedArc<T, R>) -> Self {
+    pub fn from_detached(self, detached: DetachedArc<T, R>) -> Self {
         let inner = detached.inner;
         let mut self_data = self.inner.data.get();
         let mut detach_data = inner.data.get();
-        unsafe {
-            mem::swap(&mut self_data, &mut detach_data);
-        }
+        // unsafe {
+        mem::swap(&mut self_data, &mut detach_data);
+        // }
         self
     }
 }
@@ -98,7 +97,7 @@ impl<'rwlock, T: ?Sized, R> WriteArc<T, R> {
     }
 
     pub fn leak(this: Self) -> &'rwlock mut T {
-        let mut this = ManuallyDrop::new(this);
+        let this = ManuallyDrop::new(this);
         // Safety: We know statically that only we are referencing data
         unsafe { &mut *this.inner.data.get() }
     }

@@ -1,6 +1,6 @@
 use crate::net::ip::IpAddrs;
 use crate::prelude::collections::HashSet;
-use crate::rails::ext::blocking::{Merge, Tap};
+use crate::rails::ext::blocking::Merge;
 use core::fmt::{Display, Formatter};
 #[cfg(feature = "regex")]
 use regex::Regex;
@@ -8,8 +8,6 @@ use std::io;
 use std::net::{
     IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr, ToSocketAddrs as StdToSocketAddrs,
 };
-use std::ops::Deref;
-use tokio::net::ToSocketAddrs as TokioToSocketAddrs;
 
 // Struct representing a single IP address and port binding
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -506,7 +504,7 @@ impl SocketAddrs {
 
 impl IntoIterator for SocketAddrs {
     type Item = SocketAddr;
-    type IntoIter = crate::prelude::vec::Iter<Self::Item>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
 
     fn into_iter(mut self) -> Self::IntoIter {
         self.merged_defaults().into_iter()
@@ -571,11 +569,29 @@ impl StdToSocketAddrs for SocketAddrs {
 
 impl From<SocketAddrs> for Vec<SocketAddr> {
     fn from(bind_addrs: SocketAddrs) -> Self {
-        if let Some(addrs) = bind_addrs.bind_addr {
-            addrs.iter().cloned().collect()
-        } else {
-            Vec::new()
+        let mut addrs = Vec::new();
+
+        if let Some(bind_addrs) = &bind_addrs.bind_addr {
+            for addr in bind_addrs {
+                addrs.push(addr.clone());
+            }
         }
+
+        if let Some(default_bind_addrs) = &bind_addrs.default_bind_addr {
+            for addr in default_bind_addrs {
+                addrs.push(addr.clone());
+            }
+        }
+
+        addrs
+    }
+}
+impl From<SocketAddrs> for Vec<std::net::SocketAddr> {
+    fn from(bind_addrs: SocketAddrs) -> Self {
+        bind_addrs
+            .to_socket_addrs()
+            .map(|t| t.collect())
+            .unwrap_or(Vec::new())
     }
 }
 

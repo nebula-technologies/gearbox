@@ -1,6 +1,6 @@
 use crate::log::tracing::entity::syslog::ConversionError;
 use crate::log::tracing::Value;
-use alloc::string::{String, ToString};
+use alloc::string::String;
 #[cfg_attr(
     feature = "dep_serde",
     derive(serde_derive::Deserialize, serde_derive::Serialize)

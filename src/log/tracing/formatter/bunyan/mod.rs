@@ -3,7 +3,7 @@ use crate::log::tracing::{LogFormatter, Value};
 use crate::time::{DateTime, SecondsFormat};
 use hashbrown::HashMap;
 use serde::ser::{SerializeMap, Serializer};
-use tracing::{Event, Id, Level, Subscriber};
+use tracing::{Event, Level, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::registry::{LookupSpan, SpanRef};
 
@@ -104,7 +104,7 @@ impl Bunyan {
             if !BUNYAN_RESERVED_FIELDS.contains(&key.as_str()) {
                 map_serializer.serialize_entry(key, &serde_json::Value::from(value))?;
             } else {
-                tracing::debug!(
+                tracing::info!(
                     "{} is a reserved field in the bunyan log format. Skipping it.",
                     key
                 );
@@ -117,7 +117,7 @@ impl Bunyan {
                 if !BUNYAN_RESERVED_FIELDS.contains(key) {
                     map_serializer.serialize_entry(key, &serde_json::Value::from(value))?;
                 } else {
-                    tracing::debug!(
+                    tracing::info!(
                         "{} is a reserved field in the bunyan log format. Skipping it.",
                         key
                     );
@@ -248,7 +248,7 @@ impl LogFormatter for Bunyan {
                         if !BUNYAN_RESERVED_FIELDS.contains(key) {
                             map_serializer.serialize_entry(key, &serde_json::Value::from(value))?;
                         } else {
-                            tracing::debug!(
+                            tracing::info!(
                                 "{} is a reserved field in the bunyan log format. Skipping it.",
                                 key
                             );

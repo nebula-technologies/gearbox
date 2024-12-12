@@ -3,7 +3,6 @@ use crate::log::tracing::{LogFormatter, Value};
 use alloc::{string::String, vec::Vec};
 use core::fmt;
 use core::fmt::Debug;
-use core::marker::PhantomData;
 use core::result::Result;
 use hashbrown::HashMap;
 use std::io::Write;

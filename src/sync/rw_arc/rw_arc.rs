@@ -11,10 +11,6 @@ use crate::prelude::{
     cell::UnsafeCell,
     fmt,
     marker::PhantomData,
-    mem,
-    mem::ManuallyDrop,
-    ops::{Deref, DerefMut},
-    ptr,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,

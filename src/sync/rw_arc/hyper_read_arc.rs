@@ -2,6 +2,7 @@ use super::RwArcInner;
 use crate::prelude::{ops::Deref, sync::Arc};
 
 pub struct HyperReadArc<T: ?Sized + Clone, R> {
+    #[allow(unused)]
     pub(super) inner: Arc<RwArcInner<T, R>>,
     pub(super) data: T,
 }

@@ -1,4 +1,4 @@
-use crate::error::tracer::{DynTracerError, TracerError};
+use crate::error::tracer::DynTracerError;
 use crate::time::duration::Duration;
 use spin::lock_api::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -13,7 +13,7 @@ impl CacheWrapper {
 
     pub fn clear(&self) {
         (Ok(self.0.write()) as Result<RwLockWriteGuard<'_, Cache>, DynTracerError>)
-            .and_then(|mut t| {
+            .map(|mut t| {
                 let t = &mut *t;
                 t.year = None;
                 t.month = None;
@@ -25,7 +25,6 @@ impl CacheWrapper {
                 t.day_of_week = None;
                 t.week = None;
                 t.day_of_year = None;
-                Ok(())
             })
             .ok();
     }

@@ -91,7 +91,26 @@ macro_rules! info {
         $crate::log_func_generator!($i(()), info, $f, $s)
     };
     ($($arg:tt)*) => {
-        $crate::prelude::tracing::debug!($($arg)*);
+        $crate::prelude::tracing::info!($($arg)*);
+    };
+}
+
+#[macro_export]
+macro_rules! notice {
+    ($i:ident) => {
+        $crate::log_func_generator!($i(()), info, UserlevelMessages, "{:?}")
+    };
+    ($i:ident, $s:literal) => {
+        $crate::log_func_generator!($i(()), info, UserlevelMessages, $s)
+    };
+    ($i:ident, $f:ident) => {
+        $crate::log_func_generator!($i(()), info, $f, "{:?}")
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::log_func_generator!($i(()), info, $f, $s)
+    };
+    ($($arg:tt)*) => {
+        $crate::prelude::tracing::info!($($arg)*);
     };
 }
 

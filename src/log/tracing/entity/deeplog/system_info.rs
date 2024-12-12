@@ -1,12 +1,9 @@
-use core::{net::IpAddr, option::Option};
+use core::option::Option;
 use serde_derive::{Deserialize, Serialize};
+use spin::RwLock;
 use std::fs::read_to_string;
 #[cfg(feature = "std")]
 use std::process::Command;
-
-#[cfg(feature = "std")]
-use pnet::datalink;
-use spin::RwLock;
 
 pub static HOSTNAME: RwLock<Option<String>> = RwLock::new(None);
 pub static MAC_ADDRESSES: RwLock<Vec<String>> = RwLock::new(Vec::new());

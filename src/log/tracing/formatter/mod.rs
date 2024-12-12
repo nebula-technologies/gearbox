@@ -5,11 +5,8 @@ pub mod deeplog;
 #[cfg(feature = "log-tracing-syslog")]
 pub mod syslog;
 
-use crate::log::tracing::layer::log_layer::LogEmitter;
 use crate::log::tracing::layer::{LogLayer, Storage, Type};
-use crate::prelude::sync::Arc;
 use alloc::string::String;
-use core::fmt::Debug;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::registry::SpanRef;

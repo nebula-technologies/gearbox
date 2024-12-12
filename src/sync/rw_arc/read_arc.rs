@@ -1,8 +1,8 @@
-use super::{compare_exchange, RelaxStrategy, RwArcInner, Spin, READER, UPGRADED, WRITER};
+use super::{RwArcInner, READER, UPGRADED, WRITER};
 use crate::prelude::{
     fmt,
     mem::ManuallyDrop,
-    ops::{Deref, DerefMut},
+    ops::Deref,
     sync::{atomic::Ordering, Arc},
 };
 

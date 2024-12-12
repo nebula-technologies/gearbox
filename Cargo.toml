@@ -140,7 +140,7 @@ net-hostname = ["net", "libc"]
 net-http = ["net"]
 net-ip = ["net", "if_addrs"]
 net-ips = ["net", "if_addrs"]
-net-socket-addr = ["net", "std"]
+net-socket-addr = ["net", "std", "net-ip"]
 net-ip-range = ["net"]
 net-signature = ["net", "base64", "bs58", "hashbrown", "dep_serde", "hmac", "sha2", "time"]
 net-http-dyno-request = ["net-http"]
@@ -164,7 +164,7 @@ service = ["std"]
 service-all = ["service", "service-discovery", "service-discovery-loggers-impl", "service-framework-axum"]
 service-discovery = ["service", "with_json", "tokio", "dep_serde", "serde_derive", "time", "net-ips", "log-tracing-all", "bytes", "net-ip-range", "net-socket-addr", "semver", "collections-const-hash-map"]
 service-discovery-loggers-impl = ["service-discovery"]
-service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "net-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge", "pnet", "regex", "net-socket-addr"]
+service-framework-axum = ["service", "service-discovery", "with_json", "axum", "tokio", "dep_serde", "serde_derive", "time", "log-tracing-all", "net-ips", "sync-rw-arc", "num_cpus", "hyper", "hyper_util", "tower-http", "bytes", "with_json", "common-merge", "pnet", "regex", "net-socket-addr", "prelude-defaults", "net-ip", "sync-container"]
 
 # Storage
 storage = ["std", "common-try-default", "error-tracer", "dep_serde", "rails-ext"]
@@ -176,8 +176,9 @@ storage-json-ext = ["storage", "with_json"]
 
 # Sync/Async support blocks
 sync = ["std"]
-sync-all = ["sync", "sync-rw-arc"]
+sync-all = ["sync", "sync-rw-arc", "sync-container"]
 sync-rw-arc = ["sync"]
+sync-container = ["sync", "collections-hash-map"]
 
 # Template Engine
 template = ["std", "hashbrown", "spin", "regex", "time", "error-tracer"]

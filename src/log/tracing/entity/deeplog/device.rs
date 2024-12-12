@@ -3,8 +3,6 @@
 #[cfg(feature = "with_serde")]
 use crate::prelude::serde::derive::{Deserialize, Serialize};
 use core::option::Option;
-#[cfg(feature = "std")]
-use std::process::Command;
 
 #[cfg(feature = "std")]
 use pnet::datalink;

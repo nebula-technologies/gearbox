@@ -1,6 +1,5 @@
 use crate::log::tracing::entity::syslog::Facility;
 use crate::log::tracing::entity::syslog::Severity;
-use crate::log::tracing::layer::log_layer::LogEmitter;
 use crate::log::tracing::layer::LogLayer;
 use crate::log::tracing::{
     layer::{Storage, Type},

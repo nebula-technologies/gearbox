@@ -8,7 +8,6 @@ pub mod user;
 
 use crate::log::tracing::entity::syslog::{Facility, Severity};
 use crate::prelude::serde::derive::{Deserialize, Serialize};
-use crate::sync::rw_arc::RwArc;
 pub use caller::Caller;
 pub use device::Device;
 pub use process_info::ProcessInfo;

@@ -1,16 +1,13 @@
-use crate::log::tracing::entity::deeplog::{
-    Caller, DeepLog, Device, ProcessInfo, SystemInfo, Timestamps,
-};
+use crate::log::tracing::entity::deeplog::{Caller, DeepLog, Timestamps};
 #[cfg(feature = "net-endpoint-config")]
 use crate::net::endpoint_config::EndpointConfig;
 use crate::{
     collections::HashMap,
     log::tracing::{
-        entity::syslog::{Facility, Severity},
+        entity::syslog::Severity,
         layer::{LogLayer, Storage, Type},
         LogFormatter, Value,
     },
-    sync::rw_arc::RwArc,
     time::DateTime,
 };
 use alloc::{
@@ -22,12 +19,9 @@ use alloc::{
 use core::{
     fmt,
     ops::{Deref, DerefMut},
-    time::Duration,
 };
 use futures::StreamExt;
 use serde_derive::{Deserialize, Serialize};
-use std::net::SocketAddr;
-use tokio::{io, net::UdpSocket, task, time::interval};
 use tracing::{Event, Subscriber};
 use tracing_subscriber::{
     fmt::MakeWriter,

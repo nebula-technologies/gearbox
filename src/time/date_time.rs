@@ -15,7 +15,6 @@ use alloc::{
     format,
     string::{String, ToString},
 };
-use core::any::Any;
 use core::cmp::Ordering;
 use core::fmt::{Display, Formatter};
 use core::hash::{Hash, Hasher};

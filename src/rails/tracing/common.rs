@@ -23,6 +23,6 @@ mod test {
     #[test]
     fn test_logging_implementation() {
         let res: Result<&str, &str> = Ok("Hello");
-        res.log(debug!(Ok)).log(error!(Err)).ok();
+        res.log(info!(Ok)).log(error!(Err)).ok();
     }
 }

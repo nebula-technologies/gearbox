@@ -1,10 +1,10 @@
 use super::{
-    compare_exchange, ReadArc, RelaxStrategy, RwArcInner, Spin, WriteArc, READER, UPGRADED, WRITER,
+    compare_exchange, ReadArc, RelaxStrategy, RwArcInner, Spin, WriteArc, UPGRADED, WRITER,
 };
 use crate::prelude::{
     fmt, mem,
     mem::ManuallyDrop,
-    ops::{Deref, DerefMut},
+    ops::Deref,
     sync::{atomic::Ordering, Arc},
 };
 

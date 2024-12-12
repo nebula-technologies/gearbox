@@ -1,4 +1,3 @@
-use crate::rails::ext::blocking::Tap;
 use alloc::vec::Vec;
 use if_addrs::get_if_addrs;
 use std::io::Error;
