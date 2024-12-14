@@ -1,8 +1,6 @@
 use crate::collections::HashMap;
-use crate::rails::tracing::common::RailsLog;
 use crate::rails::tracing::syslog::RailsSyslog;
 use crate::sync::KeyContainer;
-use crate::{debug, error};
 use std::any::Any;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
@@ -37,9 +35,13 @@ where
         Self::default()
     }
 
-    fn set(&mut self, k: K, v: V) -> &mut Self {
-        self.state.insert(k, Arc::new(v));
-        self
+    fn set(&self, k: K, v: V) -> Option<V> {
+        self.state
+            .write()
+            .log(error!(Err, "Failed to get write lock: {:?}"))
+            .log(debug!(Ok, "Got access to write lock: {:?}"))
+            .ok()
+            .and_then(|mut t| t.insert(k, Arc::new(v)))
     }
 
     fn get(&self, k: &K) -> Option<Arc<V>> {
@@ -48,18 +50,27 @@ where
             .read()
             .log(error!(Err, "Failed to get read lock: {:?}"))
             .log(debug!(Ok, "Got access to read lock: {:?}"))
-            .and_then(|state| {
-                state.get(&k).and_then(|t| {
-                    println!("Data available");
-                    t.clone().downcast::<V>().ok().or_else(|| {
-                        println!("Downcast Failure");
-                        None
-                    })
-                })
+            .and_then(|state| state.get(&k))
+            .ok()
+            .cloned()
+            .and_then(|t| {
+                t.downcast::<V>()
+                    .log(error!(Err, "Failed to cast type: {}"))
+                    .ok()
             })
     }
 
-    fn remove(&mut self, k: &K) -> Option<Arc<V>> {
-        self.state.remove(&k).and_then(|t| t.downcast::<V>().ok())
+    fn remove(&self, k: &K) -> Option<Arc<V>> {
+        self.state
+            .write()
+            .log(error!(Err, "Failed to get write lock: {:?}"))
+            .log(debug!(Ok, "Got access to write lock: {:?}"))
+            .ok()
+            .and_then(|mut rwl| rwl.remove(&k))
+            .and_then(|t| {
+                t.downcast::<V>()
+                    .log(error!(Err, "Failed to cast type: {}"))
+                    .ok()
+            })
     }
 }

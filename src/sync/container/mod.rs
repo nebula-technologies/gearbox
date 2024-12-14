@@ -5,24 +5,29 @@ use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-pub trait TypeContainer<T>: Clone + Default + Debug + Send + Sync
-where
-    T: Any + Send + Sync,
-{
+pub trait TypeContainer: Clone + Default + Debug + Send + Sync {
     fn new() -> Self;
-    fn set(&mut self, t: T) -> &mut Self;
-    fn get(&self) -> Option<Arc<T>>;
-    fn remove(&mut self) -> Option<Arc<T>>;
-    fn has(&self) -> bool {
-        self.get().is_some()
+    fn set<T: Any + Send + Sync>(&self, t: T) -> Option<Arc<T>>;
+    fn add<T: Any + Send + Sync>(&self, t: T) -> &Self {
+        self.set(t);
+        self
+    }
+    fn get<T: Any + Send + Sync>(&self) -> Option<Arc<T>>;
+    fn remove<T: Any + Send + Sync>(&self) -> Option<Arc<T>>;
+    fn has<T: Any + Send + Sync>(&self) -> bool {
+        self.get::<T>().is_some()
     }
 }
 
 pub trait KeyContainer<K, V>: Clone + Default + Debug + Send + Sync {
     fn new() -> Self;
-    fn set(&mut self, key: K, value: V) -> &mut Self;
+    fn set(&self, key: K, value: V) -> Option<V>;
+    fn add(&self, key: K, value: V) -> &Self {
+        self.set(key, value);
+        self
+    }
     fn get(&self, key: &K) -> Option<Arc<V>>;
-    fn remove(&mut self, key: &K) -> Option<Arc<V>>;
+    fn remove(&self, key: &K) -> Option<Arc<V>>;
     fn has(&self, key: &K) -> bool {
         self.get(key).is_some()
     }

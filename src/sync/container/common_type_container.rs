@@ -1,12 +1,15 @@
 use crate::collections::HashMap;
+use crate::rails::tracing::syslog::RailsSyslog;
 use crate::sync::TypeContainer;
+use crate::{debug, error};
+use core::fmt::Debug;
 use std::any::{Any, TypeId};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 #[derive(Clone, Debug)]
 pub struct CommonTypeContainer {
     // A map for storing application state keyed by TypeId
-    state: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+    state: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
 }
 
 impl CommonTypeContainer {
@@ -19,39 +22,45 @@ impl CommonTypeContainer {
 impl Default for CommonTypeContainer {
     fn default() -> Self {
         Self {
-            state: HashMap::new(),
+            state: RwLock::new(HashMap::new()),
         }
     }
 }
 
-impl<T> TypeContainer<T> for CommonTypeContainer
-where
-    T: Any + Send + Sync,
-{
+impl TypeContainer for CommonTypeContainer {
     fn new() -> Self {
         Self::default()
     }
 
-    fn set(&mut self, t: T) -> &mut Self {
-        self.state.insert(TypeId::of::<T>(), Arc::new(t));
-        self
+    fn set<T: Any + Send + Sync>(&self, t: T) -> Option<Arc<T>> {
+        self.state
+            .write()
+            .map_err(|e| e.to_string())
+            .log(error!(Err, "Failed to get write lock: {:?}"))
+            .ok()
+            .and_then(|mut t| t.insert(TypeId::of::<T>(), Arc::new(t)).ok())
+            .and_then(|t| t.downcast::<T>())
+            .ok()
     }
 
-    fn get(&self) -> Option<Arc<T>> {
+    fn get<T: Any + Send + Sync>(&self) -> Option<Arc<T>> {
         let t = TypeId::of::<T>();
         println!("{:?}", t);
-        self.state.get(&t).and_then(|t| {
-            println!("Data available");
-            t.clone().downcast::<T>().ok().or_else(|| {
-                println!("Downcast Failure");
-                None
-            })
-        })
+        self.state
+            .read()
+            .map_err(|e| e.to_string())
+            .log(error!(Err, "Failed to get read lock: {:?}"))
+            .ok()
+            .and_then(|t| t.get(&t).and_then(|t| t.clone().downcast::<T>().ok()))
     }
 
-    fn remove(&mut self) -> Option<Arc<T>> {
+    fn remove<T: Any + Send + Sync>(&self) -> Option<Arc<T>> {
         self.state
-            .remove(&TypeId::of::<T>())
+            .write()
+            .map_err(|e| e.to_string())
+            .log(error!(Err, "Failed to get write lock: {:?}"))
+            .ok()
+            .and_then(|mut t| t.remove(&TypeId::of::<T>()))
             .and_then(|t| t.downcast::<T>().ok())
     }
 }
@@ -60,14 +69,25 @@ where
 mod tests {
     use super::*;
     use std::sync::Arc;
+    use tracing_subscriber::{fmt, EnvFilter};
 
     #[derive(Clone, Debug, PartialEq)]
     struct TestData {
         value: String,
     }
 
+    fn logger_setup() {
+        // Set up a tracing subscriber for logs
+        let subscriber = fmt()
+            .with_env_filter(EnvFilter::from_default_env())
+            .finish();
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("Failed to set tracing subscriber");
+    }
+
     #[test]
     fn test_set_and_get() {
+        logger_setup();
         let mut container = CommonTypeContainer::default();
 
         let data = TestData {
@@ -86,6 +106,7 @@ mod tests {
 
     #[test]
     fn test_remove() {
+        logger_setup();
         let mut container = CommonTypeContainer::default();
 
         let data = TestData {
@@ -108,6 +129,7 @@ mod tests {
 
     #[test]
     fn test_has() {
+        logger_setup();
         let mut container = CommonTypeContainer::default();
 
         let data = TestData {
@@ -132,6 +154,7 @@ mod tests {
 
     #[test]
     fn test_multiple_types() {
+        logger_setup();
         let mut container = CommonTypeContainer::default();
 
         let string_data = "String data".to_string();

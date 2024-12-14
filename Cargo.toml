@@ -158,6 +158,8 @@ rails = ["std"]
 rails-all = ["rails", "rails-ext", "rails-tracing"]
 rails-ext = ["rails", "error-tracer", "spin"]
 rails-tracing = ["rails"]
+rails-tracing-common = ["rails-tracing"]
+rails-tracing-syslog = ["rails-tracing"]
 
 # Services - Builders and more
 service = ["std"]
@@ -178,7 +180,7 @@ storage-json-ext = ["storage", "with_json"]
 sync = ["std"]
 sync-all = ["sync", "sync-rw-arc", "sync-container"]
 sync-rw-arc = ["sync"]
-sync-container = ["sync", "collections-hash-map"]
+sync-container = ["sync", "collections-hash-map", "rails-tracing"]
 
 # Template Engine
 template = ["std", "hashbrown", "spin", "regex", "time", "error-tracer"]
@@ -310,4 +312,6 @@ hyper-util = { version = "0.1", features = ["full"] }
 wasm-bindgen-test = "0.3.43"
 futures = { version = "0.3.30" }
 hex = "0.4.3"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
 
