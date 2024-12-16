@@ -27,8 +27,7 @@ mod test {
         let subscriber = fmt()
             .with_env_filter(EnvFilter::from_default_env())
             .finish();
-        tracing::subscriber::set_global_default(subscriber)
-            .expect("Failed to set tracing subscriber");
+        tracing::subscriber::set_global_default(subscriber).ok();
 
         // Example Result to log
         let res: Result<&str, &str> = Ok("Hello");

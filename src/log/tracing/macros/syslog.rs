@@ -41,91 +41,846 @@ macro_rules! syslog_func_generator {
         }
     };
 }
-
 #[macro_export]
-macro_rules! generate_log_facility {
-    ($({$macro_name:ident, $syslog_level:ident, $tracing_level:ident, $facility:ident, #internal $dollar:tt}),* $(,)?) => {
-        $(
-            #[macro_export]
-            macro_rules! $macro_name {
-                ($i:ident) => {
-                    $crate::syslog_func_generator!(
-                        $i(()),
-                        $syslog_level,
-                        $tracing_level,
-                        $facility,
-                        "{:?}"
-                    )
-                };
-                ($i:ident, message: $s:literal) => {
-                    $crate::syslog_func_generator!(
-                        $i(()),
-                        $syslog_level,
-                        $tracing_level,
-                        $facility,
-                        $s
-                    )
-                };
-                ($i:ident, $s:literal) => {
-                    $crate::syslog_func_generator!(
-                        $i(()),
-                        $syslog_level,
-                        $tracing_level,
-                        $facility,
-                        $s
-                    )
-                };
-                ($i:ident, $f:ident) => {
-                    $crate::syslog_func_generator!(
-                        $i(()),
-                        $syslog_level,
-                        $tracing_level,
-                        $f,
-                        "{:?}"
-                    )
-                };
-                ($i:ident, $f:ident, message: $s:literal) => {
-                    $crate::syslog_func_generator!(
-                        $i(()),
-                        $syslog_level,
-                        $tracing_level,
-                        $f,
-                        $s
-                    )
-                };
-                ($i:ident, $f:ident, $s:literal) => {
-                    $crate::syslog_func_generator!(
-                        $i(()),
-                        $syslog_level,
-                        $tracing_level,
-                        $f,
-                        $s
-                    )
-                };
-                ($dollar ($dollar generated_args:tt)*) => {
-                    $crate::prelude::tracing::$tracing_level!(
-                        log_level = $crate::log::tracing::entity::syslog::Severity::$syslog_level.as_int(),
-                        log_level_name = $crate::log::tracing::entity::syslog::Severity::$syslog_level.as_str(),
-                        $dollar ($dollar generated_args)*
-                    )
-                };
-            }
-
-            pub use $macro_name;
-        )*
+macro_rules! emergency {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::error!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Emergency.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Emergency.as_str(),
+            $ ($generated_args)*
+        )
     };
 }
 
-generate_log_facility!(
-    {emergency, Emergency, error, UserlevelMessages, #internal $},
-    {emerg, Emergency, error, UserlevelMessages, #internal $},
-    {alert, Alert, error, UserlevelMessages, #internal $},
-    {critical, Critical, error, UserlevelMessages, #internal $},
-    {crit, Critical, error, UserlevelMessages, #internal $},
-    {error, Error, error, UserlevelMessages, #internal $},
-    {warning, Warning, warn, UserlevelMessages, #internal $},
-    {notice, Notice, info, UserlevelMessages, #internal $},
-    {info, Informational, info, UserlevelMessages, #internal $},
-    {debug, Debug, trace, UserlevelMessages, #internal $},
-    {trace, Debug, trace, UserlevelMessages, #internal $},
-);
+#[macro_export]
+macro_rules! emerg {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Emergency,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::error!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Emergency.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Emergency.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! alert {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Alert,
+            error,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Alert,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Alert,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Alert,
+            error,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Alert,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Alert,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::error!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Alert.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Alert.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! critical {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::error!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Critical.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Critical.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! crit {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Critical,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::error!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Critical.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Critical.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! error {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::error!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Error.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Error.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+#[macro_export]
+macro_rules! err {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Error,
+            error,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::error!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Error.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Error.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! warning {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::warn!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Warning.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Warning.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! warn {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Warning,
+            warn,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::warn!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Warning.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Warning.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! notice {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Notice,
+            info,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Notice,
+            info,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Notice,
+            info,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Notice,
+            info,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Notice,
+            info,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Notice,
+            info,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::info!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Notice.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Notice.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! info {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Informational,
+            info,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Informational,
+            info,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Informational,
+            info,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Informational,
+            info,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Informational,
+            info,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Informational,
+            info,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::info!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Informational.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Informational.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! debug {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::trace!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Debug.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Debug.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! trace {
+    ($i:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            UserlevelMessages,
+            "{:?}"
+        )
+    };
+    ($i:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            UserlevelMessages,
+            $s
+        )
+    };
+    ($i:ident, $f:ident) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            $f,
+            "{:?}"
+        )
+    };
+    ($i:ident, $f:ident, message: $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            $f,
+            $s
+        )
+    };
+    ($i:ident, $f:ident, $s:literal) => {
+        $crate::syslog_func_generator!(
+            $i(()),
+            Debug,
+            trace,
+            $f,
+            $s
+        )
+    };
+    ($ ($generated_args:tt)*) => {
+        $crate::prelude::tracing::trace!(
+            log_level = $crate::log::tracing::entity::syslog::Severity::Debug.as_int(),
+            log_level_name = $crate::log::tracing::entity::syslog::Severity::Debug.as_str(),
+            $ ($generated_args)*
+        )
+    };
+}

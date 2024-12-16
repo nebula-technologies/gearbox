@@ -21,7 +21,7 @@ pub trait TypeContainer: Clone + Default + Debug + Send + Sync {
 
 pub trait KeyContainer<K, V>: Clone + Default + Debug + Send + Sync {
     fn new() -> Self;
-    fn set(&self, key: K, value: V) -> Option<V>;
+    fn set(&self, key: K, value: V) -> Option<Arc<V>>;
     fn add(&self, key: K, value: V) -> &Self {
         self.set(key, value);
         self

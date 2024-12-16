@@ -21,6 +21,8 @@ use core::hash::{Hash, Hasher};
 use core::ops::{Add, Sub};
 #[cfg(feature = "dep_serde")]
 use serde::{de::Error as SerdeError, Deserialize, Deserializer, Serialize, Serializer};
+#[cfg(feature = "template")]
+use std::any::Any;
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
