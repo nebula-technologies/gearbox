@@ -9,14 +9,15 @@ pub mod socket_addrs_with_builder;
 use std::net::IpAddr;
 
 pub use {
-    socket_addr::SocketAddr, socket_addrs::SocketAddrs, socket_addrs_error::SocketAddrsError,
+    socket_addr::SocketAddr, socket_addr_with_builder::SocketAddrWithBuilder,
+    socket_addrs::SocketAddrs, socket_addrs_error::SocketAddrsError,
     socket_addrs_with_builder::SocketAddrsWithBuilder,
 };
 
 pub type Ipv4Raw = (u8, u8, u8, u8);
 pub type Ipv6Raw = (u16, u16, u16, u16, u16, u16, u16, u16);
 
-pub trait SocketAddrsTryWithBuilder<T> {
+pub trait SocketTryWithBuilder<T> {
     type Error;
     fn ipv4_port(self, ip: Ipv4Raw, port: u16) -> Self;
     fn ipv6_port(self, ip: Ipv6Raw, port: u16) -> Self;
@@ -27,26 +28,15 @@ pub trait SocketAddrsTryWithBuilder<T> {
 
     fn default_addr(self, addr: SocketAddr) -> Self;
 
-    fn with_default_ipv4(self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) -> Self;
+    fn with_default_ipv4(self, ip: Ipv4Raw, port: u16) -> Self;
 
-    fn with_default_ipv6(
-        self,
-        o1: u16,
-        o2: u16,
-        o3: u16,
-        o4: u16,
-        o5: u16,
-        o6: u16,
-        o7: u16,
-        o8: u16,
-        port: u16,
-    ) -> Self;
+    fn with_default_ipv6(self, ipv6raw: Ipv6Raw, port: u16) -> Self;
 
     fn default_port(self, port: u16) -> Self;
 
     fn if_default_port(self, port: u16) -> Self;
-    fn try_capture_ips(self) -> Result<T, Self::Error>;
-    fn if_try_capture_ips(self) -> Result<SocketAddrsWithBuilder, Self::Error>;
+    fn try_capture_ip(self) -> Result<T, Self::Error>;
+    fn if_try_capture_ip(self) -> Result<SocketAddrsWithBuilder, Self::Error>;
     fn try_capture_broadcast(self) -> Result<T, Self::Error>;
     fn if_try_capture_broadcast(self) -> Result<SocketAddrsWithBuilder, Self::Error>;
     fn build(self) -> Result<SocketAddrs, Self::Error>;

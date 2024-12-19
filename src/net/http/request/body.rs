@@ -48,7 +48,7 @@ impl BodyTrait for Body {
                         .take()
                         .ok_or(tracer_dyn_err!("Reference is empty"))
                         .into_future()
-                        .and_then(|t| async { t.bytes().await.map_dyn_tracer_err(error_notice!()) })
+                        .and_then(|t| async { t.bytes().await.map_dyn_tracer_err(error_info!()) })
                         .await
                 }
                 Body::Empty => Ok(Bytes::new()),
@@ -64,7 +64,7 @@ impl BodyTrait for Body {
         Box::pin(async move {
             self.into_bytes()
                 .await
-                .and_then(|t| String::from_utf8(t.to_vec()).map_dyn_tracer_err(error_notice!()))
+                .and_then(|t| String::from_utf8(t.to_vec()).map_dyn_tracer_err(error_info!()))
         })
     }
 
@@ -78,7 +78,7 @@ impl BodyTrait for Body {
 
     fn try_sync_into_string(&mut self) -> Result<String, DynTracerError> {
         match self {
-            Body::Bytes(ref b) => String::from_utf8(b.clone()).map_dyn_tracer_err(error_notice!()),
+            Body::Bytes(ref b) => String::from_utf8(b.clone()).map_dyn_tracer_err(error_info!()),
             Body::Reference(r) => Err(tracer_dyn_err!()),
             Body::Empty => Ok(String::new()),
         }

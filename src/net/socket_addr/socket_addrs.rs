@@ -1,5 +1,5 @@
 use crate::net::ip::IpAddrs;
-use crate::net::socket_addr::{SocketAddr, SocketAddrsError, SocketAddrsWithBuilder};
+use crate::net::socket_addr::{Ipv6Raw, SocketAddr, SocketAddrsError, SocketAddrsWithBuilder};
 use crate::rails::ext::blocking::Merge;
 use std::collections::HashSet;
 use std::io;
@@ -8,7 +8,7 @@ use std::net::{
 };
 
 // Struct representing multiple IP address and port bindings
-#[derive(Debug, Clone, Default)]
+#[derive(Default, Debug)]
 pub struct SocketAddrs {
     pub bind_addr: Option<HashSet<SocketAddr>>,
     pub default_bind_addr: Option<HashSet<SocketAddr>>,
@@ -33,20 +33,11 @@ impl SocketAddrs {
         self.add_bind_addr(addr);
     }
 
-    pub fn add_bind_ipv6_port(
-        &mut self,
-        o1: u16,
-        o2: u16,
-        o3: u16,
-        o4: u16,
-        o5: u16,
-        o6: u16,
-        o7: u16,
-        o8: u16,
-        port: u16,
-    ) {
+    pub fn add_bind_ipv6_port(&mut self, ip: Ipv6Raw, port: u16) {
         let addr = SocketAddr::new(
-            IpAddr::V6(Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8)),
+            IpAddr::V6(Ipv6Addr::new(
+                ip.0, ip.1, ip.2, ip.3, ip.4, ip.5, ip.6, ip.7,
+            )),
             port,
         );
         self.add_bind_addr(addr);

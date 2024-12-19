@@ -13,14 +13,7 @@ pub enum Url {
     Strict(UrlStrict),
 }
 
-impl Url {
-    pub fn to_string(&self) -> String {
-        match self {
-            Url::Simple(url) => url.clone(),
-            Url::Strict(url) => url.to_string(),
-        }
-    }
-}
+impl Url {}
 impl Display for Url {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

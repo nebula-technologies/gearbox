@@ -1,21 +1,27 @@
+use super::SocketTryWithBuilder;
 use crate::net::socket_addr::socket_addr_with_builder::SocketAddrWithBuilder;
 use crate::net::socket_addr::SocketAddrs;
+use core::fmt;
 use core::fmt::{Display, Formatter};
+use core::marker::PhantomData;
 #[cfg(feature = "regex")]
 use regex::Regex;
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::io::Result as IoResult;
 use std::net::{
     IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr as StdSocketAddr, ToSocketAddrs as StdToSocketAddrs,
 };
 
-// Struct representing a single IP address and port binding
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct SocketAddr {
+pub struct SocketAddr<O = SocketAddrWithBuilder, B = SocketAddrWithBuilder>
+where
+    B: SocketTryWithBuilder<O>,
+{
     ip: Option<IpAddr>,
     port: Option<u16>,
     default_ip: Option<IpAddr>,
     default_port: Option<u16>,
+    phantom: PhantomData<(O, B)>,
 }
 
 impl SocketAddr {
@@ -26,6 +32,7 @@ impl SocketAddr {
             port: Some(port),
             default_ip: None,
             default_port: None,
+            phantom: Default::default(),
         }
     }
 
@@ -92,6 +99,7 @@ impl SocketAddr {
             port: Some(port),
             default_ip: Some(default_ip),
             default_port: Some(default_port),
+            phantom: Default::default(),
         }
     }
     pub fn as_broadcast_addr(&self, subnet_mask: Option<IpAddr>) -> Result<SocketAddr, String> {
@@ -149,6 +157,7 @@ impl SocketAddr {
             port: Some(9999),
             default_ip: Some(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))),
             default_port: Some(9999),
+            phantom: Default::default(),
         }
     }
 
@@ -275,6 +284,18 @@ impl SocketAddr {
     }
 }
 
+impl Clone for SocketAddr {
+    fn clone(&self) -> Self {
+        SocketAddr {
+            ip: self.ip,
+            port: self.port,
+            default_ip: self.default_ip,
+            default_port: self.default_port,
+            phantom: Default::default(),
+        }
+    }
+}
+
 impl Default for SocketAddr {
     fn default() -> Self {
         SocketAddr::default_addr()
@@ -291,6 +312,48 @@ impl Display for SocketAddr {
         )
     }
 }
+
+impl<O, B> fmt::Debug for SocketAddr<O, B>
+where
+    B: SocketTryWithBuilder<O>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SocketAddr")
+            .field("ip", &self.ip)
+            .field("port", &self.port)
+            .field("default_ip", &self.default_ip)
+            .field("default_port", &self.default_port)
+            // Exclude `phantom`
+            .finish()
+    }
+}
+
+impl<O, B> Hash for SocketAddr<O, B>
+where
+    B: SocketTryWithBuilder<O>,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.ip.hash(state);
+        self.port.hash(state);
+        self.default_ip.hash(state);
+        self.default_port.hash(state);
+        // PhantomData is intentionally not hashed.
+    }
+}
+
+impl<O, B> PartialEq for SocketAddr<O, B>
+where
+    B: SocketTryWithBuilder<O>,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.ip == other.ip
+            && self.port == other.port
+            && self.default_ip == other.default_ip
+            && self.default_port == other.default_port
+    }
+}
+
+impl<O, B> Eq for SocketAddr<O, B> where B: SocketTryWithBuilder<O> {}
 
 impl StdToSocketAddrs for SocketAddr {
     type Iter = std::vec::IntoIter<StdSocketAddr>;

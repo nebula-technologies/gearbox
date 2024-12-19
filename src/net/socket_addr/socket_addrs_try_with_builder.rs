@@ -1,14 +1,12 @@
 use crate::net::ip::IpAddrs;
 use crate::net::socket_addr::socket_addrs_error::SocketAddrsError;
 use crate::net::socket_addr::socket_addrs_with_builder::SocketAddrsWithBuilder;
-use crate::net::socket_addr::{
-    Ipv4Raw, Ipv6Raw, SocketAddr, SocketAddrs, SocketAddrsTryWithBuilder,
-};
+use crate::net::socket_addr::{Ipv4Raw, Ipv6Raw, SocketAddr, SocketAddrs, SocketTryWithBuilder};
 use crate::rails::ext::blocking::Merge;
 use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-impl SocketAddrsTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilder {
+impl SocketTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilder {
     type Error = SocketAddrsError;
 
     fn ipv4_port(mut self, ip: Ipv4Raw, port: u16) -> Self {
@@ -88,7 +86,7 @@ impl SocketAddrsTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilde
         }
         self
     }
-    fn try_capture_ips(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+    fn try_capture_ip(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
         self.default_port
             .ok_or(SocketAddrsError::FailedToCaptureIp(
                 "No default port".to_string(),
@@ -107,9 +105,9 @@ impl SocketAddrsTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilde
                 },
             )
     }
-    fn if_try_capture_ips(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+    fn if_try_capture_ip(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
         if self.bind_addr.is_none() {
-            self.try_capture_ips()
+            self.try_capture_ip()
         } else {
             Ok(self)
         }
@@ -152,7 +150,7 @@ impl SocketAddrsTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilde
     }
 }
 
-impl SocketAddrsTryWithBuilder<SocketAddrsWithBuilder>
+impl SocketTryWithBuilder<SocketAddrsWithBuilder>
     for Result<SocketAddrsWithBuilder, SocketAddrsError>
 {
     type Error = SocketAddrsError;
@@ -210,12 +208,12 @@ impl SocketAddrsTryWithBuilder<SocketAddrsWithBuilder>
     fn if_default_port(self, port: u16) -> Result<SocketAddrsWithBuilder, Self::Error> {
         self.map(|t| t.if_default_port(port))
     }
-    fn try_capture_ips(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
-        self.and_then(|t| t.try_capture_ips())
+    fn try_capture_ip(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.and_then(|t| t.try_capture_ip())
     }
 
-    fn if_try_capture_ips(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
-        self.and_then(|t| t.if_try_capture_ips())
+    fn if_try_capture_ip(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
+        self.and_then(|t| t.if_try_capture_ip())
     }
 
     fn try_capture_broadcast(self) -> Result<SocketAddrsWithBuilder, Self::Error> {
