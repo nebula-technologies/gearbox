@@ -1,5 +1,7 @@
 use crate::net::ip::IpAddrs;
-use crate::net::socket_addr::{Ipv6Raw, SocketAddr, SocketAddrsError, SocketAddrsWithBuilder};
+use crate::net::socket_addr::{
+    Ipv4Raw, Ipv6Raw, SocketAddr, SocketAddrsError, SocketAddrsWithBuilder,
+};
 use crate::rails::ext::blocking::Merge;
 use std::collections::HashSet;
 use std::io;
@@ -8,7 +10,7 @@ use std::net::{
 };
 
 // Struct representing multiple IP address and port bindings
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct SocketAddrs {
     pub bind_addr: Option<HashSet<SocketAddr>>,
     pub default_bind_addr: Option<HashSet<SocketAddr>>,
@@ -28,8 +30,8 @@ impl SocketAddrs {
         }
     }
 
-    pub fn add_bind_ipv4_port(&mut self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) {
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(o1, o2, o3, o4)), port);
+    pub fn add_bind_ipv4_port(&mut self, o: Ipv4Raw, port: u16) {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(o.0, o.1, o.2, o.3)), port);
         self.add_bind_addr(addr);
     }
 

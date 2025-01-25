@@ -1,6 +1,5 @@
 use crate::collections::HashMap;
 // use crate::error;
-use crate::rails::tracing::syslog::RailsSyslog;
 use crate::sync::{CommonTypeContainer, KeyContainer};
 use std::any::{Any, TypeId};
 use std::fmt::Debug;

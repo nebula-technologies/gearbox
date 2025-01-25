@@ -15,13 +15,13 @@ use std::net::{
 
 pub struct SocketAddr<O = SocketAddrWithBuilder, B = SocketAddrWithBuilder>
 where
-    B: SocketTryWithBuilder<O>,
+    B: SocketTryWithBuilder<O, SocketAddr<O, B>>,
 {
-    ip: Option<IpAddr>,
-    port: Option<u16>,
-    default_ip: Option<IpAddr>,
-    default_port: Option<u16>,
-    phantom: PhantomData<(O, B)>,
+    pub(crate) ip: Option<IpAddr>,
+    pub(crate) port: Option<u16>,
+    pub(crate) default_ip: Option<IpAddr>,
+    pub(crate) default_port: Option<u16>,
+    pub(crate) phantom: PhantomData<(O, B)>,
 }
 
 impl SocketAddr {
@@ -315,7 +315,7 @@ impl Display for SocketAddr {
 
 impl<O, B> fmt::Debug for SocketAddr<O, B>
 where
-    B: SocketTryWithBuilder<O>,
+    B: SocketTryWithBuilder<O, SocketAddr<O, B>>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SocketAddr")
@@ -330,7 +330,7 @@ where
 
 impl<O, B> Hash for SocketAddr<O, B>
 where
-    B: SocketTryWithBuilder<O>,
+    B: SocketTryWithBuilder<O, SocketAddr<O, B>>,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.ip.hash(state);
@@ -343,7 +343,7 @@ where
 
 impl<O, B> PartialEq for SocketAddr<O, B>
 where
-    B: SocketTryWithBuilder<O>,
+    B: SocketTryWithBuilder<O, SocketAddr<O, B>>,
 {
     fn eq(&self, other: &Self) -> bool {
         self.ip == other.ip
@@ -353,7 +353,7 @@ where
     }
 }
 
-impl<O, B> Eq for SocketAddr<O, B> where B: SocketTryWithBuilder<O> {}
+impl<O, B> Eq for SocketAddr<O, B> where B: SocketTryWithBuilder<O, SocketAddr<O, B>> {}
 
 impl StdToSocketAddrs for SocketAddr {
     type Iter = std::vec::IntoIter<StdSocketAddr>;

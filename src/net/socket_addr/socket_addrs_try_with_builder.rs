@@ -6,7 +6,7 @@ use crate::rails::ext::blocking::Merge;
 use std::collections::HashSet;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-impl SocketTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilder {
+impl SocketTryWithBuilder<SocketAddrsWithBuilder, SocketAddrs> for SocketAddrsWithBuilder {
     type Error = SocketAddrsError;
 
     fn ipv4_port(mut self, ip: Ipv4Raw, port: u16) -> Self {
@@ -51,25 +51,14 @@ impl SocketTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilder {
         self
     }
 
-    fn with_default_ipv4(mut self, o1: u8, o2: u8, o3: u8, o4: u8, port: u16) -> Self {
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(o1, o2, o3, o4)), port);
+    fn with_default_ipv4(mut self, o: Ipv4Raw, port: u16) -> Self {
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(o.0, o.1, o.2, o.3)), port);
         self.default_addr(addr)
     }
 
-    fn with_default_ipv6(
-        mut self,
-        o1: u16,
-        o2: u16,
-        o3: u16,
-        o4: u16,
-        o5: u16,
-        o6: u16,
-        o7: u16,
-        o8: u16,
-        port: u16,
-    ) -> Self {
+    fn with_default_ipv6(mut self, o: Ipv6Raw, port: u16) -> Self {
         let addr = SocketAddr::new(
-            IpAddr::V6(Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8)),
+            IpAddr::V6(Ipv6Addr::new(o.0, o.1, o.2, o.3, o.4, o.5, o.6, o.7)),
             port,
         );
         self.default_addr(addr)
@@ -86,6 +75,7 @@ impl SocketTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilder {
         }
         self
     }
+
     fn try_capture_ip(mut self) -> Result<SocketAddrsWithBuilder, Self::Error> {
         self.default_port
             .ok_or(SocketAddrsError::FailedToCaptureIp(
@@ -150,7 +140,7 @@ impl SocketTryWithBuilder<SocketAddrsWithBuilder> for SocketAddrsWithBuilder {
     }
 }
 
-impl SocketTryWithBuilder<SocketAddrsWithBuilder>
+impl SocketTryWithBuilder<SocketAddrsWithBuilder, SocketAddrs>
     for Result<SocketAddrsWithBuilder, SocketAddrsError>
 {
     type Error = SocketAddrsError;
@@ -177,28 +167,18 @@ impl SocketTryWithBuilder<SocketAddrsWithBuilder>
 
     fn with_default_ipv4(
         self,
-        o1: u8,
-        o2: u8,
-        o3: u8,
-        o4: u8,
+        o: Ipv4Raw,
         port: u16,
     ) -> Result<SocketAddrsWithBuilder, Self::Error> {
-        self.map(|t| t.with_default_ipv4(o1, o2, o3, o4, port))
+        self.map(|t| t.with_default_ipv4(o, port))
     }
 
     fn with_default_ipv6(
         self,
-        o1: u16,
-        o2: u16,
-        o3: u16,
-        o4: u16,
-        o5: u16,
-        o6: u16,
-        o7: u16,
-        o8: u16,
+        o: Ipv6Raw,
         port: u16,
     ) -> Result<SocketAddrsWithBuilder, Self::Error> {
-        self.map(|t| t.with_default_ipv6(o1, o2, o3, o4, o5, o6, o7, o8, port))
+        self.map(|t| t.with_default_ipv6(o, port))
     }
 
     fn default_port(self, port: u16) -> Result<SocketAddrsWithBuilder, Self::Error> {

@@ -413,7 +413,6 @@ extern crate uniffi_macros;
 #[cfg(test)]
 #[macro_use]
 extern crate wasm_bindgen_test;
-extern crate core;
 #[cfg(all(target_arch = "wasm32", feature = "web"))]
 extern crate web_sys;
 

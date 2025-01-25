@@ -1,5 +1,4 @@
 use crate::collections::HashMap;
-use crate::rails::tracing::syslog::RailsSyslog;
 use crate::sync::TypeContainer;
 // use crate::{debug, error};
 use crate::error;

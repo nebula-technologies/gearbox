@@ -1,4 +1,5 @@
 pub mod socket_addr;
+pub mod socket_addr_error;
 pub mod socket_addr_try_with_builder;
 pub mod socket_addr_with_builder;
 pub mod socket_addrs;
@@ -17,7 +18,10 @@ pub use {
 pub type Ipv4Raw = (u8, u8, u8, u8);
 pub type Ipv6Raw = (u16, u16, u16, u16, u16, u16, u16, u16);
 
-pub trait SocketTryWithBuilder<T> {
+pub trait SocketTryWithBuilder<T, O>
+where
+    Self: Sized,
+{
     type Error;
     fn ipv4_port(self, ip: Ipv4Raw, port: u16) -> Self;
     fn ipv6_port(self, ip: Ipv6Raw, port: u16) -> Self;
@@ -36,10 +40,10 @@ pub trait SocketTryWithBuilder<T> {
 
     fn if_default_port(self, port: u16) -> Self;
     fn try_capture_ip(self) -> Result<T, Self::Error>;
-    fn if_try_capture_ip(self) -> Result<SocketAddrsWithBuilder, Self::Error>;
+    fn if_try_capture_ip(self) -> Result<T, Self::Error>;
     fn try_capture_broadcast(self) -> Result<T, Self::Error>;
-    fn if_try_capture_broadcast(self) -> Result<SocketAddrsWithBuilder, Self::Error>;
-    fn build(self) -> Result<SocketAddrs, Self::Error>;
+    fn if_try_capture_broadcast(self) -> Result<T, Self::Error>;
+    fn build(self) -> Result<O, Self::Error>;
 }
 
 #[cfg(test)]
@@ -97,14 +101,14 @@ mod tests {
     #[test]
     fn test_socket_bind_addrs_add_bind_ipv4_port() {
         let mut bind_addrs = SocketAddrs::default();
-        bind_addrs.add_bind_ipv4_port(192, 168, 1, 1, 8080);
+        bind_addrs.add_bind_ipv4_port((192, 168, 1, 1), 8080);
         assert!(bind_addrs.bind_addr.is_some());
     }
 
     #[test]
     fn test_socket_bind_addrs_add_bind_ipv6_port() {
         let mut bind_addrs = SocketAddrs::default();
-        bind_addrs.add_bind_ipv6_port(0xfe80, 0, 0, 0, 0, 0, 0, 1, 8080);
+        bind_addrs.add_bind_ipv6_port((0xfe80, 0, 0, 0, 0, 0, 0, 1), 8080);
         assert!(bind_addrs.bind_addr.is_some());
     }
 
@@ -124,7 +128,7 @@ mod tests {
     #[test]
     fn test_to_socket_addrs_for_socket_bind_addrs() {
         let mut bind_addrs = SocketAddrs::default();
-        bind_addrs.add_bind_ipv4_port(127, 0, 0, 1, 8080);
+        bind_addrs.add_bind_ipv4_port((127, 0, 0, 1), 8080);
         let addrs_iter = bind_addrs.to_socket_addrs().unwrap();
         let addrs: Vec<StdSocketAddr> = addrs_iter.collect();
         assert_eq!(addrs.len(), 1);
@@ -137,7 +141,7 @@ mod tests {
     #[test]
     fn test_from_socket_bind_addrs_to_vec() {
         let mut bind_addrs = SocketAddrs::default();
-        bind_addrs.add_bind_ipv4_port(127, 0, 0, 1, 8080);
+        bind_addrs.add_bind_ipv4_port((127, 0, 0, 1), 8080);
         let vec: Vec<SocketAddr> = bind_addrs.into();
         assert_eq!(vec.len(), 1);
     }
