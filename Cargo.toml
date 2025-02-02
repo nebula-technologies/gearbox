@@ -201,9 +201,9 @@ derive_more = { version = "0.99.18", optional = true }
 serde_json = { version = "1", optional = true }
 serde_yaml = { version = "0.9.34", optional = true }
 serde = { version = "1", optional = true }
-tracing = { version = "0.1.40", default-features = false, features = ["log", "attributes"], optional = true }
+tracing = { version = "0.1.41", default-features = false, features = ["log", "attributes"], optional = true }
 libc = { version = "0.2.159", optional = true }
-tracing-subscriber = { version = "0.3.18", default-features = false, features = ["smallvec", "sharded-slab", "thread_local", "nu-ansi-term"], optional = true }
+tracing-subscriber = { version = "0.3.19", default-features = false, features = ["smallvec", "sharded-slab", "thread_local", "nu-ansi-term", "env-filter"], optional = true }
 tracing-log = { version = "0.2.0", default-features = false, features = ["log-tracer", "interest-cache"], optional = true }
 num-traits = { version = "0.2.19", optional = true }
 spin = { version = "0.9.8", optional = true }
@@ -312,6 +312,6 @@ hyper-util = { version = "0.1", features = ["full"] }
 wasm-bindgen-test = "0.3.43"
 futures = { version = "0.3.30" }
 hex = "0.4.3"
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["fmt", "env-filter"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["fmt", "env-filter"] }
 

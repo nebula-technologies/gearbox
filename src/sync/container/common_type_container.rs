@@ -1,7 +1,7 @@
 use crate::collections::HashMap;
-use crate::sync::TypeContainer;
-// use crate::{debug, error};
-use crate::error;
+use crate::sync::{CommonKeyContainer, TypeContainer};
+#[cfg(feature = "common-merge")]
+use crate::{common::merge::DataMerge, sync::container::TypeContainerExtMerge};
 use core::fmt::Debug;
 use std::any::{Any, TypeId};
 use std::sync::{Arc, RwLock};
@@ -86,7 +86,6 @@ impl TypeContainer for CommonTypeContainer {
 
     fn get<T: Any + Send + Sync>(&self) -> Option<Arc<T>> {
         let key = TypeId::of::<T>();
-        println!("{:?}", key);
         self.state
             .read()
             .map_err(|e| e.to_string())
@@ -104,6 +103,20 @@ impl TypeContainer for CommonTypeContainer {
             .ok()
             .and_then(|mut t| t.remove(&TypeId::of::<T>()))
             .and_then(|t| t.downcast::<T>().ok())
+    }
+}
+
+#[cfg(feature = "common-merge")]
+impl TypeContainerExtMerge for CommonTypeContainer {
+    fn update<T: DataMerge<Arc<T>> + Any + Send + Sync>(&self, mut other: T) -> Option<Arc<T>> {
+        let new_value = if let Some(value) = self.get::<T>() {
+            other.data_merge(value);
+            other
+        } else {
+            other
+        };
+
+        self.set(new_value)
     }
 }
 

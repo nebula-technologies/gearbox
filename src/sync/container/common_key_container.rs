@@ -1,6 +1,9 @@
 use crate::collections::HashMap;
+use core::fmt::Formatter;
 // use crate::error;
 use crate::sync::{CommonTypeContainer, KeyContainer};
+#[cfg(feature = "common-merge")]
+use crate::{common::merge::DataMerge, sync::container::KeyContainerExtMerge};
 use std::any::{Any, TypeId};
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
@@ -120,5 +123,25 @@ where
                     // .log(error!(Err, message: "Failed to cast type"))
                     .ok()
             })
+    }
+}
+
+#[cfg(feature = "common-merge")]
+impl<K, V> KeyContainerExtMerge<K, V> for CommonKeyContainer<K>
+where
+    V: Any + DataMerge<Arc<V>> + Send + Sync + Clone + Debug,
+    K: std::cmp::Eq + std::hash::Hash + Clone + Debug + Send + Sync,
+{
+    fn update(&self, key: K, other: V) -> Option<Arc<V>> {
+        let new_value = self
+            .get(&key)
+            .map(|value: std::sync::Arc<V>| {
+                let mut other = other.clone();
+                other.data_merge(value.clone());
+                other
+            })
+            .unwrap_or(other.clone());
+
+        self.set(key, new_value)
     }
 }

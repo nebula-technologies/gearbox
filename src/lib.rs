@@ -535,6 +535,11 @@ pub mod prelude {
         pub use tracing::*;
     }
 
+    #[cfg(feature = "tracing")]
+    pub mod tracing_subscriber {
+        pub use tracing_subscriber::*;
+    }
+
     #[cfg(feature = "prelude-defaults")]
     pub use {
         // Alloc types

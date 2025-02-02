@@ -269,7 +269,7 @@ impl LogFormatter for DeepLogFormatter {
                             }
                         })
                     })
-                    .unwrap_or(format!("{:>30}", "No file"));
+                    .unwrap_or(format!("{:>40}", "No file"));
 
                 let line = deeplog
                     .caller
@@ -289,37 +289,124 @@ impl LogFormatter for DeepLogFormatter {
         span: &SpanRef<S>,
         ty: Type,
     ) -> String {
-        let deeplog = if let Some(l) = self.log.clone() {
-            l
+        if self.log.is_none() {
+            self.log = Some(DeepLog::default())
+        }
+        let deeplog = if let Some(mut deeplog) = self.log.clone() {
+            deeplog.message = None;
+
+            deeplog.span_id = Option::from(span.metadata().name().to_string());
+
+            deeplog.local_id = Some(vec![
+                span.id().into_non_zero_u64().to_string(),
+                ty.to_string(),
+            ]);
+
+            deeplog.caller = Some(Caller {
+                function: span.metadata().module_path().map(|t| t.to_owned()),
+                file: span.metadata().file().map(|t| t.to_string()),
+                line: span.metadata().line().map(|t| t as i64),
+            });
+
+            deeplog.severity = Some(span.metadata().level().into());
+
+            deeplog.facility = None;
+
+            deeplog.trace_id = span
+                .extensions()
+                .get::<HashMap<String, String>>() // Assuming the fields are stored in a HashMap
+                .and_then(|fields| fields.get("trace_id").cloned());
+
+            if let Some(timestamps) = &mut deeplog.timestamps {
+                timestamps.received_timestamp = None;
+                if timestamps.timestamp.is_none() {
+                    timestamps.timestamp = Some(DateTime::now());
+                }
+            } else {
+                deeplog.timestamps = Some(Timestamps {
+                    received_timestamp: None,
+                    timestamp: Some(DateTime::now()),
+                });
+            }
+
+            deeplog.clone()
         } else {
-            DeepLog::default()
+            let mut deeplog = DeepLog::default();
+            deeplog.message = Some("Internal Log error".to_string());
+            deeplog
         };
 
-        let mut map = serde_json::value::Map::new();
-        map.insert(
-            "timestamps".to_string(),
-            deeplog
-                .timestamps
-                .and_then(|t| t.timestamp)
-                .map(|t| t.to_rfc3339())
-                .map(|t| serde_json::Value::String(t))
-                .unwrap_or(serde_json::Value::Null),
-        );
-        map.insert(
-            "severity".to_string(),
-            serde_json::Value::String(deeplog.severity.unwrap_or(Severity::Error).to_string()),
-        );
-        map.insert(
-            "msg".to_string(),
-            serde_json::Value::String(deeplog.message.unwrap_or("Enter Span".to_string())),
-        );
-        map.insert(
-            "span_id".to_string(),
-            serde_json::Value::String(span.metadata().name().to_string()),
-        );
+        match self.output_style.clone().unwrap_or(LogStyleOutput::Full) {
+            LogStyleOutput::Full => serde_json::to_string(&deeplog)
+                .unwrap_or_else(|e| format!(r#"{{"message":"{}"}}"#, e.to_string())),
+            LogStyleOutput::Minimal => {
+                let mut map = serde_json::value::Map::new();
+                map.insert(
+                    "timestamps".to_string(),
+                    deeplog
+                        .timestamps
+                        .and_then(|t| t.timestamp)
+                        .map(|t| t.to_rfc3339())
+                        .map(|t| serde_json::Value::String(t))
+                        .unwrap_or(serde_json::Value::Null),
+                );
+                map.insert(
+                    "severity".to_string(),
+                    serde_json::Value::String(
+                        deeplog.severity.unwrap_or(Severity::Error).to_string(),
+                    ),
+                );
+                map.insert(
+                    "msg".to_string(),
+                    serde_json::Value::String(deeplog.message.unwrap_or("No message".to_string())),
+                );
+                serde_json::to_string(&serde_json::Value::Object(map))
+                    .unwrap_or_else(|e| format!(r#"{{"message":"{}"}}"#, e.to_string()))
+            }
+            LogStyleOutput::Human => {
+                let severity = deeplog.severity.unwrap_or(Severity::Error);
+                let timestamp = deeplog
+                    .timestamps
+                    .and_then(|t| t.timestamp)
+                    .map(|t| t.to_rfc3339())
+                    .unwrap_or("No timestamp".to_string());
+                let msg = deeplog.message.unwrap_or("No message".to_string());
 
-        serde_json::to_string(&serde_json::Value::Object(map))
-            .unwrap_or_else(|e| format!(r#"{{"message":"{}"}}"#, e.to_string()))
+                // Extract file and line information
+                let file = deeplog
+                    .caller
+                    .as_ref()
+                    .and_then(|caller| {
+                        caller.file.as_ref().map(|file_path| {
+                            // If the file path is longer than 30 characters, truncate and add "..."
+                            if file_path.len() > 40 {
+                                format!(" ...{}", &file_path[file_path.len() - 37..])
+                            } else {
+                                // Pad the file path to the front with spaces if it's less than 30 characters
+                                format!(" {:>40}", file_path)
+                            }
+                        })
+                    })
+                    .unwrap_or(format!("{:>40}", "No file"));
+
+                let line = deeplog
+                    .caller
+                    .as_ref()
+                    .and_then(|caller| caller.line)
+                    .map(|line| line.to_string())
+                    .unwrap_or("No line".to_string());
+
+                // Format the log message with aligned severity and fixed-length file path
+                format!(
+                    "{} {:<15} {}:{} Span: {}",
+                    timestamp,
+                    severity,
+                    file,
+                    line,
+                    deeplog.span_id.unwrap_or("No span id".to_string())
+                )
+            }
+        }
     }
 }
 
